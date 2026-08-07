@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import SiteVisitForm from "./SiteVisitForm";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewSiteVisitPage() {
   const [contacts, projects] = await Promise.all([
     db.contact.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true, type: true } }),

@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import NewProposalForm from "./NewProposalForm";
 
+export const dynamic = "force-dynamic";
+
 export default async function NewProposalPage() {
   const [contacts, buyerReqs, tenantReqs, projects] = await Promise.all([
     db.contact.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true, type: true } }),
