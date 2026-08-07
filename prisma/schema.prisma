@@ -1,0 +1,941 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  SUPER_ADMIN
+  OWNER
+  EMPLOYEE
+}
+
+enum FieldType {
+  TEXT
+  TEXTAREA
+  NUMBER
+  PHONE
+  EMAIL
+  DATE
+  RADIO
+  DROPDOWN
+  MULTISELECT
+  REPEATER
+  FILE
+}
+
+enum RecordState {
+  OPEN
+  LOCKED
+  ARCHIVED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOCK
+  UNLOCK
+  ARCHIVE
+  UNARCHIVE
+  LOGIN
+  LOGOUT
+  FILE_UPLOAD
+  FILE_DELETE
+  OTP_SENT
+  OTP_VERIFIED
+}
+
+enum ContactType {
+  OWNER
+  BUYER
+  TENANT
+  DEVELOPER
+  BROKER
+  ARCHITECT
+  LEGAL_CONSULTANT
+  TECHNICAL_CONSULTANT
+  ASSOCIATION_MEMBER
+  COMPANY
+  OTHER
+}
+
+enum PropertyAvailability {
+  DRAFT
+  UNDER_VERIFICATION
+  AVAILABLE
+  TEMPORARILY_HELD
+  RESERVED
+  UNDER_NEGOTIATION
+  SOLD
+  RENTED
+  LEASED
+  WITHDRAWN
+  UNAVAILABLE
+  ARCHIVED
+}
+
+enum RequirementStatus {
+  NEW
+  UNDER_REVIEW
+  ACTIVE
+  MATCHES_AVAILABLE
+  PROPOSAL_SENT
+  SITE_VISIT
+  NEGOTIATION
+  FULFILLED
+  ON_HOLD
+  CLOSED
+}
+
+enum ProposalStatus {
+  DRAFT
+  SENT
+  VIEWED
+  RESPONSE_PENDING
+  INTERESTED
+  PARTIALLY_SHORTLISTED
+  SITE_VISIT_REQUESTED
+  NEGOTIATING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum PropertyResponse {
+  NO_RESPONSE
+  INTERESTED
+  NOT_INTERESTED
+  SHORTLISTED
+  SITE_VISIT_REQUESTED
+  NEGOTIATING
+  CONFIRMED
+}
+
+enum SiteVisitStatus {
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+  NO_SHOW
+}
+
+enum NegotiationStatus {
+  ACTIVE
+  AGREED
+  COLLAPSED
+}
+
+enum DealType {
+  SOLD
+  RENTED
+  LEASED
+  REDEVELOPMENT_CONFIRMED
+  WITHDRAWN
+  REQUIREMENT_CLOSED
+}
+
+enum DeveloperStatus {
+  NOT_CONTACTED
+  PROJECT_SENT
+  RESPONSE_PENDING
+  INTERESTED
+  NOT_INTERESTED
+  MEETING_SCHEDULED
+  PROPOSAL_REQUESTED
+  PROPOSAL_RECEIVED
+  REVISION_REQUESTED
+  SHORTLISTED
+  FINAL_NEGOTIATION
+  SELECTED
+  REJECTED
+  NOT_SELECTED
+}
+
+enum ConsentStatus {
+  AGREED
+  NOT_AGREED
+  UNDECIDED
+  CONDITIONAL_CONSENT
+  NOT_CONTACTED
+}
+
+// ─── Users ────────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  phone        String   @unique
+  passwordHash String
+  role         UserRole @default(EMPLOYEE)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  assignedProjects Project[] @relation("ProjectAssignee")
+  auditLogs        AuditLog[]
+
+  @@map("users")
+}
+
+// ─── App Settings ─────────────────────────────────────────────────────────────
+
+model AppSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("app_settings")
+}
+
+// ─── Statuses & Tags ──────────────────────────────────────────────────────────
+
+model Status {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+  color     String    @default("#6B7280")
+  sortOrder Int       @default(0)
+  projects  Project[]
+
+  @@map("statuses")
+}
+
+model Tag {
+  id       String       @id @default(cuid())
+  name     String       @unique
+  color    String       @default("#6B7280")
+  projects ProjectTag[]
+
+  @@map("tags")
+}
+
+model ProjectTag {
+  projectId String
+  tagId     String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, tagId])
+  @@map("project_tags")
+}
+
+// ─── Categories & Subcategories ───────────────────────────────────────────────
+
+model Category {
+  id            String        @id @default(cuid())
+  name          String        @unique
+  slug          String        @unique
+  sortOrder     Int           @default(0)
+  subcategories Subcategory[]
+  projects      Project[]
+  buyerRequirements  BuyerRequirement[]
+  tenantRequirements TenantRequirement[]
+  intakeTokens        BuyerIntakeToken[]
+  tenantIntakeTokens  TenantIntakeToken[]
+
+  @@map("categories")
+}
+
+model Subcategory {
+  id         String    @id @default(cuid())
+  name       String
+  slug       String
+  sortOrder  Int       @default(0)
+  categoryId String
+  category   Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  templates  Template[]
+  projects   Project[]
+
+  @@unique([categoryId, slug])
+  @@map("subcategories")
+}
+
+// ─── Templates & Question Groups ──────────────────────────────────────────────
+
+model Template {
+  id            String          @id @default(cuid())
+  name          String
+  version       Int             @default(1)
+  isActive      Boolean         @default(true)
+  subcategoryId String
+  subcategory   Subcategory     @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
+  groups        TemplateGroup[]
+  projects      Project[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@map("templates")
+}
+
+model QuestionGroup {
+  id         String          @id @default(cuid())
+  name       String
+  slug       String          @unique
+  isShared   Boolean         @default(false)
+  sortOrder  Int             @default(0)
+  questions  Question[]
+  templates  TemplateGroup[]
+
+  @@map("question_groups")
+}
+
+model TemplateGroup {
+  id         String        @id @default(cuid())
+  templateId String
+  groupId    String
+  sortOrder  Int           @default(0)
+  template   Template      @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  group      QuestionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, groupId])
+  @@map("template_groups")
+}
+
+model Question {
+  id              String        @id @default(cuid())
+  groupId         String
+  label           String
+  fieldType       FieldType
+  isRequired      Boolean       @default(false)
+  isInternal      Boolean       @default(false)
+  sortOrder       Int           @default(0)
+  options         String[]      // For RADIO, DROPDOWN, MULTISELECT
+  conditionalJson Json?         // { parentQuestionId, matchValue }
+  helpText        String?
+  unit            String?       // e.g. "sqft", "Rs", "ft"
+  autoCalcJson    Json?         // { formula, sourceFields }
+  group           QuestionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  responses       Response[]
+
+  @@map("questions")
+}
+
+// ─── Scoring Rules ────────────────────────────────────────────────────────────
+
+model ScoringRule {
+  id               String   @id @default(cuid())
+  name             String
+  templateSlug     String   // "selling-buying" | "special-projects" | "rental"
+  criterionKey     String   @default("")  // groups rules by criterion, e.g. "mandate", "commission"
+  maxScore         Int      @default(0)  // max achievable for this criterion (for totalPossible)
+  questionLabel    String   @default("")  // template question label to match against
+  matchValue       String
+  score            Int
+  sortOrder        Int      @default(0)
+
+  @@map("scoring_rules")
+}
+
+// ─── Projects ─────────────────────────────────────────────────────────────────
+
+model Project {
+  id              String      @id @default(cuid())
+  projectNumber   String      @unique
+  title           String
+  categoryId      String
+  subcategoryId   String
+  templateId      String
+  templateVersion Int
+  statusId        String?
+  assigneeId      String?
+  state           RecordState @default(OPEN)
+  leadSource      String?
+  leadDate        DateTime?
+  potentialScore  Int?
+  clientName      String?
+  clientPhone     String?
+  clientEmail     String?
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  availability  PropertyAvailability @default(AVAILABLE)
+
+  category      Category      @relation(fields: [categoryId], references: [id])
+  subcategory   Subcategory   @relation(fields: [subcategoryId], references: [id])
+  template      Template      @relation(fields: [templateId], references: [id])
+  status        Status?       @relation(fields: [statusId], references: [id])
+  assignee      User?         @relation("ProjectAssignee", fields: [assigneeId], references: [id])
+  tags          ProjectTag[]
+  responses     Response[]
+  files         ProjectFile[]
+  clientLinks   ClientLink[]
+  auditLogs     AuditLog[]
+  lockEntries   LockEntry[]
+  projectNotes  ProjectNote[]
+  followUps     FollowUp[]
+  matches            Match[]
+  customFields       ProjectCustomField[]
+  proposalProperties ProposalProperty[]
+  siteVisits         SiteVisit[]
+  negotiations       Negotiation[]
+  deal               Deal?
+  developerProposals DeveloperProposal[]
+  ownerUnits         OwnerUnit[]
+
+  @@map("projects")
+}
+
+// ─── Responses ────────────────────────────────────────────────────────────────
+
+model Response {
+  id         String   @id @default(cuid())
+  projectId  String
+  questionId String
+  value      String?
+  jsonValue  Json?    // For MULTISELECT, REPEATER
+  updatedAt  DateTime @updatedAt
+
+  project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, questionId])
+  @@map("responses")
+}
+
+// ─── Files ────────────────────────────────────────────────────────────────────
+
+model ProjectFile {
+  id           String   @id @default(cuid())
+  projectId    String
+  questionId   String?
+  fileName     String
+  originalName String
+  mimeType     String
+  sizeBytes    Int
+  storagePath  String
+  uploadedBy   String?
+  uploadedAt   DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_files")
+}
+
+// ─── Client Links (OTP Portal) ────────────────────────────────────────────────
+
+model ClientLink {
+  id          String    @id @default(cuid())
+  projectId   String
+  phone       String
+  token       String    @unique @default(cuid())
+  otp         String?
+  otpExpiresAt DateTime?
+  verifiedAt  DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("client_links")
+}
+
+// ─── Lock Entries ─────────────────────────────────────────────────────────────
+
+model LockEntry {
+  id         String   @id @default(cuid())
+  projectId  String
+  scope      String   // "project" | "group:<groupId>" | "question:<questionId>"
+  lockedBy   String
+  lockedAt   DateTime @default(now())
+  unlockedAt DateTime?
+  unlockedBy String?
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("lock_entries")
+}
+
+// ─── Notes & Meetings ─────────────────────────────────────────────────────────
+
+model ProjectNote {
+  id        String   @id @default(cuid())
+  projectId String
+  authorId  String
+  type      String   @default("note") // "note" | "meeting"
+  content   String
+  meetingAt DateTime?
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_notes")
+}
+
+// ─── Follow-ups ───────────────────────────────────────────────────────────────
+
+model FollowUp {
+  id          String    @id @default(cuid())
+  projectId   String
+  assigneeId  String?
+  dueAt       DateTime
+  description String
+  isDone      Boolean   @default(false)
+  doneAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("follow_ups")
+}
+
+// ─── Audit Logs ───────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  projectId  String?
+  userId     String?
+  action     AuditAction
+  entityType String?     // "project" | "response" | "file" | "lock" | etc.
+  entityId   String?
+  before     Json?
+  after      Json?
+  meta       Json?
+  ip         String?
+  createdAt  DateTime    @default(now())
+
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
+
+// ─── Contacts ─────────────────────────────────────────────────────────────────
+
+model Contact {
+  id          String      @id @default(cuid())
+  name        String
+  phone       String?
+  email       String?
+  company     String?
+  type        ContactType @default(OTHER)
+  notes       String?
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  buyerRequirements  BuyerRequirement[]
+  tenantRequirements TenantRequirement[]
+  proposals          Proposal[]
+  siteVisits         SiteVisit[]
+  negotiations       Negotiation[]
+  deals              Deal[]
+  developerProfile   Developer?
+
+  @@map("contacts")
+}
+
+// ─── Property Availability ────────────────────────────────────────────────────
+// availability field is added to Project via a separate field below.
+// We extend Project with availability by adding it as an optional field
+// in a migration; here we define the supporting models.
+
+// ─── Buyer Requirements ───────────────────────────────────────────────────────
+
+model BuyerRequirement {
+  id               String            @id @default(cuid())
+  reqNumber        String            @unique
+  contactId        String
+  categoryId       String
+  subcategoryId    String?
+  preferredLocations Json?           // string[]
+  budgetMin        Float?
+  budgetMax        Float?
+  areaMin          Float?
+  areaMax          Float?
+  bhk              String?
+  propertySubtype  String?
+  furnishing       String?
+  features         Json?             // string[]
+  timeline         String?
+  priority         String?           @default("Medium")
+  notes            String?
+  status           RequirementStatus @default(NEW)
+  managedById      String?
+  followUpDate     DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  contact    Contact  @relation(fields: [contactId], references: [id])
+  category   Category @relation(fields: [categoryId], references: [id])
+  matches    Match[]
+  proposals  Proposal[]
+  customFields RequirementCustomField[]
+
+  @@map("buyer_requirements")
+}
+
+// ─── Tenant Requirements ──────────────────────────────────────────────────────
+
+model TenantRequirement {
+  id                 String            @id @default(cuid())
+  reqNumber          String            @unique
+  contactId          String
+  categoryId         String
+  subcategoryId      String?
+  preferredLocations Json?             // string[]
+  rentMin            Float?
+  rentMax            Float?
+  depositBudget      Float?
+  areaMin            Float?
+  areaMax            Float?
+  leaseDuration      Int?              // months
+  lockInPeriod       Int?              // months
+  moveInDate         DateTime?
+  propertySubtype    String?
+  furnishing         String?
+  features           Json?             // string[]
+  operationalReqs    String?
+  priority           String?           @default("Medium")
+  notes              String?
+  status             RequirementStatus @default(NEW)
+  managedById        String?
+  followUpDate       DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  contact   Contact  @relation(fields: [contactId], references: [id])
+  category  Category @relation(fields: [categoryId], references: [id])
+  matches   Match[]
+  proposals Proposal[]
+  customFields RequirementCustomField[]
+
+  @@map("tenant_requirements")
+}
+
+// ─── Matches ──────────────────────────────────────────────────────────────────
+
+model Match {
+  id                  String    @id @default(cuid())
+  projectId           String
+  buyerRequirementId  String?
+  tenantRequirementId String?
+  matchPct            Int       @default(0)
+  criteriaMatched     Json?     // string[]
+  criteriaMissed      Json?     // string[]
+  alreadySent         Boolean   @default(false)
+  isManual            Boolean   @default(false)
+  confirmedAt         DateTime?
+  createdAt           DateTime  @default(now())
+
+  project           Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  buyerRequirement  BuyerRequirement?  @relation(fields: [buyerRequirementId], references: [id], onDelete: Cascade)
+  tenantRequirement TenantRequirement? @relation(fields: [tenantRequirementId], references: [id], onDelete: Cascade)
+
+  @@map("matches")
+}
+
+// ─── Custom Fields ────────────────────────────────────────────────────────────
+
+model ProjectCustomField {
+  id        String   @id @default(cuid())
+  projectId String
+  label     String
+  value     String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_custom_fields")
+}
+
+model RequirementCustomField {
+  id                  String   @id @default(cuid())
+  buyerRequirementId  String?
+  tenantRequirementId String?
+  label               String
+  value               String?
+  sortOrder           Int      @default(0)
+  createdAt           DateTime @default(now())
+
+  buyerRequirement  BuyerRequirement?  @relation(fields: [buyerRequirementId], references: [id], onDelete: Cascade)
+  tenantRequirement TenantRequirement? @relation(fields: [tenantRequirementId], references: [id], onDelete: Cascade)
+
+  @@map("requirement_custom_fields")
+}
+
+// ─── Proposals ────────────────────────────────────────────────────────────────
+
+model Proposal {
+  id                  String         @id @default(cuid())
+  proposalNumber      String         @unique
+  contactId           String
+  buyerRequirementId  String?
+  tenantRequirementId String?
+  status              ProposalStatus @default(DRAFT)
+  introduction        String?
+  remarks             String?
+  sentAt              DateTime?
+  createdById         String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  contact           Contact            @relation(fields: [contactId], references: [id])
+  buyerRequirement  BuyerRequirement?  @relation(fields: [buyerRequirementId], references: [id])
+  tenantRequirement TenantRequirement? @relation(fields: [tenantRequirementId], references: [id])
+  items             ProposalProperty[]
+  siteVisits        SiteVisit[]
+  negotiations      Negotiation[]
+
+  @@map("proposals")
+}
+
+model ProposalProperty {
+  id         String           @id @default(cuid())
+  proposalId String
+  projectId  String
+  sortOrder  Int              @default(0)
+  response   PropertyResponse @default(NO_RESPONSE)
+  remarks    String?
+  createdAt  DateTime         @default(now())
+
+  proposal Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([proposalId, projectId])
+  @@map("proposal_properties")
+}
+
+// ─── Site Visits ──────────────────────────────────────────────────────────────
+
+model SiteVisit {
+  id           String          @id @default(cuid())
+  visitNumber  String          @unique
+  projectId    String
+  contactId    String
+  proposalId   String?
+  scheduledAt  DateTime
+  location     String?
+  managedById  String?
+  attendees    Json?           // string[]
+  status       SiteVisitStatus @default(SCHEDULED)
+  feedback     String?
+  interestLevel String?
+  notes        String?
+  nextAction   String?
+  followUpDate DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  project  Project   @relation(fields: [projectId], references: [id])
+  contact  Contact   @relation(fields: [contactId], references: [id])
+  proposal Proposal? @relation(fields: [proposalId], references: [id])
+
+  @@map("site_visits")
+}
+
+// ─── Negotiations ─────────────────────────────────────────────────────────────
+
+model Negotiation {
+  id           String            @id @default(cuid())
+  projectId    String
+  contactId    String
+  proposalId   String?
+  status       NegotiationStatus @default(ACTIVE)
+  askingPrice  Float?
+  agreedTerms  Json?
+  notes        String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  project  Project            @relation(fields: [projectId], references: [id])
+  contact  Contact            @relation(fields: [contactId], references: [id])
+  proposal Proposal?          @relation(fields: [proposalId], references: [id])
+  rounds   NegotiationRound[]
+
+  @@map("negotiations")
+}
+
+model NegotiationRound {
+  id            String   @id @default(cuid())
+  negotiationId String
+  roundNumber   Int
+  offerBy       String   // "buyer" | "seller"
+  offerAmount   Float?
+  deposit       Float?
+  maintenance   Float?
+  leaseTerm     Int?
+  lockIn        Int?
+  brokerage     Float?
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  negotiation Negotiation @relation(fields: [negotiationId], references: [id], onDelete: Cascade)
+
+  @@map("negotiation_rounds")
+}
+
+// ─── Deals ────────────────────────────────────────────────────────────────────
+
+model Deal {
+  id            String   @id @default(cuid())
+  dealNumber    String   @unique
+  projectId     String   @unique
+  contactId     String
+  type          DealType
+  finalPrice    Float?
+  finalRent     Float?
+  brokerage     Float?
+  closureDate   DateTime?
+  paymentStatus String?
+  notes         String?
+  closedById    String?
+  reason        String?
+  createdAt     DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+  contact Contact @relation(fields: [contactId], references: [id])
+
+  @@map("deals")
+}
+
+// ─── Developers ───────────────────────────────────────────────────────────────
+
+model Developer {
+  id                    String  @id @default(cuid())
+  contactId             String  @unique
+  reraNumber            String?
+  preferredLocations    Json?   // string[]
+  preferredProjectSize  String?
+  completedProjects     Int?    @default(0)
+  ongoingProjects       Int?    @default(0)
+  financialCapability   String?
+  internalRating        Int?
+  isActive              Boolean @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  contact           Contact            @relation(fields: [contactId], references: [id])
+  developerProposals DeveloperProposal[]
+
+  @@map("developers")
+}
+
+model DeveloperProposal {
+  id                    String          @id @default(cuid())
+  developerId           String
+  projectId             String
+  version               Int             @default(1)
+  status                DeveloperStatus @default(NOT_CONTACTED)
+  additionalArea        Float?
+  corpusFund            Float?
+  monthlyRent           Float?
+  deposit               Float?
+  constructionTimeline  Int?            // months
+  gracePeriod           Int?            // months
+  bankGuarantee         String?
+  amenities             String?
+  technicalSpecs        String?
+  parking               Int?
+  revenueShare          Float?
+  tempAccommodation     String?
+  legalExpenses         String?
+  approvalExpenses      String?
+  developerConditions   String?
+  ownerConditions       String?
+  internalRemarks       String?
+  receivedAt            DateTime?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  developer Developer @relation(fields: [developerId], references: [id])
+  project   Project   @relation(fields: [projectId], references: [id])
+
+  @@map("developer_proposals")
+}
+
+// ─── Owner Units (Redevelopment flat register) ────────────────────────────────
+
+model OwnerUnit {
+  id              String        @id @default(cuid())
+  projectId       String
+  unitNumber      String
+  ownerName       String
+  phone           String?
+  email           String?
+  existingArea    Float?        // sqft
+  uds             Float?        // sqft
+  occupancyStatus String?
+  consentStatus   ConsentStatus @default(NOT_CONTACTED)
+  conditions      String?
+  meetingAttended Boolean       @default(false)
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("owner_units")
+}
+
+// ─── Buyer Intake Token (public requirement form) ─────────────────────────────
+
+model BuyerIntakeToken {
+  id          String    @id @default(cuid())
+  token       String    @unique @default(cuid())
+  categoryId  String
+  label       String?   // e.g. "Residential Buyers — July 2025"
+  isActive    Boolean   @default(true)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  category    Category  @relation(fields: [categoryId], references: [id])
+  submissions BuyerIntakeSubmission[]
+
+  @@map("buyer_intake_tokens")
+}
+
+model BuyerIntakeSubmission {
+  id        String   @id @default(cuid())
+  tokenId   String
+  name      String
+  phone     String
+  email     String?
+  data      Json     // full form answers as key-value
+  createdAt DateTime @default(now())
+
+  token     BuyerIntakeToken @relation(fields: [tokenId], references: [id])
+
+  @@map("buyer_intake_submissions")
+}
+
+// ─── Tenant Intake Token (public tenant requirement form) ─────────────────────
+
+model TenantIntakeToken {
+  id          String    @id @default(cuid())
+  token       String    @unique @default(cuid())
+  categoryId  String
+  label       String?
+  isActive    Boolean   @default(true)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  category    Category  @relation(fields: [categoryId], references: [id])
+  submissions TenantIntakeSubmission[]
+
+  @@map("tenant_intake_tokens")
+}
+
+model TenantIntakeSubmission {
+  id        String   @id @default(cuid())
+  tokenId   String
+  name      String
+  phone     String
+  email     String?
+  data      Json
+  createdAt DateTime @default(now())
+
+  token     TenantIntakeToken @relation(fields: [tokenId], references: [id])
+
+  @@map("tenant_intake_submissions")
+}

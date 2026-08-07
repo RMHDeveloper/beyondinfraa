@@ -1,0 +1,28 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  /* Stitch design tokens */
+  --bi-navy:           #1a2b3c;
+  --bi-navy-dark:      #041627;
+  --bi-accent:         #2563eb;
+  --bi-accent-hover:   #1d4ed8;
+  --bi-teal:           #0d9488;
+  --bi-surface:        #f9fafb;
+  --bi-card:           #ffffff;
+  --bi-border:         #e2e8f0;
+  --bi-border-light:   #f1f5f9;
+
+  /* Sector colors */
+  --bi-residential:    #2563eb;
+  --bi-commercial:     #d97706;
+  --bi-industrial:     #7c3aed;
+  --bi-redevelopment:  #0d9488;
+}
+
+body {
+  background: var(--bi-surface);
+  color: #191c1d;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
