@@ -33,7 +33,7 @@ export default function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
         >
           <Menu className="w-5 h-5" strokeWidth={1.75} />
         </button>
-        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0 ml-auto">
           <div className="w-6 h-6 rounded-md bg-[#1a2b3c] flex items-center justify-center flex-shrink-0">
             <span className="text-white text-[10px] font-bold">BI</span>
           </div>
