@@ -9,7 +9,7 @@ export default function AppShell({ user, children }: { user: SessionUser; childr
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="fixed inset-0 flex overflow-hidden bg-gray-50">
       <Sidebar user={user} mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <TopNav onMenuClick={() => setMobileNavOpen(true)} />

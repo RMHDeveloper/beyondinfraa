@@ -1,7 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Search, Bell, Settings, Plus, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,10 +14,7 @@ const TABS = [
 
 export default function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
   const pathname = usePathname();
-  const [tabParam, setTabParam] = useState<string | null>(null);
-  useEffect(() => {
-    setTabParam(new URLSearchParams(window.location.search).get("tab"));
-  }, [pathname]);
+  const tabParam = useSearchParams().get("tab");
 
   function tabActive(tab: typeof TABS[number]) {
     if (tab.label === "Overview") return pathname === "/dashboard";
@@ -27,7 +23,7 @@ export default function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
   }
 
   return (
-    <header className="bg-white border-b border-gray-200 flex-shrink-0 z-10">
+    <header className="bg-white border-b border-gray-200 flex-shrink-0 sticky top-0 z-20">
       {/* Mobile: app bar (menu + logo + new) then tabs row below */}
       <div className="flex md:hidden items-center h-12 px-3 gap-2 min-w-0">
         <button
