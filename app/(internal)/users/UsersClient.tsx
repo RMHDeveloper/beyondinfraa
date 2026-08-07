@@ -57,8 +57,7 @@ export default function UsersClient({ users }: { users: UserRow[] }) {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-white rounded-xl border border-gray-200">
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
@@ -107,7 +106,6 @@ export default function UsersClient({ users }: { users: UserRow[] }) {
               })}
             </tbody>
           </table>
-          </div>
         </div>
       </div>
     </div>

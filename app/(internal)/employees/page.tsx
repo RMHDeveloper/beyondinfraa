@@ -13,8 +13,7 @@ export default async function EmployeesPage() {
       {employees.length === 0 ? (
         <p className="text-sm text-gray-400">No employees added yet.</p>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden max-w-2xl">
-          <div className="overflow-x-auto">
+        <div className="bg-white rounded-xl border border-gray-200 max-w-2xl">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50 sticky top-0 z-10">
@@ -39,7 +38,6 @@ export default async function EmployeesPage() {
               ))}
             </tbody>
           </table>
-          </div>
         </div>
       )}
     </div>

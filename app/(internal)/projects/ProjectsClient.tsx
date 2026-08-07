@@ -260,8 +260,7 @@ export default function ProjectsClient({
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="overflow-x-auto">
+            <div className="bg-white rounded-xl border border-gray-200">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
@@ -336,7 +335,6 @@ export default function ProjectsClient({
                   )}
                 </tbody>
               </table>
-              </div>
             </div>
             {total > 0 && (
               <div className="mt-3 text-xs text-gray-400 text-right">
@@ -508,8 +506,7 @@ export default function ProjectsClient({
                 </Link>
               </div>
             ) : (
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
+              <div className="bg-white rounded-xl border border-gray-200">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
@@ -532,7 +529,6 @@ export default function ProjectsClient({
                     ))}
                   </tbody>
                 </table>
-                </div>
               </div>
             )}
           </div>
@@ -608,8 +604,7 @@ export default function ProjectsClient({
                 </p>
               </div>
             ) : (
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
+              <div className="bg-white rounded-xl border border-gray-200">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
@@ -640,7 +635,6 @@ export default function ProjectsClient({
                     ))}
                   </tbody>
                 </table>
-                </div>
               </div>
             )}
           </div>
@@ -955,8 +949,7 @@ function RequirementsTab<T>({
           </Link>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-white rounded-xl border border-gray-200">
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
@@ -973,7 +966,6 @@ function RequirementsTab<T>({
               ))}
             </tbody>
           </table>
-          </div>
         </div>
       )}
     </div>

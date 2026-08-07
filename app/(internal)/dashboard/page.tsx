@@ -172,14 +172,13 @@ export default function DashboardPage() {
 
         {/* Priority follow-ups + Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-xl border border-gray-200">
             <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
               <p className="font-bold text-gray-900 text-sm">Recent Properties</p>
               <Link href="/projects" className="text-xs text-blue-600 font-medium hover:underline flex items-center gap-0.5">
                 All Properties <ArrowUpRight className="w-3 h-3" />
               </Link>
             </div>
-            <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100 sticky top-0 z-10">
@@ -219,7 +218,6 @@ export default function DashboardPage() {
                 )}
               </tbody>
             </table>
-            </div>
           </div>
 
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">

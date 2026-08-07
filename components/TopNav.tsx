@@ -40,29 +40,31 @@ export default function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
           <span className="text-sm font-bold text-gray-900 truncate">BeyondInfra</span>
         </div>
       </div>
-      <nav className="flex md:hidden items-center gap-0 px-3 border-t border-gray-100 overflow-x-auto no-scrollbar">
-        {TABS.map((tab) => (
-          <Link
-            key={tab.label}
-            href={tab.href}
-            className={cn(
-              "px-3 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0",
-              tabActive(tab)
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300"
-            )}
-          >
-            {tab.label}
-          </Link>
-        ))}
+      <div className="flex md:hidden items-center gap-1 pl-1 pr-3 border-t border-gray-100">
+        <nav className="flex items-center gap-0 flex-1 min-w-0 overflow-x-auto no-scrollbar">
+          {TABS.map((tab) => (
+            <Link
+              key={tab.label}
+              href={tab.href}
+              className={cn(
+                "px-3 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0",
+                tabActive(tab)
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300"
+              )}
+            >
+              {tab.label}
+            </Link>
+          ))}
+        </nav>
         <Link
           href="/projects/new"
-          className="flex items-center justify-center bg-blue-600 text-white p-1.5 rounded-md hover:bg-blue-700 transition-colors flex-shrink-0 ml-auto my-1.5"
+          className="flex items-center justify-center bg-blue-600 text-white p-1.5 rounded-md hover:bg-blue-700 transition-colors flex-shrink-0"
           title="New Entry"
         >
           <Plus className="w-4 h-4" strokeWidth={2.5} />
         </Link>
-      </nav>
+      </div>
 
       {/* Desktop: single row */}
       <div className="hidden md:flex items-center h-12 px-6 gap-4 min-w-0">
