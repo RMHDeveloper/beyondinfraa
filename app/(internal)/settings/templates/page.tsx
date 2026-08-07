@@ -119,7 +119,7 @@ export default function TemplatesPage() {
                     <div className="border-t border-gray-100 overflow-x-auto">
                       <table className="w-full text-xs">
                         <thead>
-                          <tr className="bg-gray-50 text-gray-400 uppercase tracking-wide">
+                          <tr className="bg-gray-50 text-gray-400 uppercase tracking-wide sticky top-0 z-10">
                             <th className="text-left px-4 py-2 font-medium">#</th>
                             <th className="text-left px-4 py-2 font-medium">Field</th>
                             <th className="text-left px-4 py-2 font-medium">Type</th>

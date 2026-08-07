@@ -77,7 +77,7 @@ export default function TasksClient({ followUps: initial }: { followUps: FollowU
           <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
+              <tr className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                 <th className="px-4 py-3 w-8" />
                 <th className="text-left px-4 py-3 font-semibold text-[10px] uppercase tracking-wider text-gray-400">Task</th>
                 <th className="text-left px-4 py-3 font-semibold text-[10px] uppercase tracking-wider text-gray-400">Project</th>

@@ -264,7 +264,7 @@ export default function ProjectsClient({
               <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
+                  <tr className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                     {["ID", "Name / Property", "Sub-type", "Transaction", "Score", "Owner", "Status", "Availability"].map((h) => (
                       <th key={h} className="text-left px-4 py-3 font-semibold text-[10px] uppercase tracking-wider text-gray-400">{h}</th>
                     ))}
@@ -512,7 +512,7 @@ export default function ProjectsClient({
                 <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200">
+                    <tr className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                       {["Property", "Contact", "Scheduled", "Notes", "Status"].map((h) => (
                         <th key={h} className="text-left px-4 py-3 font-semibold text-[10px] uppercase tracking-wider text-gray-400">{h}</th>
                       ))}
@@ -612,7 +612,7 @@ export default function ProjectsClient({
                 <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200">
+                    <tr className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                       {["Property", "Category", "Contact", "Type", "Agreed Price", "Closed On"].map((h) => (
                         <th key={h} className="text-left px-4 py-3 font-semibold text-[10px] uppercase tracking-wider text-gray-400">{h}</th>
                       ))}
@@ -959,7 +959,7 @@ function RequirementsTab<T>({
           <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
+              <tr className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                 {headers.map((h) => (
                   <th key={h} className="text-left px-4 py-3 font-semibold text-[10px] uppercase tracking-wider text-gray-400">{h}</th>
                 ))}

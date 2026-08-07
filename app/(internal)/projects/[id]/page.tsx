@@ -1205,7 +1205,7 @@ export default function ProjectDetailPage() {
                 {units.length > 0 ? (
                   <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                     <table className="w-full text-xs">
-                      <thead><tr className="bg-gray-50 border-b border-gray-200">
+                      <thead><tr className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                         {["Unit #","Owner","Phone","Area","UDS","Consent","Meeting",""].map(h => (
                           <th key={h} className="text-left px-3 py-2.5 font-semibold text-[10px] uppercase tracking-wider text-gray-400">{h}</th>
                         ))}
@@ -1355,7 +1355,7 @@ export default function ProjectDetailPage() {
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs min-w-[640px]">
                         <thead>
-                          <tr className="bg-purple-50 border-b border-purple-100">
+                          <tr className="bg-purple-50 border-b border-purple-100 sticky top-0 z-10">
                             <th className="text-left px-3 py-2.5 font-semibold text-[10px] uppercase tracking-wider text-purple-500 w-28">Term</th>
                             {devProposals.map((dp: any) => (
                               <th key={dp.id} className="text-center px-3 py-2.5 font-semibold text-[10px] uppercase tracking-wider text-gray-600">

@@ -39,13 +39,6 @@ export default function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
           </div>
           <span className="text-sm font-bold text-gray-900 truncate">BeyondInfra</span>
         </div>
-        <Link
-          href="/projects/new"
-          className="flex items-center justify-center bg-blue-600 text-white p-1.5 rounded-md hover:bg-blue-700 transition-colors flex-shrink-0"
-          title="New Entry"
-        >
-          <Plus className="w-4 h-4" strokeWidth={2.5} />
-        </Link>
       </div>
       <nav className="flex md:hidden items-center gap-0 px-3 border-t border-gray-100 overflow-x-auto no-scrollbar">
         {TABS.map((tab) => (
@@ -62,6 +55,13 @@ export default function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
             {tab.label}
           </Link>
         ))}
+        <Link
+          href="/projects/new"
+          className="flex items-center justify-center bg-blue-600 text-white p-1.5 rounded-md hover:bg-blue-700 transition-colors flex-shrink-0 ml-auto my-1.5"
+          title="New Entry"
+        >
+          <Plus className="w-4 h-4" strokeWidth={2.5} />
+        </Link>
       </nav>
 
       {/* Desktop: single row */}
