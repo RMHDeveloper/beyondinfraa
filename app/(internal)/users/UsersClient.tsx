@@ -23,7 +23,7 @@ export default function UsersClient({ users }: { users: UserRow[] }) {
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
+      <div className="bg-white border-b border-gray-200 px-3 sm:px-6 py-4 flex items-center justify-between flex-shrink-0">
         <div>
           <p className="text-xs text-gray-400">ERP System › Users & Roles</p>
           <h1 className="text-xl font-bold text-gray-900 mt-0.5">Users & Roles</h1>
@@ -33,9 +33,9 @@ export default function UsersClient({ users }: { users: UserRow[] }) {
         </Link>
       </div>
 
-      <div className="flex-1 overflow-auto px-6 py-4">
+      <div className="flex-1 overflow-auto px-3 sm:px-6 py-4">
         {/* Role summary */}
-        <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
           {Object.entries(ROLE_STYLES).map(([role, { label, color, bg }]) => {
             const count = users.filter((u) => u.role === role).length;
             const Icon = role === "SUPER_ADMIN" ? Shield : role === "OWNER" ? UserCheck : User;
@@ -58,6 +58,7 @@ export default function UsersClient({ users }: { users: UserRow[] }) {
 
         {/* Table */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
@@ -106,6 +107,7 @@ export default function UsersClient({ users }: { users: UserRow[] }) {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </div>

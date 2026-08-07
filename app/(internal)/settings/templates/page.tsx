@@ -52,9 +52,9 @@ export default function TemplatesPage() {
   }
 
   return (
-    <div className="flex gap-6 max-w-5xl">
+    <div className="flex flex-col lg:flex-row gap-6 max-w-5xl">
       {/* Template list */}
-      <div className="w-56 flex-shrink-0">
+      <div className="w-full lg:w-56 flex-shrink-0">
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 px-1">Templates</p>
         <div className="space-y-0.5">
           {templates.map((t) => (
@@ -78,7 +78,7 @@ export default function TemplatesPage() {
       {/* Template detail */}
       {selected && (
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
             <div>
               <h2 className="font-semibold text-gray-900">{selected.name}</h2>
               <p className="text-xs text-gray-400 mt-0.5">
@@ -116,7 +116,7 @@ export default function TemplatesPage() {
                   </button>
 
                   {isOpen && visibleQs.length > 0 && (
-                    <div className="border-t border-gray-100">
+                    <div className="border-t border-gray-100 overflow-x-auto">
                       <table className="w-full text-xs">
                         <thead>
                           <tr className="bg-gray-50 text-gray-400 uppercase tracking-wide">

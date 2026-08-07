@@ -50,7 +50,7 @@ export default function SiteVisitForm({
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Date & Time *</label>
                 <input name="scheduledAt" type="datetime-local" required

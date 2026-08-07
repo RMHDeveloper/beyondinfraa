@@ -65,7 +65,7 @@ export default function FollowUpsTab({ projectId }: { projectId: string }) {
           <textarea value={desc} onChange={e => setDesc(e.target.value)}
             placeholder="What needs to be done?" rows={2}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white" />
-          <div className="flex gap-2 items-center">
+          <div className="flex flex-wrap gap-2 items-center">
             <input type="date" value={dueAt} onChange={e => setDueAt(e.target.value)}
               className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white text-gray-600" />
             <span className="text-xs text-gray-400">Due date (optional)</span>

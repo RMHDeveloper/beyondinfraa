@@ -110,12 +110,12 @@ export default function RequirementDetailPage() {
   return (
     <div className="flex flex-col h-full bg-gray-50 overflow-hidden">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 h-12 flex items-center gap-3">
+      <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-3 flex-wrap">
         <button onClick={() => router.back()} className="text-gray-400 hover:text-gray-600">
           <ArrowLeft className="w-4 h-4" />
         </button>
         <Icon className="w-4 h-4 flex-shrink-0" style={{ color: accentColor }} />
-        <h1 className="text-sm font-bold text-gray-900 truncate">{req.contact.name}</h1>
+        <h1 className="text-sm font-bold text-gray-900 truncate min-w-0">{req.contact.name}</h1>
         <span className="font-mono text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded">{req.reqNumber}</span>
         <div className="relative flex-shrink-0">
           <button
@@ -152,7 +152,7 @@ export default function RequirementDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border-b border-gray-200 px-4 flex items-center h-9">
+      <div className="bg-white border-b border-gray-200 px-4 flex items-center h-9 overflow-x-auto no-scrollbar">
         {TABS.map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             className={cn("px-3 h-full text-[11px] font-medium whitespace-nowrap border-b-2 transition-colors",
@@ -302,7 +302,7 @@ export default function RequirementDetailPage() {
                     <div className="flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full flex-shrink-0 bg-green-500" />
                       <span className="font-mono text-[10px] text-gray-400">{m.project.projectNumber}</span>
-                      <span className="font-bold text-gray-900 text-sm flex-1 truncate">{m.project.title}</span>
+                      <span className="font-bold text-gray-900 text-sm flex-1 min-w-0 truncate">{m.project.title}</span>
                       {m.project.status && (
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full border flex-shrink-0"
                           style={{ color: m.project.status.color, borderColor: m.project.status.color, background: m.project.status.color + "12" }}>

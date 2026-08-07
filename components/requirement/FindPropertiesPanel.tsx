@@ -152,7 +152,7 @@ export default function FindPropertiesPanel({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-mono text-[10px] text-gray-400">{p.projectNumber}</span>
-                    <span className="font-bold text-gray-900 text-sm truncate">{p.title}</span>
+                    <span className="font-bold text-gray-900 text-sm truncate min-w-0">{p.title}</span>
                     {confirmed && (
                       <span className="text-[10px] font-bold bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">Matched</span>
                     )}

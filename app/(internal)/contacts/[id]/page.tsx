@@ -67,7 +67,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
   return (
     <div className="flex flex-col h-full bg-gray-50 overflow-y-auto">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3 flex-shrink-0">
+      <div className="bg-white border-b border-gray-200 px-3 sm:px-6 py-4 flex items-center gap-3 flex-shrink-0">
         <Link href="/contacts" className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
           <ArrowLeft className="w-4 h-4 text-gray-500" />
         </Link>
@@ -81,7 +81,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
         </Link>
       </div>
 
-      <div className="px-6 py-5 space-y-4">
+      <div className="px-3 sm:px-6 py-5 space-y-4">
         {/* Identity card */}
         <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-start gap-4">
           <div className="w-14 h-14 rounded-xl flex items-center justify-center text-xl font-bold flex-shrink-0"
@@ -236,7 +236,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
               {contact.siteVisits.map((sv) => (
                 <div key={sv.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 text-xs">
                   <span className="font-mono text-gray-400">{sv.visitNumber}</span>
-                  <Link href={`/projects/${sv.project.id}`} className="font-semibold text-gray-700 hover:text-blue-600 truncate">
+                  <Link href={`/projects/${sv.project.id}`} className="font-semibold text-gray-700 hover:text-blue-600 truncate min-w-0">
                     {sv.project.title}
                   </Link>
                   <span className="text-gray-400 ml-auto flex-shrink-0">

@@ -45,7 +45,7 @@ export default function ContactsClient({ contacts }: { contacts: Contact[] }) {
   return (
     <div className="flex flex-col h-full bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
+      <div className="bg-white border-b border-gray-200 px-3 sm:px-6 py-4 flex items-center justify-between flex-shrink-0">
         <div>
           <p className="text-xs text-gray-400">ERP System › Contacts</p>
           <h1 className="text-xl font-bold text-gray-900 mt-0.5">Contact Database</h1>
@@ -56,7 +56,7 @@ export default function ContactsClient({ contacts }: { contacts: Contact[] }) {
         </Link>
       </div>
 
-      <div className="flex-1 overflow-auto px-6 py-4">
+      <div className="flex-1 overflow-auto px-3 sm:px-6 py-4">
         {/* Filters */}
         <div className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 flex items-center gap-3 mb-4 flex-wrap">
           <div className="relative">
@@ -80,6 +80,7 @@ export default function ContactsClient({ contacts }: { contacts: Contact[] }) {
 
         {/* Table */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
@@ -165,6 +166,7 @@ export default function ContactsClient({ contacts }: { contacts: Contact[] }) {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </div>

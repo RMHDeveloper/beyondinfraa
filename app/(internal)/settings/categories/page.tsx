@@ -64,7 +64,7 @@ export default function CategoriesPage() {
       </div>
 
       {adding && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 flex gap-3 items-end">
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 flex flex-wrap gap-3 items-end">
           <div className="flex-1">
             <label className="block text-xs font-medium text-gray-600 mb-1">Name</label>
             <input
@@ -116,7 +116,7 @@ export default function CategoriesPage() {
                 </div>
 
                 {addingSubFor === cat.id ? (
-                  <div className="flex gap-2 items-end">
+                  <div className="flex flex-wrap gap-2 items-end">
                     <div className="flex-1">
                       <input
                         className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900"

@@ -6,13 +6,13 @@ import {
   LayoutDashboard, Home, Briefcase, Factory, RefreshCw,
   Users, BarChart2, Settings, ClipboardList, LogOut,
   ChevronRight, MapPin, Building2, Link2, UserCog, FileText,
-  PanelLeftClose, PanelLeftOpen,
+  PanelLeftClose, PanelLeftOpen, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/types";
 import { useState, useEffect } from "react";
 
-type Props = { user: SessionUser };
+type Props = { user: SessionUser; mobileOpen?: boolean; onClose?: () => void };
 
 const sectorNav = [
   { href: "/dashboard",              label: "Dashboard",    icon: LayoutDashboard },
@@ -37,10 +37,12 @@ const mgmtNav = [
   { href: "/settings",              label: "Settings",          icon: Settings,      roles: ["SUPER_ADMIN", "OWNER"] as const },
 ];
 
-export default function Sidebar({ user }: Props) {
+export default function Sidebar({ user, mobileOpen = false, onClose }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+  // Mobile drawer is always shown fully expanded, regardless of the desktop collapse preference.
+  const isCollapsed = collapsed && !mobileOpen;
 
   useEffect(() => {
     const saved = localStorage.getItem("sidebar_collapsed");
@@ -68,139 +70,163 @@ export default function Sidebar({ user }: Props) {
   const initials = user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
   return (
-    <aside className={cn(
-      "flex flex-col min-h-screen flex-shrink-0 bg-white border-r border-gray-200 transition-all duration-200",
-      collapsed ? "w-[52px]" : "w-[220px]"
-    )}>
-      {/* Logo + toggle */}
-      <div className={cn("border-b border-gray-100 flex items-center", collapsed ? "px-2 py-4 justify-center" : "px-3 py-4 gap-2")}>
-        {!collapsed && (
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <div className="w-7 h-7 rounded-md bg-[#1a2b3c] flex items-center justify-center flex-shrink-0">
+    <>
+      {/* Mobile backdrop */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 md:hidden"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+      <aside className={cn(
+        "flex flex-col h-screen flex-shrink-0 bg-white border-r border-gray-200 transition-all duration-200 z-50",
+        "fixed inset-y-0 left-0 md:static",
+        mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
+        "w-[240px]",
+        isCollapsed ? "md:w-[52px]" : "md:w-[220px]"
+      )}>
+        {/* Logo + toggle */}
+        <div className={cn("border-b border-gray-100 flex items-center", isCollapsed ? "px-2 py-4 justify-center" : "px-3 py-4 gap-2")}>
+          {!isCollapsed && (
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <div className="w-7 h-7 rounded-md bg-[#1a2b3c] flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-xs font-bold">BI</span>
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-gray-900 leading-tight">BeyondInfra</p>
+                <p className="text-[10px] text-gray-400 leading-tight">Consultancy ERP</p>
+              </div>
+            </div>
+          )}
+          {isCollapsed && (
+            <div className="w-7 h-7 rounded-md bg-[#1a2b3c] flex items-center justify-center">
               <span className="text-white text-xs font-bold">BI</span>
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-gray-900 leading-tight">BeyondInfra</p>
-              <p className="text-[10px] text-gray-400 leading-tight">Consultancy ERP</p>
-            </div>
-          </div>
-        )}
-        {collapsed && (
-          <div className="w-7 h-7 rounded-md bg-[#1a2b3c] flex items-center justify-center">
-            <span className="text-white text-xs font-bold">BI</span>
-          </div>
-        )}
-        <button
-          onClick={toggle}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className={cn(
-            "text-gray-400 hover:text-gray-700 transition-colors flex-shrink-0",
-            collapsed ? "mt-2 ml-0" : ""
           )}
-        >
-          {collapsed
-            ? <PanelLeftOpen className="w-4 h-4" strokeWidth={1.75} />
-            : <PanelLeftClose className="w-4 h-4" strokeWidth={1.75} />
-          }
-        </button>
-      </div>
-
-      {/* Nav */}
-      <nav className="flex-1 py-3 overflow-y-auto overflow-x-hidden">
-        {/* Main sectors */}
-        <div className={cn("space-y-0.5", collapsed ? "px-1.5" : "px-3")}>
-          {sectorNav.map((item) => {
-            const active = isActive(item.href);
-            const color = (item as { color?: string }).color ?? "#374151";
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                title={collapsed ? item.label : undefined}
-                className={cn(
-                  "flex items-center rounded-lg text-sm font-medium transition-colors",
-                  collapsed ? "justify-center p-2.5" : "gap-2.5 px-3 py-2",
-                  active
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                )}
-                style={active ? { color } : undefined}
-              >
-                <item.icon
-                  className="w-4 h-4 flex-shrink-0"
-                  strokeWidth={1.75}
-                  style={{ color: active ? color : undefined }}
-                />
-                {!collapsed && (
-                  <>
-                    {item.label}
-                    {active && item.label !== "Dashboard" && (
-                      <ChevronRight className="w-3 h-3 ml-auto" style={{ color }} />
-                    )}
-                  </>
-                )}
-              </Link>
-            );
-          })}
+          {/* Desktop collapse toggle */}
+          <button
+            onClick={toggle}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className={cn(
+              "hidden md:block text-gray-400 hover:text-gray-700 transition-colors flex-shrink-0",
+              isCollapsed ? "mt-2 ml-0" : ""
+            )}
+          >
+            {collapsed
+              ? <PanelLeftOpen className="w-4 h-4" strokeWidth={1.75} />
+              : <PanelLeftClose className="w-4 h-4" strokeWidth={1.75} />
+            }
+          </button>
+          {/* Mobile close */}
+          <button
+            onClick={onClose}
+            title="Close menu"
+            className="md:hidden text-gray-400 hover:text-gray-700 transition-colors flex-shrink-0"
+          >
+            <X className="w-5 h-5" strokeWidth={1.75} />
+          </button>
         </div>
 
-        {/* Management group */}
-        <div className={cn("mt-4", collapsed ? "px-1.5" : "px-3")}>
-          {!collapsed && (
-            <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400">Management</p>
-          )}
-          {collapsed && <div className="border-t border-gray-100 mb-2" />}
-          <div className="space-y-0.5">
-            {mgmtNav.map((item) => {
-              if (item.roles && !([...item.roles] as string[]).includes(user.role)) return null;
-              const active = isActive(item.href) && item.href !== "/settings";
+        {/* Nav */}
+        <nav className="flex-1 py-3 overflow-y-auto overflow-x-hidden">
+          {/* Main sectors */}
+          <div className={cn("space-y-0.5", isCollapsed ? "px-1.5" : "px-3")}>
+            {sectorNav.map((item) => {
+              const active = isActive(item.href);
+              const color = (item as { color?: string }).color ?? "#374151";
               return (
                 <Link
                   key={item.label}
                   href={item.href}
-                  title={collapsed ? item.label : undefined}
+                  title={isCollapsed ? item.label : undefined}
+                  onClick={onClose}
                   className={cn(
                     "flex items-center rounded-lg text-sm font-medium transition-colors",
-                    collapsed ? "justify-center p-2.5" : "gap-2.5 px-3 py-2",
-                    active ? "bg-gray-100 text-gray-900" : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+                    isCollapsed ? "justify-center p-2.5" : "gap-2.5 px-3 py-2",
+                    active
+                      ? "bg-blue-50 text-blue-700"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   )}
+                  style={active ? { color } : undefined}
                 >
-                  <item.icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.75} />
-                  {!collapsed && item.label}
+                  <item.icon
+                    className="w-4 h-4 flex-shrink-0"
+                    strokeWidth={1.75}
+                    style={{ color: active ? color : undefined }}
+                  />
+                  {!isCollapsed && (
+                    <>
+                      {item.label}
+                      {active && item.label !== "Dashboard" && (
+                        <ChevronRight className="w-3 h-3 ml-auto" style={{ color }} />
+                      )}
+                    </>
+                  )}
                 </Link>
               );
             })}
           </div>
-        </div>
-      </nav>
 
-      {/* User */}
-      <div className="border-t border-gray-100 p-3">
-        <div className={cn("flex items-center", collapsed ? "justify-center" : "gap-2.5 px-2 py-2")}>
-          <div
-            className="w-8 h-8 rounded-full bg-[#1a2b3c] flex items-center justify-center flex-shrink-0"
-            title={collapsed ? `${user.name} — ${user.role.replace(/_/g, " ").toLowerCase()}` : undefined}
-          >
-            <span className="text-xs font-semibold text-white">{initials}</span>
+          {/* Management group */}
+          <div className={cn("mt-4", isCollapsed ? "px-1.5" : "px-3")}>
+            {!isCollapsed && (
+              <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400">Management</p>
+            )}
+            {isCollapsed && <div className="border-t border-gray-100 mb-2" />}
+            <div className="space-y-0.5">
+              {mgmtNav.map((item) => {
+                if (item.roles && !([...item.roles] as string[]).includes(user.role)) return null;
+                const active = isActive(item.href) && item.href !== "/settings";
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    title={isCollapsed ? item.label : undefined}
+                    onClick={onClose}
+                    className={cn(
+                      "flex items-center rounded-lg text-sm font-medium transition-colors",
+                      isCollapsed ? "justify-center p-2.5" : "gap-2.5 px-3 py-2",
+                      active ? "bg-gray-100 text-gray-900" : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+                    )}
+                  >
+                    <item.icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.75} />
+                    {!isCollapsed && item.label}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-          {!collapsed && (
-            <>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-gray-900 truncate">{user.name}</p>
-                <p className="text-[10px] text-gray-400 truncate capitalize">{user.role.replace(/_/g, " ").toLowerCase()}</p>
-              </div>
-              <button onClick={handleLogout} className="text-gray-400 hover:text-gray-700 transition-colors flex-shrink-0" title="Sign out">
+        </nav>
+
+        {/* User */}
+        <div className="border-t border-gray-100 p-3">
+          <div className={cn("flex items-center", isCollapsed ? "justify-center" : "gap-2.5 px-2 py-2")}>
+            <div
+              className="w-8 h-8 rounded-full bg-[#1a2b3c] flex items-center justify-center flex-shrink-0"
+              title={isCollapsed ? `${user.name} — ${user.role.replace(/_/g, " ").toLowerCase()}` : undefined}
+            >
+              <span className="text-xs font-semibold text-white">{initials}</span>
+            </div>
+            {!isCollapsed && (
+              <>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-gray-900 truncate">{user.name}</p>
+                  <p className="text-[10px] text-gray-400 truncate capitalize">{user.role.replace(/_/g, " ").toLowerCase()}</p>
+                </div>
+                <button onClick={handleLogout} className="text-gray-400 hover:text-gray-700 transition-colors flex-shrink-0" title="Sign out">
+                  <LogOut className="w-3.5 h-3.5" strokeWidth={1.75} />
+                </button>
+              </>
+            )}
+            {isCollapsed && (
+              <button onClick={handleLogout} className="mt-2 text-gray-400 hover:text-gray-700 transition-colors" title="Sign out">
                 <LogOut className="w-3.5 h-3.5" strokeWidth={1.75} />
               </button>
-            </>
-          )}
-          {collapsed && (
-            <button onClick={handleLogout} className="mt-2 text-gray-400 hover:text-gray-700 transition-colors" title="Sign out">
-              <LogOut className="w-3.5 h-3.5" strokeWidth={1.75} />
-            </button>
-          )}
+            )}
+          </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }

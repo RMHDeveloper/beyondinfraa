@@ -58,12 +58,12 @@ export default function DashboardPage() {
 
   return (
     <div className="overflow-y-auto h-full bg-gray-50">
-      <div className="px-8 pt-6 pb-2">
+      <div className="px-4 sm:px-8 pt-6 pb-2">
         <p className="text-xs text-gray-400">ERP System › Main Dashboard</p>
         <h1 className="text-2xl font-bold text-gray-900 mt-0.5">Operations Overview</h1>
       </div>
 
-      <div className="px-8 pb-8 space-y-5">
+      <div className="px-4 sm:px-8 pb-8 space-y-5">
         {/* Overdue alert */}
         {data.overdueFollowups > 0 && (
           <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-sm text-red-700">
@@ -74,7 +74,7 @@ export default function DashboardPage() {
         )}
 
         {/* Top KPI strip */}
-        <div className="grid grid-cols-4 sm:grid-cols-8 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
           {[
             { label: "Properties",    value: data.totalProjects,       icon: Home,     color: "#2563eb" },
             { label: "Contacts",      value: data.totalContacts,       icon: Users,    color: "#059669" },
@@ -143,7 +143,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Pipeline */}
-        <div className="rounded-xl p-5 flex items-center gap-8" style={{ background: "#1a2b3c" }}>
+        <div className="rounded-xl p-5 flex flex-col lg:flex-row lg:items-center gap-6 lg:gap-8" style={{ background: "#1a2b3c" }}>
           <div className="flex-shrink-0">
             <div className="flex items-center gap-2 mb-1">
               <TrendingUp className="w-4 h-4 text-blue-400" />
@@ -156,7 +156,7 @@ export default function DashboardPage() {
               View Full Report →
             </Link>
           </div>
-          <div className="flex-1 grid grid-cols-4 gap-3">
+          <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-3">
             {SECTORS.map(({ key, color, bg }) => {
               const propCount = data.catCounts[key] ?? 0;
               return (
@@ -179,6 +179,7 @@ export default function DashboardPage() {
                 All Properties <ArrowUpRight className="w-3 h-3" />
               </Link>
             </div>
+            <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
@@ -218,6 +219,7 @@ export default function DashboardPage() {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
 
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">

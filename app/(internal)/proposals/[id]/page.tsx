@@ -122,7 +122,7 @@ export default function ProposalDetailPage() {
   return (
     <div className="flex flex-col h-full bg-gray-50 overflow-hidden">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-4 h-12 flex items-center gap-3 flex-shrink-0">
+      <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-3 flex-shrink-0 flex-wrap">
         <button onClick={() => router.back()} className="text-gray-400 hover:text-gray-600">
           <ArrowLeft className="w-4 h-4" />
         </button>

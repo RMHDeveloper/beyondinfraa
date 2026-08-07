@@ -42,7 +42,7 @@ export default function NewUserPage() {
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3 flex-shrink-0">
+      <div className="bg-white border-b border-gray-200 px-3 sm:px-6 py-4 flex items-center gap-3 flex-shrink-0">
         <Link href="/users" className="text-gray-400 hover:text-gray-700">
           <ArrowLeft className="w-4 h-4" />
         </Link>
@@ -52,7 +52,7 @@ export default function NewUserPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto px-6 py-6">
+      <div className="flex-1 overflow-auto px-3 sm:px-6 py-6">
         <form onSubmit={handleSubmit} className="max-w-lg bg-white rounded-xl border border-gray-200 p-6 space-y-4">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg px-3 py-2">{error}</div>

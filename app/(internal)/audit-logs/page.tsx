@@ -10,9 +10,10 @@ export default async function AuditLogsPage() {
   });
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       <h1 className="text-xl font-bold text-gray-900 mb-6">Audit Logs</h1>
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
@@ -42,6 +43,7 @@ export default async function AuditLogsPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

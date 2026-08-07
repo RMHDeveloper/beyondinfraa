@@ -22,7 +22,7 @@ export default function NewContactForm({ action }: { action: (fd: FormData) => P
   const ref = useRef<HTMLFormElement>(null);
   return (
     <div className="flex flex-col h-full bg-gray-50">
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3 flex-shrink-0">
+      <div className="bg-white border-b border-gray-200 px-3 sm:px-6 py-4 flex items-center gap-3 flex-shrink-0">
         <Link href="/contacts" className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
           <ArrowLeft className="w-4 h-4 text-gray-500" />
         </Link>
@@ -32,7 +32,7 @@ export default function NewContactForm({ action }: { action: (fd: FormData) => P
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto px-6 py-6">
+      <div className="flex-1 overflow-auto px-3 sm:px-6 py-6">
         <form ref={ref} action={action} className="max-w-xl space-y-4">
           <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
@@ -55,7 +55,7 @@ export default function NewContactForm({ action }: { action: (fd: FormData) => P
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Phone</label>
                 <input name="phone" type="tel" placeholder="+91 98765 43210"

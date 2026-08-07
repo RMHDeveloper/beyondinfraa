@@ -118,7 +118,7 @@ export default function ClientPortalPage() {
   if (phase === "phone") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 w-full max-w-sm">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 px-6 sm:px-8 py-8 w-full max-w-sm">
           <div className="mb-6">
             <h1 className="text-xl font-bold text-gray-900">Client Portal</h1>
             <p className="text-sm text-gray-400 mt-1">Enter your registered mobile number to continue.</p>
@@ -153,7 +153,7 @@ export default function ClientPortalPage() {
   if (phase === "otp") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 w-full max-w-sm">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 px-6 sm:px-8 py-8 w-full max-w-sm">
           <div className="mb-6">
             <h1 className="text-xl font-bold text-gray-900">Enter OTP</h1>
             <p className="text-sm text-gray-400 mt-1">A 6-digit code was sent to {phone}.</p>
@@ -199,12 +199,12 @@ export default function ClientPortalPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <div>
+        <div className="max-w-2xl mx-auto flex items-center justify-between flex-wrap gap-2">
+          <div className="min-w-0">
             <h1 className="text-base font-bold text-gray-900">{project.title}</h1>
             <p className="text-xs text-gray-400">{project.category.name} · {project.subcategory.name}</p>
           </div>
-          <span className="text-xs">
+          <span className="text-xs shrink-0">
             {saveStatus === "saving" && <span className="flex items-center gap-1 text-gray-400"><Loader2 className="w-3 h-3 animate-spin" /> Saving…</span>}
             {saveStatus === "saved" && <span className="flex items-center gap-1 text-green-600"><Check className="w-3 h-3" /> Saved</span>}
             {saveStatus === "error" && <span className="flex items-center gap-1 text-red-500"><AlertCircle className="w-3 h-3" /> Error</span>}

@@ -43,12 +43,12 @@ export default function ReportsClient({ data }: Props) {
 
   return (
     <div className="flex flex-col h-full bg-gray-50 overflow-y-auto">
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
+      <div className="bg-white border-b border-gray-200 px-3 sm:px-6 py-4 flex-shrink-0">
         <p className="text-xs text-gray-400">ERP System › Reports</p>
         <h1 className="text-xl font-bold text-gray-900 mt-0.5">Reports & Analytics</h1>
       </div>
 
-      <div className="px-6 py-4 space-y-5">
+      <div className="px-3 sm:px-6 py-4 space-y-5">
         {/* Summary metrics */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {summaryMetrics.map(({ label, value, icon: Icon, color }) => (

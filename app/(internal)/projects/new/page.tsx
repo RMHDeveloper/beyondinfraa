@@ -79,7 +79,7 @@ export default function NewProjectPage() {
   }
 
   return (
-    <div className="p-8 max-w-2xl">
+    <div className="p-4 sm:p-8 max-w-2xl">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-gray-400 mb-8">
         <span className={cn(step === "category" ? "text-gray-900 font-medium" : "")}>Category</span>
@@ -94,7 +94,7 @@ export default function NewProjectPage() {
         <div>
           <h1 className="text-xl font-bold text-gray-900 mb-1">Select Category</h1>
           <p className="text-sm text-gray-400 mb-6">What kind of property is this project for?</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {categories.map((cat) => (
               <button
                 key={cat.id}
@@ -117,7 +117,7 @@ export default function NewProjectPage() {
           </button>
           <h1 className="text-xl font-bold text-gray-900 mb-1">Select Type</h1>
           <p className="text-sm text-gray-400 mb-6">Choose the transaction type for this {selectedCat.name} project.</p>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {selectedCat.subcategories.map((sub) => (
               <button
                 key={sub.id}
@@ -175,7 +175,7 @@ export default function NewProjectPage() {
 
             <div className="border-t border-gray-100 pt-5">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Client (optional — can add later)</p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Client Name</label>
                   <input
@@ -209,7 +209,7 @@ export default function NewProjectPage() {
 
             <div className="border-t border-gray-100 pt-5">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Lead Info (optional)</p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Lead Source</label>
                   <select

@@ -45,15 +45,15 @@ export default function TasksClient({ followUps: initial }: { followUps: FollowU
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
+      <div className="bg-white border-b border-gray-200 px-3 sm:px-6 py-4 flex-shrink-0">
         <p className="text-xs text-gray-400">ERP System › Tasks & Follow-ups</p>
         <h1 className="text-xl font-bold text-gray-900 mt-0.5">Tasks & Follow-ups</h1>
         <p className="text-xs text-gray-400 mt-0.5">Track action items across all properties. Add tasks from any property page.</p>
       </div>
 
-      <div className="flex-1 overflow-auto px-6 py-4">
+      <div className="flex-1 overflow-auto px-3 sm:px-6 py-4">
         {/* Summary cards */}
-        <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
           {[
             { label: "Pending", count: counts.Pending, color: "#d97706", bg: "#fffbeb", icon: Clock },
             { label: "Overdue", count: counts.Overdue, color: "#dc2626", bg: "#fef2f2", icon: XCircle },
@@ -74,6 +74,7 @@ export default function TasksClient({ followUps: initial }: { followUps: FollowU
 
         {/* List */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
@@ -136,6 +137,7 @@ export default function TasksClient({ followUps: initial }: { followUps: FollowU
               )}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </div>

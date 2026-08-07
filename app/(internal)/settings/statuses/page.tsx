@@ -94,7 +94,7 @@ export default function StatusesPage() {
 
         <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
           {statuses.map((s) => (
-            <div key={s.id} className="flex items-center gap-3 px-4 py-3">
+            <div key={s.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
               {editingStatus?.id === s.id ? (
                 <>
                   <input type="color" value={editingStatus.color} onChange={(e) => setEditingStatus((p) => p && ({ ...p, color: e.target.value }))} className="w-8 h-8 rounded cursor-pointer border-0" />
@@ -115,7 +115,7 @@ export default function StatusesPage() {
           ))}
 
           {addingStatus && (
-            <div className="flex items-center gap-3 px-4 py-3 bg-blue-50">
+            <div className="flex flex-wrap items-center gap-3 px-4 py-3 bg-blue-50">
               <input type="color" value={newStatus.color} onChange={(e) => setNewStatus((p) => ({ ...p, color: e.target.value }))} className="w-8 h-8 rounded cursor-pointer border-0" />
               <input className="flex-1 border border-gray-300 rounded-lg px-2.5 py-1 text-sm" placeholder="Status name" value={newStatus.name} onChange={(e) => setNewStatus({ name: e.target.value, slug: toSlug(e.target.value), color: newStatus.color })} autoFocus />
               <input className="w-32 border border-gray-300 rounded-lg px-2.5 py-1 text-sm font-mono" placeholder="slug" value={newStatus.slug} onChange={(e) => setNewStatus((p) => ({ ...p, slug: e.target.value }))} />
@@ -145,7 +145,7 @@ export default function StatusesPage() {
         </div>
 
         {addingTag && (
-          <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-3">
+          <div className="flex flex-wrap items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-3">
             <input type="color" value={newTag.color} onChange={(e) => setNewTag((p) => ({ ...p, color: e.target.value }))} className="w-8 h-8 rounded cursor-pointer border-0" />
             <input className="flex-1 border border-gray-300 rounded-lg px-2.5 py-1 text-sm" placeholder="Tag name" value={newTag.name} onChange={(e) => setNewTag((p) => ({ ...p, name: e.target.value }))} autoFocus />
             <button onClick={saveTag} className="px-3 py-1 bg-gray-900 text-white text-xs font-medium rounded-lg">Save</button>

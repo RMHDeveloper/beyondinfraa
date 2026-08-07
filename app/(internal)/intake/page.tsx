@@ -36,7 +36,7 @@ function TokenList({
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-bold text-gray-900 text-sm truncate">{t.label ?? "Intake Form"}</span>
+                <span className="font-bold text-gray-900 text-sm truncate min-w-0">{t.label ?? "Intake Form"}</span>
                 <span className="text-[10px] font-bold bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">{t.category.name}</span>
                 {!t.isActive && <span className="text-[10px] font-bold bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">Inactive</span>}
                 {t.expiresAt && new Date(t.expiresAt) < new Date() && (
@@ -54,7 +54,7 @@ function TokenList({
                 )}
               </div>
               <div className="mt-2 flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-1.5 border border-gray-100">
-                <span className="text-[10px] font-mono text-gray-500 truncate flex-1">{urlPrefix}/{t.token}</span>
+                <span className="text-[10px] font-mono text-gray-500 truncate flex-1 min-w-0">{urlPrefix}/{t.token}</span>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">

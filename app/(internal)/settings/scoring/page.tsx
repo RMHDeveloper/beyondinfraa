@@ -41,7 +41,7 @@ function RuleForm({
 
   return (
     <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Profile */}
         <div className="col-span-2">
           <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Profile *</label>
@@ -188,7 +188,7 @@ export default function ScoringPage() {
   return (
     <div className="max-w-4xl space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <p className="text-sm text-gray-500">Configure scoring rules for each property profile. Rules within the same criterion key compete — the first match wins.</p>
         </div>

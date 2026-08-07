@@ -45,7 +45,7 @@ export default function RequirementForm({ type, contacts, categories, action, de
               {isBuyer ? "Buyer" : "Tenant"} Details
             </p>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Contact *</label>
                 <select name="contactId" required defaultValue={defaultContactId ?? ""} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
@@ -72,7 +72,7 @@ export default function RequirementForm({ type, contacts, categories, action, de
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
               {isBuyer ? "Budget Range" : "Rent Budget"}
             </p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {isBuyer ? (
                 <>
                   <div>
@@ -121,7 +121,7 @@ export default function RequirementForm({ type, contacts, categories, action, de
           {/* Property Preferences */}
           <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Property Preferences</p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Min Area (sq.ft)</label>
                 <input name="areaMin" type="number" placeholder="e.g. 800"

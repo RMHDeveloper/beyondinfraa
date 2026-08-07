@@ -40,7 +40,7 @@ export default async function SiteVisitsPage() {
 
       <div className="flex-1 overflow-auto px-6 py-4 space-y-4">
         {/* Summary */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {[
             { label: "Scheduled", value: scheduled, color: "#2563eb", bg: "#eff6ff" },
             { label: "Completed", value: completed, color: "#059669", bg: "#ecfdf5" },
@@ -67,6 +67,7 @@ export default async function SiteVisitsPage() {
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
@@ -98,6 +99,7 @@ export default async function SiteVisitsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
 

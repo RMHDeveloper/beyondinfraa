@@ -170,35 +170,35 @@ export default function ProjectsClient({
     <div className="flex flex-col h-full bg-gray-50">
       {/* Category header bar */}
       {catParam !== "All" && (
-        <div className="bg-white border-b border-gray-100 px-6 py-2 flex items-center gap-3">
+        <div className="bg-white border-b border-gray-100 px-3 sm:px-6 py-2 flex items-center gap-3 flex-wrap">
           <span className="text-xs font-bold px-2.5 py-1 rounded-md" style={{ background: SECTOR_COLORS[catParam]?.bg, color: SECTOR_COLORS[catParam]?.color }}>
             {catParam}
           </span>
-          <span className="text-xs text-gray-400">Showing {catFiltered.length} records in this category</span>
+          <span className="text-xs text-gray-400 hidden sm:inline">Showing {catFiltered.length} records in this category</span>
           <Link href="/projects" className="ml-auto text-xs text-gray-400 hover:text-gray-700 underline">View All</Link>
         </div>
       )}
 
       {/* Sub-tabs */}
-      <div className="bg-white border-b border-gray-200 px-6 flex items-center gap-0 overflow-x-auto flex-shrink-0">
+      <div className="bg-white border-b border-gray-200 px-3 sm:px-6 flex items-center gap-0 overflow-x-auto no-scrollbar flex-shrink-0">
         {SUB_TABS.map((tab) => (
           <button key={tab} onClick={() => handleTabClick(tab)}
-            className={cn("px-4 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-colors flex-shrink-0",
+            className={cn("px-3 sm:px-4 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-colors flex-shrink-0",
               activeTab === tab ? "text-blue-600" : "border-transparent text-gray-500 hover:text-gray-800")}
             style={activeTab === tab ? { borderColor: sectorColor, color: sectorColor } : undefined}>
             {tab}
           </button>
         ))}
-        <div className="ml-auto flex items-center gap-2 py-2 flex-shrink-0">
+        <div className="ml-auto flex items-center gap-2 py-2 flex-shrink-0 pl-2">
           <Link href="/projects/new"
-            className="flex items-center gap-1.5 bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors">
-            <Plus className="w-3.5 h-3.5" strokeWidth={2.5} /> Add Property
+            className="flex items-center gap-1.5 bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors whitespace-nowrap">
+            <Plus className="w-3.5 h-3.5" strokeWidth={2.5} /> <span className="hidden sm:inline">Add Property</span>
           </Link>
         </div>
       </div>
 
       {/* Tab content */}
-      <div className="flex-1 overflow-auto px-6 py-4">
+      <div className="flex-1 overflow-auto px-3 sm:px-6 py-4">
 
         {/* ── OVERVIEW ─────────────────────────────────────── */}
         {activeTab === "Overview" && (
@@ -261,6 +261,7 @@ export default function ProjectsClient({
             </div>
 
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
@@ -335,6 +336,7 @@ export default function ProjectsClient({
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
             {total > 0 && (
               <div className="mt-3 text-xs text-gray-400 text-right">
@@ -453,7 +455,7 @@ export default function ProjectsClient({
             ) : (
               <div className="space-y-2">
                 {/* Pipeline summary */}
-                <div className="grid grid-cols-5 gap-2 mb-3">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">
                   {(["DRAFT","SENT","VIEWED","ACCEPTED","REJECTED"] as const).map(s => {
                     const count = proposals.filter(p => p.status === s).length;
                     const cfg: Record<string, { color: string; bg: string }> = {
@@ -507,6 +509,7 @@ export default function ProjectsClient({
               </div>
             ) : (
               <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200">
@@ -529,6 +532,7 @@ export default function ProjectsClient({
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             )}
           </div>
@@ -556,7 +560,7 @@ export default function ProjectsClient({
               <div className="space-y-3">
                 {negotiations.map((n) => (
                   <div key={n.id} className="bg-white rounded-xl border border-gray-200 p-4">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
                       <div>
                         <p className="font-bold text-gray-900 text-sm">{n.project.title}</p>
                         <p className="text-xs text-gray-500 mt-0.5">with <span className="font-semibold">{n.contact.name}</span> · started {fmtDate(n.createdAt)}</p>
@@ -605,6 +609,7 @@ export default function ProjectsClient({
               </div>
             ) : (
               <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200">
@@ -635,6 +640,7 @@ export default function ProjectsClient({
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             )}
           </div>
@@ -720,20 +726,20 @@ function MatchingPanel({ matches, buyerReqs, tenantReqs }: {
           {grouped.map(g => (
             <div key={g.reqId} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               {/* Requirement header */}
-              <div className={cn("px-4 py-3 flex items-center justify-between border-b border-gray-100",
+              <div className={cn("px-4 py-3 flex items-center justify-between gap-2 flex-wrap border-b border-gray-100",
                 g.type === "buyer" ? "bg-green-50" : "bg-amber-50")}>
-                <div className="flex items-center gap-2">
-                  <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full",
+                <div className="flex items-center gap-2 flex-wrap min-w-0">
+                  <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0",
                     g.type === "buyer" ? "bg-green-200 text-green-800" : "bg-amber-200 text-amber-800")}>
                     {g.type === "buyer" ? "BUYER" : "TENANT"}
                   </span>
                   <Link href={`/requirements/${g.type}/${g.reqId}`}
-                    className="font-bold text-gray-900 text-sm hover:text-blue-600">
+                    className="font-bold text-gray-900 text-sm hover:text-blue-600 truncate">
                     {g.contactName}
                   </Link>
-                  <span className="text-xs text-gray-400">{g.reqNumber}</span>
+                  <span className="text-xs text-gray-400 flex-shrink-0">{g.reqNumber}</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <Link href={`/requirements/${g.type}/${g.reqId}`}
                     className="text-[10px] font-bold border border-gray-200 text-gray-600 px-2.5 py-1 rounded-lg hover:bg-gray-50">
                     View Req
@@ -950,6 +956,7 @@ function RequirementsTab<T>({
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
@@ -966,6 +973,7 @@ function RequirementsTab<T>({
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

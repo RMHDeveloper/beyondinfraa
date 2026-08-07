@@ -32,9 +32,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 px-8 py-10">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 px-6 sm:px-8 py-8 sm:py-10">
           <div className="mb-8 text-center">
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">BeyondInfra</h1>
             <p className="text-sm text-gray-500 mt-1">Property Consultancy ERP</p>
