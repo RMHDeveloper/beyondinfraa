@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Plus, Printer,
@@ -133,9 +133,7 @@ export default function ProjectsClient({
 }: Props) {
   const router = useRouter();
 
-  const [searchStr, setSearchStr] = useState("");
-  useEffect(() => { setSearchStr(window.location.search); }, []);
-  const sp = new URLSearchParams(searchStr);
+  const sp = useSearchParams();
 
   const catParam = sp.get("cat") ?? "All";
   const tabParam = (sp.get("tab") as SubTab | null) ?? "Available Properties";
@@ -145,10 +143,9 @@ export default function ProjectsClient({
   const [reqCatFilter, setReqCatFilter] = useState("All");
 
   useEffect(() => {
-    const p = new URLSearchParams(window.location.search);
-    const t = p.get("tab") as SubTab | null;
+    const t = sp.get("tab") as SubTab | null;
     if (t && SUB_TABS.includes(t)) setActiveTab(t);
-  }, [searchStr]);
+  }, [sp]);
 
   function handleTabClick(tab: SubTab) {
     setActiveTab(tab);
