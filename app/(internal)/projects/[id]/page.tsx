@@ -527,6 +527,16 @@ export default function ProjectDetailPage() {
   const [editingDevId, setEditingDevId] = useState<string | null>(null);
   const [devCompareMode, setDevCompareMode] = useState(false);
 
+  // Negotiation round form
+  const BLANK_ROUND = { offerBy: "buyer", offerAmount: "", notes: "" };
+  const [addRoundNegId, setAddRoundNegId] = useState<string | null>(null);
+  const [roundForm, setRoundForm] = useState<typeof BLANK_ROUND>(BLANK_ROUND);
+
+  // Close deal form
+  const BLANK_DEAL = { dealType: "SOLD", finalPrice: "", finalRent: "", closureDate: new Date().toISOString().slice(0, 10), notes: "" };
+  const [closeDealNegId, setCloseDealNegId] = useState<string | null>(null);
+  const [dealForm, setDealForm] = useState<typeof BLANK_DEAL>(BLANK_DEAL);
+
   // Score breakdown
   const [scoreBreakdown, setScoreBreakdown] = useState<ScoreBreakdown | null>(null);
 
@@ -703,6 +713,37 @@ export default function ProjectDetailPage() {
     if (!res.ok) { const e = await res.json(); alert(e.error ?? "Failed to start negotiation"); return; }
     await reloadExtra();
     setActiveTab("Negotiation Log");
+  }
+
+  async function addNegotiationRound(negotiationId: string, roundNumber: number) {
+    if (!roundForm.offerAmount) return;
+    await fetch(`/api/projects/${id}/extra`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "negotiationRound", negotiationId, roundNumber, ...roundForm }),
+    });
+    await reloadExtra();
+    setAddRoundNegId(null);
+    setRoundForm(BLANK_ROUND);
+  }
+
+  async function updateNegotiationStatus(negotiationId: string, status: string) {
+    await fetch(`/api/projects/${id}/extra`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "negotiation", id: negotiationId, status }),
+    });
+    await reloadExtra();
+  }
+
+  async function closeDeal(contactId: string) {
+    if (!dealForm.finalPrice && !dealForm.finalRent) return;
+    const res = await fetch(`/api/projects/${id}/extra`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "deal", contactId, ...dealForm }),
+    });
+    if (!res.ok) { const e = await res.json(); alert(e.error ?? "Failed to close deal"); return; }
+    await reloadExtra();
+    setCloseDealNegId(null);
+    setDealForm(BLANK_DEAL);
   }
 
   const labelValueMap: Record<string, string> = {};
@@ -1282,7 +1323,7 @@ export default function ProjectDetailPage() {
                     </span>
                   </div>
                   {n.rounds.length > 0 && (
-                    <div className="border-t border-gray-100 pt-3 space-y-2">
+                    <div className="border-t border-gray-100 pt-3 space-y-2 mb-3">
                       {n.rounds.map((r: any, i: number) => (
                         <div key={r.id} className="flex items-start gap-3 text-xs">
                           <span className="w-5 h-5 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center flex-shrink-0 font-bold text-[10px]">{i+1}</span>
@@ -1295,6 +1336,97 @@ export default function ProjectDetailPage() {
                           <span className="ml-auto text-gray-400">{new Date(r.createdAt).toLocaleDateString("en-IN",{day:"numeric",month:"short"})}</span>
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {/* Add round form */}
+                  {addRoundNegId === n.id && (
+                    <div className="border-t border-gray-100 pt-3 space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <select value={roundForm.offerBy} onChange={e => setRoundForm(p => ({ ...p, offerBy: e.target.value }))}
+                          className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500">
+                          <option value="buyer">Buyer offer</option>
+                          <option value="seller">Seller offer</option>
+                        </select>
+                        <input placeholder="Amount (₹)" type="number" value={roundForm.offerAmount}
+                          onChange={e => setRoundForm(p => ({ ...p, offerAmount: e.target.value }))}
+                          className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                      </div>
+                      <input placeholder="Notes (optional)" value={roundForm.notes}
+                        onChange={e => setRoundForm(p => ({ ...p, notes: e.target.value }))}
+                        className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                      <div className="flex gap-2">
+                        <button onClick={() => addNegotiationRound(n.id, n.rounds.length + 1)}
+                          className="bg-blue-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-blue-700">Save Round</button>
+                        <button onClick={() => { setAddRoundNegId(null); setRoundForm(BLANK_ROUND); }}
+                          className="border border-gray-200 text-[10px] text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-50">Cancel</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Close deal form */}
+                  {closeDealNegId === n.id && (
+                    <div className="border-t border-gray-100 pt-3 space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <select value={dealForm.dealType} onChange={e => setDealForm(p => ({ ...p, dealType: e.target.value }))}
+                          className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500">
+                          {["SOLD","RENTED","LEASED","REDEVELOPMENT_CONFIRMED","WITHDRAWN","REQUIREMENT_CLOSED"].map(t => (
+                            <option key={t} value={t}>{t.replace(/_/g," ")}</option>
+                          ))}
+                        </select>
+                        <input type="date" value={dealForm.closureDate}
+                          onChange={e => setDealForm(p => ({ ...p, closureDate: e.target.value }))}
+                          className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        <input placeholder="Final Price (₹)" type="number" value={dealForm.finalPrice}
+                          onChange={e => setDealForm(p => ({ ...p, finalPrice: e.target.value }))}
+                          className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        <input placeholder="Final Rent (₹/mo)" type="number" value={dealForm.finalRent}
+                          onChange={e => setDealForm(p => ({ ...p, finalRent: e.target.value }))}
+                          className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                      </div>
+                      <input placeholder="Notes (optional)" value={dealForm.notes}
+                        onChange={e => setDealForm(p => ({ ...p, notes: e.target.value }))}
+                        className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                      <div className="flex gap-2">
+                        <button onClick={() => closeDeal(n.contact.id)}
+                          className="bg-green-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-green-700">Confirm Deal Closed</button>
+                        <button onClick={() => { setCloseDealNegId(null); setDealForm(BLANK_DEAL); }}
+                          className="border border-gray-200 text-[10px] text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-50">Cancel</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action buttons */}
+                  {addRoundNegId !== n.id && closeDealNegId !== n.id && (
+                    <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
+                      {n.status === "ACTIVE" && project?.state !== "ARCHIVED" && (
+                        <>
+                          <button onClick={() => { setAddRoundNegId(n.id); setRoundForm(BLANK_ROUND); }}
+                            className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100">
+                            + Add Round
+                          </button>
+                          <button onClick={() => updateNegotiationStatus(n.id, "AGREED")}
+                            className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-green-50 text-green-700 hover:bg-green-100">
+                            Mark Agreed
+                          </button>
+                          <button onClick={() => updateNegotiationStatus(n.id, "COLLAPSED")}
+                            className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-red-50 text-red-600 hover:bg-red-100">
+                            Mark Collapsed
+                          </button>
+                        </>
+                      )}
+                      {n.status === "AGREED" && project?.state !== "ARCHIVED" && (
+                        <button onClick={() => { setCloseDealNegId(n.id); setDealForm(BLANK_DEAL); }}
+                          className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-green-600 text-white hover:bg-green-700">
+                          ✓ Close Deal
+                        </button>
+                      )}
+                      {project?.state === "ARCHIVED" && (
+                        <span className="text-[10px] font-bold text-gray-400">Deal closed — property archived.</span>
+                      )}
+                      {n.status === "COLLAPSED" && project?.state !== "ARCHIVED" && (
+                        <span className="text-[10px] text-gray-400">Negotiation collapsed.</span>
+                      )}
                     </div>
                   )}
                 </div>

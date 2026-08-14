@@ -24,6 +24,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     data: {
       projectId: id,
       contactId: body.contactId,
+      proposalId: body.proposalId ?? null,
       status: "ACTIVE",
     },
     select: {

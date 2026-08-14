@@ -110,9 +110,9 @@ const NEG_STATUS_COLORS: Record<string, string> = {
   STALLED: "bg-amber-50 text-amber-700", WITHDRAWN: "bg-red-50 text-red-700",
 };
 const DEAL_TYPE_COLORS: Record<string, string> = {
-  SALE: "bg-blue-50 text-blue-700", RENT: "bg-amber-50 text-amber-700",
-  LEASE: "bg-purple-50 text-purple-700", JV: "bg-teal-50 text-teal-700",
-  REDEVELOPMENT: "bg-pink-50 text-pink-700",
+  SOLD: "bg-blue-50 text-blue-700", RENTED: "bg-amber-50 text-amber-700",
+  LEASED: "bg-purple-50 text-purple-700", REDEVELOPMENT_CONFIRMED: "bg-pink-50 text-pink-700",
+  WITHDRAWN: "bg-red-50 text-red-700", REQUIREMENT_CLOSED: "bg-teal-50 text-teal-700",
 };
 
 const SUB_TABS = [
@@ -625,7 +625,7 @@ export default function ProjectsClient({
                         </td>
                         <td className="px-4 py-3 text-gray-700">{d.contact.name}</td>
                         <td className="px-4 py-3">
-                          <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase", DEAL_TYPE_COLORS[d.type] ?? "bg-gray-100 text-gray-500")}>{d.type}</span>
+                          <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase", DEAL_TYPE_COLORS[d.type] ?? "bg-gray-100 text-gray-500")}>{d.type.replace(/_/g, " ")}</span>
                         </td>
                         <td className="px-4 py-3 font-semibold text-gray-900">
                           {d.finalPrice ? `₹${(d.finalPrice / 1e7).toFixed(2)}Cr` : d.finalRent ? `₹${d.finalRent.toLocaleString()}/mo` : "—"}
@@ -808,8 +808,10 @@ const PROPOSAL_STATUS_FLOW = ["DRAFT", "SENT", "VIEWED", "ACCEPTED", "REJECTED"]
 type ProposalStatus = typeof PROPOSAL_STATUS_FLOW[number];
 
 function ProposalCard({ proposal }: { proposal: Proposal }) {
+  const router = useRouter();
   const [status, setStatus] = useState(proposal.status as ProposalStatus);
   const [updating, setUpdating] = useState(false);
+  const [startingNegotiation, setStartingNegotiation] = useState(false);
 
   async function updateStatus(next: ProposalStatus) {
     setUpdating(true);
@@ -820,6 +822,20 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
     });
     setStatus(next);
     setUpdating(false);
+  }
+
+  async function startNegotiation() {
+    const projectId = proposal.items[0]?.project.id;
+    if (!projectId) return;
+    setStartingNegotiation(true);
+    const res = await fetch(`/api/projects/${projectId}/negotiations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contactId: proposal.contact.id, proposalId: proposal.id }),
+    });
+    setStartingNegotiation(false);
+    if (!res.ok) { alert("Failed to start negotiation"); return; }
+    router.push(`/projects/${projectId}?tab=Negotiation+Log`);
   }
 
   const STATUS_CFG: Record<ProposalStatus, { color: string; bg: string; border: string }> = {
@@ -883,10 +899,10 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
           </>
         )}
         {status === "ACCEPTED" && proposal.items[0] && (
-          <Link href={`/projects/${proposal.items[0].project.id}?tab=Negotiation+Log`}
-            className="text-[10px] font-bold text-green-700 bg-green-50 px-3 py-1.5 rounded-lg hover:bg-green-100">
-            Open Negotiation Log →
-          </Link>
+          <button onClick={startNegotiation} disabled={startingNegotiation}
+            className="flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-50 px-3 py-1.5 rounded-lg hover:bg-green-100 disabled:opacity-50">
+            <Handshake className="w-3 h-3" /> {startingNegotiation ? "Starting…" : "Start Negotiation"}
+          </button>
         )}
         {status === "REJECTED" && (
           <span className="text-[10px] text-gray-400">Revise and create a new proposal for this contact.</span>

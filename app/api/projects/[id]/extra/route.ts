@@ -106,6 +106,29 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return Response.json(round);
   }
 
+  if (body.type === "deal") {
+    const existing = await db.deal.findUnique({ where: { projectId: id } });
+    if (existing) {
+      return Response.json({ error: "This property already has a closed deal." }, { status: 409 });
+    }
+    const count = await db.deal.count();
+    const dealNumber = `DEAL-${String(count + 1).padStart(4, "0")}`;
+    const deal = await db.deal.create({
+      data: {
+        dealNumber,
+        projectId: id,
+        contactId: body.contactId,
+        type: body.dealType,
+        finalPrice: body.finalPrice ? parseFloat(body.finalPrice) : null,
+        finalRent: body.finalRent ? parseFloat(body.finalRent) : null,
+        closureDate: body.closureDate ? new Date(body.closureDate) : new Date(),
+        notes: body.notes || null,
+      },
+    });
+    await db.project.update({ where: { id }, data: { state: "ARCHIVED" } });
+    return Response.json(deal);
+  }
+
   if (body.type === "developerProposal") {
     // Enforce: only one SELECTED developer per project
     if (body.status === "SELECTED") {
@@ -163,6 +186,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       },
     });
     return Response.json(unit);
+  }
+
+  if (body.type === "negotiation") {
+    const negotiation = await db.negotiation.update({
+      where: { id: body.id },
+      data: { status: body.status },
+    });
+    return Response.json(negotiation);
   }
 
   if (body.type === "developerProposal") {
