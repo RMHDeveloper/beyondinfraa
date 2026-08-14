@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   Lock, Unlock, Check, Loader2,
   AlertCircle, Download, Printer,
@@ -488,6 +488,7 @@ function ClosureTab({ projectId, readOnly }: { projectId: string; readOnly: bool
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [project, setProject]           = useState<Project | null>(null);
   const [loading, setLoading]           = useState(true);
@@ -500,6 +501,13 @@ export default function ProjectDetailPage() {
     return new URLSearchParams(window.location.search).get("tab") ?? "Project Overview";
   });
   const [globalEdit, setGlobalEdit]     = useState(false);
+
+  // Re-sync the active tab when navigating here (even to the same route) with a ?tab= param,
+  // e.g. clicking "Open Negotiation Log" from a Proposal card while this page is already mounted.
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam) setActiveTab(tabParam);
+  }, [id, searchParams]);
 
   // Extra data (per-project relationships)
   const [extraData, setExtraData] = useState<{
