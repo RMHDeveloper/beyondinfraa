@@ -1610,6 +1610,7 @@ export default function ProjectDetailPage() {
             Cancel
           </button>
           <button
+            onClick={() => router.back()}
             disabled={readOnly || saveStatus === "saving"}
             className="bg-blue-600 text-white text-xs font-bold px-4 py-1.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
             Save &amp; Continue
