@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { ArrowLeft, Users, Building2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type Contact = { id: string; name: string; type: string };
 type Category = { id: string; name: string };
@@ -20,6 +22,8 @@ const TIMELINES  = ["Immediate", "1-3 months", "3-6 months", "6-12 months", "12+
 
 export default function RequirementForm({ type, contacts, categories, action, defaultContactId }: Props) {
   const isBuyer = type === "buyer";
+  const [contactId, setContactId] = useState(defaultContactId ?? "");
+  const isNewContact = contactId === "__new__";
   const backHref = `/projects?tab=${isBuyer ? "Buyer+Requirements" : "Tenant+Requirements"}`;
   const title = isBuyer ? "Add Buyer Requirement" : "Add Tenant Requirement";
 
@@ -46,14 +50,26 @@ export default function RequirementForm({ type, contacts, categories, action, de
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
+              <div className={cn(isNewContact && "sm:col-span-2")}>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Contact *</label>
-                <select name="contactId" required defaultValue={defaultContactId ?? ""} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
+                <select name="contactId" required value={contactId} onChange={(e) => setContactId(e.target.value)}
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
                   <option value="">Select contact…</option>
+                  <option value="__new__">+ Add New {isBuyer ? "Buyer" : "Tenant"} Contact</option>
                   {contacts.map((c) => (
                     <option key={c.id} value={c.id}>{c.name} ({c.type})</option>
                   ))}
                 </select>
+                {isNewContact && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+                    <input name="newContactName" required placeholder="Full Name *"
+                      className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                    <input name="newContactPhone" required placeholder="Phone *"
+                      className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                    <input name="newContactEmail" type="email" placeholder="Email (optional)"
+                      className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">Category *</label>

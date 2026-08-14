@@ -11,9 +11,19 @@ export default async function NewBuyerRequirementPage({ searchParams }: { search
 
   async function createBuyerReq(formData: FormData) {
     "use server";
-    const contactId  = formData.get("contactId") as string;
+    let contactId    = formData.get("contactId") as string;
     const categoryId = formData.get("categoryId") as string;
     if (!contactId || !categoryId) return;
+
+    if (contactId === "__new__") {
+      const name  = (formData.get("newContactName") as string)?.trim();
+      const phone = (formData.get("newContactPhone") as string)?.trim();
+      const email = (formData.get("newContactEmail") as string)?.trim() || null;
+      if (!name || !phone) return;
+      const existing = await db.contact.findFirst({ where: { phone } });
+      const contact = existing ?? await db.contact.create({ data: { name, phone, email, type: "BUYER" } });
+      contactId = contact.id;
+    }
 
     const count = await db.buyerRequirement.count();
     const reqNumber = `BR-${String(count + 1).padStart(4, "0")}`;
