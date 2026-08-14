@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Home, Briefcase, Factory, RefreshCw,
   Users, BarChart2, Settings, ClipboardList, LogOut,
   ChevronRight, MapPin, Building2, Link2, UserCog, FileText,
-  PanelLeftClose, PanelLeftOpen, X,
+  PanelLeftClose, PanelLeftOpen, X, CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/types";
@@ -30,6 +30,7 @@ const mgmtNav = [
   { href: "/intake",                label: "Intake Links",      icon: Link2,         roles: ["SUPER_ADMIN", "OWNER"] as const },
   { href: "/tasks",                 label: "Tasks & Follow-ups", icon: ClipboardList, roles: ["SUPER_ADMIN", "OWNER"] as const },
   { href: "/site-visits",           label: "Site Visits",       icon: MapPin,        roles: ["SUPER_ADMIN", "OWNER"] as const },
+  { href: "/calendar",              label: "Calendar",          icon: CalendarDays,  roles: ["SUPER_ADMIN", "OWNER"] as const },
   { href: "/reports",               label: "Reports",           icon: BarChart2,     roles: ["SUPER_ADMIN", "OWNER"] as const },
   { href: "/employees",             label: "Employees",         icon: UserCog,       roles: ["SUPER_ADMIN", "OWNER"] as const },
   { href: "/audit-logs",            label: "Audit Logs",        icon: FileText,      roles: ["SUPER_ADMIN"] as const },
