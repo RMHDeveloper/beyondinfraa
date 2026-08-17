@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Question = {
@@ -206,9 +206,17 @@ export default function FieldRenderer({ question, value, jsonValue, onChange, di
                 />
               ))}
               {!effectiveDisabled && (
-                <button onClick={() => updateRows(rows.filter((_, ri) => ri !== i))} className="text-gray-300 hover:text-red-500">
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <>
+                  <button type="button" title="Duplicate row"
+                    onClick={() => updateRows([...rows.slice(0, i + 1), { ...row }, ...rows.slice(i + 1)])}
+                    className="text-gray-300 hover:text-gray-700">
+                    <Copy className="w-4 h-4" />
+                  </button>
+                  <button type="button" title="Delete row"
+                    onClick={() => updateRows(rows.filter((_, ri) => ri !== i))} className="text-gray-300 hover:text-red-500">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </>
               )}
             </div>
           ))}
