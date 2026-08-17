@@ -95,7 +95,7 @@ export default function NewProjectPage() {
           <h1 className="text-xl font-bold text-gray-900 mb-1">Select Category</h1>
           <p className="text-sm text-gray-400 mb-6">What kind of property is this project for?</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {categories.map((cat) => (
+            {categories.filter((cat) => cat.name !== "Land").map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => { setSelectedCat(cat); setSelectedSub(null); setSelectedTemplate(null); setStep("subcategory"); }}
