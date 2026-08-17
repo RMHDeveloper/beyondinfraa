@@ -23,7 +23,10 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const session = await requireSession();
-  const { categoryId, subcategoryId, templateId, templateVersion, title, clientName, clientPhone, clientEmail, leadSource, leadDate } = await req.json();
+  const {
+    categoryId, subcategoryId, templateId, templateVersion, title, clientName, clientPhone, clientEmail, leadSource, leadDate,
+    referredById, newReferrerName, newReferrerPhone,
+  } = await req.json();
 
   if (!categoryId || !subcategoryId || !templateId || !title) {
     return apiError("categoryId, subcategoryId, templateId, title required");
@@ -31,6 +34,15 @@ export async function POST(req: NextRequest) {
 
   const category = await db.category.findUnique({ where: { id: categoryId } });
   if (!category) return apiError("Category not found", 404);
+
+  let resolvedReferrerId: string | null = referredById ?? null;
+  if (!resolvedReferrerId && newReferrerName) {
+    const existing = newReferrerPhone ? await db.contact.findFirst({ where: { phone: newReferrerPhone } }) : null;
+    const referrer = existing ?? await db.contact.create({
+      data: { name: newReferrerName, phone: newReferrerPhone || null, type: "OTHER" },
+    });
+    resolvedReferrerId = referrer.id;
+  }
 
   // Generate project number
   const count = await db.project.count();
@@ -53,6 +65,7 @@ export async function POST(req: NextRequest) {
       clientEmail: clientEmail ?? null,
       leadSource: leadSource ?? null,
       leadDate: leadDate ? new Date(leadDate) : null,
+      referredById: resolvedReferrerId,
     },
   });
 

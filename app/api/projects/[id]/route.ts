@@ -12,11 +12,13 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
     select: {
       id: true, projectNumber: true, title: true, state: true, potentialScore: true,
       clientName: true, clientPhone: true, clientEmail: true, notes: true,
+      leadSource: true, leadDate: true,
       createdAt: true,
       category:    { select: { id: true, name: true, slug: true } },
       subcategory: { select: { id: true, name: true } },
       status:      { select: { id: true, name: true, color: true } },
       assignee:    { select: { id: true, name: true } },
+      referredBy:  { select: { id: true, name: true, phone: true } },
       tags:        { select: { tag: { select: { id: true, name: true, color: true } } } },
       template: {
         select: {

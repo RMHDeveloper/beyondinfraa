@@ -37,6 +37,9 @@ type Project = {
   template: { name: string; groups: TemplateGroup[] };
   responses: Response[];
   createdAt?: string;
+  leadSource?: string | null;
+  leadDate?: string | null;
+  referredBy?: { id: string; name: string; phone: string | null } | null;
 };
 
 // ─── Score breakdown type ─────────────────────────────────────────────────────
@@ -999,6 +1002,26 @@ export default function ProjectDetailPage() {
           {/* ── PROJECT OVERVIEW ── */}
           {activeTab === "Project Overview" && (
             <div className="p-4 space-y-2">
+              {/* Lead Info */}
+              {(project.leadSource || project.referredBy) && (
+                <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-6 flex-wrap text-xs">
+                  {project.leadSource && (
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mr-1.5">Lead Source</span>
+                      <span className="font-semibold text-gray-800">{project.leadSource}</span>
+                      {project.leadDate && <span className="text-gray-400"> · {new Date(project.leadDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>}
+                    </div>
+                  )}
+                  {project.referredBy && (
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mr-1.5">Referred By</span>
+                      <span className="font-semibold text-gray-800">{project.referredBy.name}</span>
+                      {project.referredBy.phone && <span className="text-gray-400"> · {project.referredBy.phone}</span>}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Score Analysis Panel */}
               {scoreBreakdown && scoreBreakdown.breakdown.length > 0 && (() => {
                 const sb = scoreBreakdown;
@@ -1714,7 +1737,7 @@ export default function ProjectDetailPage() {
           {/* ── FILES ── */}
           {activeTab === "Files" && (
             <div className="p-4">
-              <FilesTab projectId={id} readOnly={readOnly} />
+              <FilesTab apiBase={`/api/projects/${id}/files`} readOnly={readOnly} />
             </div>
           )}
 

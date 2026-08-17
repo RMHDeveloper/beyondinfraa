@@ -126,6 +126,14 @@ enum SiteVisitStatus {
   NO_SHOW
 }
 
+enum SiteVisitSegment {
+  BUY
+  SELL
+  RENT
+  REDEVELOPMENT
+  JV
+}
+
 enum NegotiationStatus {
   ACTIVE
   AGREED
@@ -241,6 +249,7 @@ model Category {
   tenantRequirements TenantRequirement[]
   intakeTokens        BuyerIntakeToken[]
   tenantIntakeTokens  TenantIntakeToken[]
+  siteVisits          SiteVisit[]
 
   @@map("categories")
 }
@@ -350,6 +359,7 @@ model Project {
   state           RecordState @default(OPEN)
   leadSource      String?
   leadDate        DateTime?
+  referredById    String?
   potentialScore  Int?
   clientName      String?
   clientPhone     String?
@@ -365,6 +375,7 @@ model Project {
   template      Template      @relation(fields: [templateId], references: [id])
   status        Status?       @relation(fields: [statusId], references: [id])
   assignee      User?         @relation("ProjectAssignee", fields: [assigneeId], references: [id])
+  referredBy    Contact?      @relation("ProjectReferrer", fields: [referredById], references: [id])
   tags          ProjectTag[]
   responses     Response[]
   files         ProjectFile[]
@@ -530,6 +541,7 @@ model Contact {
   negotiations       Negotiation[]
   deals              Deal[]
   developerProfile   Developer?
+  referredProjects   Project[] @relation("ProjectReferrer")
 
   @@map("contacts")
 }
@@ -595,6 +607,18 @@ model TenantRequirement {
   furnishing         String?
   features           Json?             // string[]
   operationalReqs    String?
+  carParksRequired   Int?
+  floorPreference    String?
+  propertySharing    String?           // "Standalone" | "Sharing"
+  flooringType       String?
+  facilityGrade      String?           // "Grade A" | "Regular"
+  powerConnectionLevel String?         // "Low Tension" | "High Tension" | "Basic Connection"
+  propertyAgePreference String?
+  directionFacing    String?
+  entityType         String?           // "Individual" | "Trust" | "Company"
+  paymentBreakup     String?
+  brokeragePct       Float?
+  additionalContacts Json?             // { name, phone, email }[]
   priority           String?           @default("Medium")
   notes              String?
   status             RequirementStatus @default(NEW)
@@ -686,8 +710,25 @@ model Proposal {
   items             ProposalProperty[]
   siteVisits        SiteVisit[]
   negotiations      Negotiation[]
+  files             ProposalFile[]
 
   @@map("proposals")
+}
+
+model ProposalFile {
+  id           String   @id @default(cuid())
+  proposalId   String
+  fileName     String
+  originalName String
+  mimeType     String
+  sizeBytes    Int
+  storagePath  String
+  uploadedBy   String?
+  uploadedAt   DateTime @default(now())
+
+  proposal Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  @@map("proposal_files")
 }
 
 model ProposalProperty {
@@ -711,9 +752,12 @@ model ProposalProperty {
 model SiteVisit {
   id           String          @id @default(cuid())
   visitNumber  String          @unique
-  projectId    String
-  contactId    String
+  projectId    String?
+  contactId    String?
   proposalId   String?
+  categoryId   String?
+  segment      SiteVisitSegment?
+  mapsLink     String?
   scheduledAt  DateTime
   location     String?
   managedById  String?
@@ -727,9 +771,10 @@ model SiteVisit {
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
-  project  Project   @relation(fields: [projectId], references: [id])
-  contact  Contact   @relation(fields: [contactId], references: [id])
+  project  Project?  @relation(fields: [projectId], references: [id])
+  contact  Contact?  @relation(fields: [contactId], references: [id])
   proposal Proposal? @relation(fields: [proposalId], references: [id])
+  category Category? @relation(fields: [categoryId], references: [id])
 
   @@map("site_visits")
 }

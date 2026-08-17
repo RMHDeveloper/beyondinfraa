@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 type Sub = { id: string; name: string; slug: string; templates?: Template[] };
 type Category = { id: string; name: string; slug: string; subcategories: Sub[] };
 type Template = { id: string; name: string; version: number };
+type Contact = { id: string; name: string; type: string; phone: string | null };
 
 type Step = "category" | "subcategory" | "details";
 
@@ -16,17 +17,23 @@ export default function NewProjectPage() {
   const [step, setStep] = useState<Step>("category");
   const [categories, setCategories] = useState<Category[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
 
   const [selectedCat, setSelectedCat] = useState<Category | null>(null);
   const [selectedSub, setSelectedSub] = useState<Sub | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
 
-  const [form, setForm] = useState({ title: "", clientName: "", clientPhone: "", clientEmail: "", leadSource: "", leadDate: "" });
+  const [form, setForm] = useState({
+    title: "", clientName: "", clientPhone: "", clientEmail: "", leadSource: "", leadDate: "",
+    referredById: "", newReferrerName: "", newReferrerPhone: "",
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const isNewReferrer = form.referredById === "__new__";
 
   useEffect(() => {
     fetch("/api/settings/categories").then((r) => r.json()).then(setCategories);
+    fetch("/api/contacts").then((r) => r.json()).then(setContacts);
   }, []);
 
   useEffect(() => {
@@ -64,6 +71,9 @@ export default function NewProjectPage() {
           clientEmail: form.clientEmail || null,
           leadSource: form.leadSource || null,
           leadDate: form.leadDate || null,
+          referredById: form.referredById && form.referredById !== "__new__" ? form.referredById : null,
+          newReferrerName: isNewReferrer ? form.newReferrerName || null : null,
+          newReferrerPhone: isNewReferrer ? form.newReferrerPhone || null : null,
         }),
       });
       if (!res.ok) {
@@ -231,6 +241,34 @@ export default function NewProjectPage() {
                     value={form.leadDate}
                     onChange={(e) => setForm((p) => ({ ...p, leadDate: e.target.value }))}
                   />
+                </div>
+                <div className={cn(isNewReferrer && "sm:col-span-2")}>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Referred By <span className="text-gray-400 font-normal">(so referral payouts can be tracked)</span>
+                  </label>
+                  <select
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 bg-white"
+                    value={form.referredById}
+                    onChange={(e) => setForm((p) => ({ ...p, referredById: e.target.value }))}
+                  >
+                    <option value="">No one / not applicable</option>
+                    <option value="__new__">+ Add New Person</option>
+                    {contacts.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name} ({c.type})</option>
+                    ))}
+                  </select>
+                  {isNewReferrer && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                      <input placeholder="Full Name *"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900"
+                        value={form.newReferrerName}
+                        onChange={(e) => setForm((p) => ({ ...p, newReferrerName: e.target.value }))} />
+                      <input placeholder="Phone"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900"
+                        value={form.newReferrerPhone}
+                        onChange={(e) => setForm((p) => ({ ...p, newReferrerPhone: e.target.value }))} />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
