@@ -1,16 +1,37 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { ArrowLeft, MapPin } from "lucide-react";
 
 type Contact = { id: string; name: string; type: string };
 type Project  = { id: string; title: string; projectNumber: string; category: { name: string } };
+type Category = { id: string; name: string };
+
+const SEGMENT_OPTIONS: Record<string, { value: string; label: string }[]> = {
+  Land: [
+    { value: "BUY", label: "Buy" },
+    { value: "SELL", label: "Sell" },
+  ],
+  "Special Projects": [
+    { value: "REDEVELOPMENT", label: "Redevelopment" },
+    { value: "JV", label: "JV" },
+  ],
+};
+const DEFAULT_SEGMENT_OPTIONS = [
+  { value: "BUY", label: "Buy" },
+  { value: "SELL", label: "Sell" },
+  { value: "RENT", label: "Rent" },
+];
 
 export default function SiteVisitForm({
-  contacts, projects, action,
+  contacts, projects, categories, action,
 }: {
-  contacts: Contact[]; projects: Project[]; action: (fd: FormData) => Promise<void>;
+  contacts: Contact[]; projects: Project[]; categories: Category[]; action: (fd: FormData) => Promise<void>;
 }) {
+  const [categoryName, setCategoryName] = useState("");
+  const segmentOptions = SEGMENT_OPTIONS[categoryName] ?? DEFAULT_SEGMENT_OPTIONS;
+
   return (
     <div className="flex flex-col h-full bg-gray-50">
       <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3 flex-shrink-0">
@@ -31,9 +52,9 @@ export default function SiteVisitForm({
             </p>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">Property *</label>
-              <select name="projectId" required className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
-                <option value="">Select property…</option>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Property</label>
+              <select name="projectId" className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
+                <option value="">Select property… (optional)</option>
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>{p.title} ({p.projectNumber})</option>
                 ))}
@@ -41,9 +62,9 @@ export default function SiteVisitForm({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">Contact *</label>
-              <select name="contactId" required className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
-                <option value="">Select contact…</option>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Contact</label>
+              <select name="contactId" className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
+                <option value="">Select contact… (optional)</option>
                 {contacts.map((c) => (
                   <option key={c.id} value={c.id}>{c.name} ({c.type})</option>
                 ))}
@@ -52,8 +73,31 @@ export default function SiteVisitForm({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Date & Time *</label>
-                <input name="scheduledAt" type="datetime-local" required
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Category</label>
+                <select name="categoryId"
+                  onChange={(e) => setCategoryName(e.target.selectedOptions[0]?.dataset.name ?? "")}
+                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
+                  <option value="">Select…</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id} data-name={c.name}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Segment</label>
+                <select name="segment" className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
+                  <option value="">Select…</option>
+                  {segmentOptions.map((s) => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Date & Time</label>
+                <input name="scheduledAt" type="datetime-local"
                   className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500" />
               </div>
               <div>
@@ -61,6 +105,12 @@ export default function SiteVisitForm({
                 <input name="location" placeholder="e.g. Property site, Office"
                   className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500" />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Google Maps Pin</label>
+              <input name="mapsLink" placeholder="https://maps.google.com/?q=…"
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500" />
             </div>
 
             <div>

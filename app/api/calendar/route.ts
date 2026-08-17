@@ -11,8 +11,8 @@ export type CalendarEvent = {
   date: string;
   title: string;
   done: boolean;
-  projectId: string;
-  projectTitle: string;
+  projectId: string | null;
+  projectTitle: string | null;
 };
 
 export async function GET(req: Request) {
@@ -61,8 +61,8 @@ export async function GET(req: Request) {
   for (const v of siteVisits) {
     events.push({
       id: v.id, type: "sitevisit", date: v.scheduledAt.toISOString(),
-      title: `Site visit — ${v.contact.name}`, done: v.status === "COMPLETED",
-      projectId: v.project.id, projectTitle: v.project.title,
+      title: v.contact ? `Site visit — ${v.contact.name}` : "Site visit", done: v.status === "COMPLETED",
+      projectId: v.project?.id ?? null, projectTitle: v.project?.title ?? null,
     });
   }
 

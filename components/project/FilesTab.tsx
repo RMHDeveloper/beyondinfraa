@@ -15,17 +15,17 @@ function formatBytes(b: number) {
   return `${(b / 1048576).toFixed(1)} MB`;
 }
 
-export default function FilesTab({ projectId, readOnly }: { projectId: string; readOnly: boolean }) {
+export default function FilesTab({ apiBase, readOnly }: { apiBase: string; readOnly: boolean }) {
   const [files, setFiles] = useState<ProjectFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function load() {
-    const res = await fetch(`/api/projects/${projectId}/files`);
+    const res = await fetch(apiBase);
     setFiles(await res.json());
   }
 
-  useEffect(() => { load(); }, [projectId]);
+  useEffect(() => { load(); }, [apiBase]);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -33,7 +33,7 @@ export default function FilesTab({ projectId, readOnly }: { projectId: string; r
     setUploading(true);
     const fd = new FormData();
     fd.append("file", file);
-    await fetch(`/api/projects/${projectId}/files`, { method: "POST", body: fd });
+    await fetch(apiBase, { method: "POST", body: fd });
     await load();
     setUploading(false);
     if (inputRef.current) inputRef.current.value = "";
@@ -41,7 +41,7 @@ export default function FilesTab({ projectId, readOnly }: { projectId: string; r
 
   async function handleDelete(fileId: string) {
     if (!confirm("Delete this file?")) return;
-    await fetch(`/api/projects/${projectId}/files/${fileId}`, { method: "DELETE" });
+    await fetch(`${apiBase}/${fileId}`, { method: "DELETE" });
     setFiles((f) => f.filter((x) => x.id !== fileId));
   }
 
@@ -74,7 +74,7 @@ export default function FilesTab({ projectId, readOnly }: { projectId: string; r
               </div>
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <a
-                  href={`/api/projects/${projectId}/files/${f.id}`}
+                  href={`${apiBase}/${f.id}`}
                   download={f.originalName}
                   className="p-1.5 text-gray-400 hover:text-gray-900 rounded"
                 >

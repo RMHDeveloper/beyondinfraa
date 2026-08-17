@@ -202,7 +202,7 @@ export default function FieldRenderer({ question, value, jsonValue, onChange, di
                     const next = rows.map((r, ri) => ri === i ? { ...r, [col]: e.target.value } : r);
                     updateRows(next);
                   }}
-                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900"
+                  className="flex-1 min-w-0 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900"
                 />
               ))}
               {!effectiveDisabled && (

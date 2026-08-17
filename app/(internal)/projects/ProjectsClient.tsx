@@ -50,8 +50,8 @@ type Proposal = {
   createdAt: Date | string;
 };
 type SiteVisit = {
-  id: string; status: string; notes: string | null; scheduledAt: Date | string;
-  contact: Contact; project: { id: string; title: string };
+  id: string; status: string; notes: string | null; scheduledAt: Date | string; segment: string | null;
+  contact: Contact | null; project: { id: string; title: string } | null;
 };
 type NegRound = { id: string; offerAmount: number | null; offerBy: string; notes: string | null; createdAt: Date | string };
 type Negotiation = {
@@ -108,6 +108,9 @@ const MATCH_COLORS = (pct: number) => pct >= 80 ? "#059669" : pct >= 50 ? "#d977
 const VISIT_STATUS_COLORS: Record<string, string> = {
   SCHEDULED: "bg-blue-50 text-blue-700", COMPLETED: "bg-green-50 text-green-700",
   CANCELLED: "bg-red-50 text-red-700", RESCHEDULED: "bg-amber-50 text-amber-700",
+};
+const SEGMENT_LABELS: Record<string, string> = {
+  BUY: "Buy", SELL: "Sell", RENT: "Rent", REDEVELOPMENT: "Redevelopment", JV: "JV",
 };
 const NEG_STATUS_COLORS: Record<string, string> = {
   ACTIVE: "bg-blue-50 text-blue-700", AGREED: "bg-green-50 text-green-700",
@@ -533,7 +536,7 @@ export default function ProjectsClient({
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
-                      {["Property", "Contact", "Scheduled", "Notes", "Status"].map((h) => (
+                      {["Property", "Contact", "Segment", "Scheduled", "Notes", "Status"].map((h) => (
                         <th key={h} className="text-left px-4 py-3 font-semibold text-[10px] uppercase tracking-wider text-gray-400">{h}</th>
                       ))}
                     </tr>
@@ -541,8 +544,9 @@ export default function ProjectsClient({
                   <tbody className="divide-y divide-gray-100">
                     {siteVisits.map((v) => (
                       <tr key={v.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-3 font-semibold text-gray-900">{v.project.title}</td>
-                        <td className="px-4 py-3 text-gray-700">{v.contact.name}</td>
+                        <td className="px-4 py-3 font-semibold text-gray-900">{v.project?.title ?? <span className="text-gray-300 font-normal">—</span>}</td>
+                        <td className="px-4 py-3 text-gray-700">{v.contact?.name ?? "—"}</td>
+                        <td className="px-4 py-3 text-gray-500">{v.segment ? SEGMENT_LABELS[v.segment] : "—"}</td>
                         <td className="px-4 py-3 text-gray-500">{fmtDate(v.scheduledAt)}</td>
                         <td className="px-4 py-3 text-gray-400 max-w-xs truncate">{v.notes ?? "—"}</td>
                         <td className="px-4 py-3">

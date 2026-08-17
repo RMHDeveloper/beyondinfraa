@@ -11,8 +11,8 @@ type CalendarEvent = {
   date: string;
   title: string;
   done: boolean;
-  projectId: string;
-  projectTitle: string;
+  projectId: string | null;
+  projectTitle: string | null;
 };
 
 const TYPE_CFG: Record<CalendarEvent["type"], { label: string; color: string; bg: string; icon: typeof ClipboardList }> = {
@@ -166,7 +166,7 @@ export default function CalendarPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={cn("text-sm font-semibold text-gray-900 truncate", e.done && "line-through text-gray-400")}>{e.title}</p>
-                      <p className="text-xs text-gray-400 truncate">{e.projectTitle} · {new Date(e.date).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</p>
+                      <p className="text-xs text-gray-400 truncate">{e.projectTitle ?? "No property linked"} · {new Date(e.date).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</p>
                     </div>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: cfg.bg, color: cfg.color }}>
                       {cfg.label}

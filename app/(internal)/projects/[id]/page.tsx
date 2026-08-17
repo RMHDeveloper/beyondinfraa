@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import FieldRenderer from "@/components/project/FieldRenderer";
 import { useAutosave } from "@/components/project/useAutosave";
 import FilesTab from "@/components/project/FilesTab";
+import GalleryTab from "@/components/project/GalleryTab";
 import NotesTab from "@/components/project/NotesTab";
 import FollowUpsTab from "@/components/project/FollowUpsTab";
 import AuditTab from "@/components/project/AuditTab";
@@ -58,7 +59,7 @@ const SECTOR_COLORS: Record<string, string> = {
 };
 
 const BASE_TABS = [
-  "Project Overview", "Find Buyers/Tenants", "Files", "Notes", "Tasks",
+  "Project Overview", "Find Buyers/Tenants", "Files", "Gallery", "Notes", "Tasks",
   "Negotiation Log", "Meetings", "Timeline", "Audit",
 ];
 const REDEVELOPMENT_TABS = [...BASE_TABS, "Developers & Proposals", "Closure"];
@@ -1785,6 +1786,13 @@ export default function ProjectDetailPage() {
           {activeTab === "Files" && (
             <div className="p-4">
               <FilesTab apiBase={`/api/projects/${id}/files`} readOnly={readOnly} />
+            </div>
+          )}
+
+          {/* ── GALLERY ── */}
+          {activeTab === "Gallery" && (
+            <div className="p-4">
+              <GalleryTab projectId={id} apiBase={`/api/projects/${id}/files`} readOnly={readOnly} />
             </div>
           )}
 

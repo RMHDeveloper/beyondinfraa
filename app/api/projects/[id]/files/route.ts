@@ -2,20 +2,21 @@ import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
 import { apiError } from "@/lib/utils";
-import { writeFile, mkdir } from "fs/promises";
+import { uploadObject } from "@/lib/storage";
 import path from "path";
-import { Prisma } from "@prisma/client";
+import { FileKind, Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-const UPLOAD_DIR = path.join(process.cwd(), "uploads");
-
-export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await requireSession();
   const { id } = await params;
+  const kindParam = req.nextUrl.searchParams.get("kind");
+  const kind = kindParam === "GALLERY_IMAGE" ? FileKind.GALLERY_IMAGE : kindParam === "DOCUMENT" ? FileKind.DOCUMENT : undefined;
+
   const files = await db.projectFile.findMany({
-    where: { projectId: id },
-    orderBy: { uploadedAt: "desc" },
+    where: { projectId: id, ...(kind ? { kind } : {}) },
+    orderBy: kind === FileKind.GALLERY_IMAGE ? { sortOrder: "asc" } : { uploadedAt: "desc" },
   });
   return Response.json(files);
 }
@@ -31,6 +32,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
   const questionId = formData.get("questionId") as string | null;
+  const kind = formData.get("kind") === "GALLERY_IMAGE" ? FileKind.GALLERY_IMAGE : FileKind.DOCUMENT;
 
   if (!file) return apiError("No file provided");
 
@@ -39,10 +41,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const ext = path.extname(file.name);
   const fileName = `${id}_${Date.now()}${ext}`;
-  const projectDir = path.join(UPLOAD_DIR, id);
-  await mkdir(projectDir, { recursive: true });
-  await writeFile(path.join(projectDir, fileName), buffer);
   const storagePath = `${id}/${fileName}`;
+  await uploadObject(storagePath, buffer, file.type);
+
+  const sortOrder = kind === FileKind.GALLERY_IMAGE
+    ? await db.projectFile.count({ where: { projectId: id, kind: FileKind.GALLERY_IMAGE } })
+    : 0;
 
   const record = await db.projectFile.create({
     data: {
@@ -53,6 +57,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       mimeType: file.type,
       sizeBytes: buffer.length,
       storagePath,
+      kind,
+      sortOrder,
       uploadedBy: session.id,
     },
   });

@@ -68,10 +68,23 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ type: 
     return Response.json(updated);
   }
   if (type === "tenant") {
-    const { status, notes, rentMin, rentMax, depositBudget, areaMin, areaMax, furnishing, priority, leaseDuration, lockInPeriod, propertySubtype, operationalReqs } = body;
+    const {
+      status, notes, rentMin, rentMax, depositBudget, areaMin, areaMax, furnishing, priority,
+      leaseDuration, lockInPeriod, propertySubtype, operationalReqs, preferredLocations, moveInDate,
+      carParksRequired, floorPreference, propertySharing, flooringType, facilityGrade,
+      powerConnectionLevel, propertyAgePreference, directionFacing, entityType, paymentBreakup,
+      brokeragePct, features, additionalContacts,
+    } = body;
     const updated = await db.tenantRequirement.update({
       where: { id },
-      data: { status, notes, rentMin, rentMax, depositBudget, areaMin, areaMax, furnishing, priority, leaseDuration, lockInPeriod, propertySubtype, operationalReqs },
+      data: {
+        status, notes, rentMin, rentMax, depositBudget, areaMin, areaMax, furnishing, priority,
+        leaseDuration, lockInPeriod, propertySubtype, operationalReqs, preferredLocations,
+        moveInDate: moveInDate ? new Date(moveInDate) : moveInDate,
+        carParksRequired, floorPreference, propertySharing, flooringType, facilityGrade,
+        powerConnectionLevel, propertyAgePreference, directionFacing, entityType, paymentBreakup,
+        brokeragePct, features, additionalContacts,
+      },
     });
     return Response.json(updated);
   }

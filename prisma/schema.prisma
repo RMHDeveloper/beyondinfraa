@@ -415,6 +415,11 @@ model Response {
 
 // ─── Files ────────────────────────────────────────────────────────────────────
 
+enum FileKind {
+  DOCUMENT
+  GALLERY_IMAGE
+}
+
 model ProjectFile {
   id           String   @id @default(cuid())
   projectId    String
@@ -424,6 +429,8 @@ model ProjectFile {
   mimeType     String
   sizeBytes    Int
   storagePath  String
+  kind         FileKind @default(DOCUMENT)
+  sortOrder    Int      @default(0)
   uploadedBy   String?
   uploadedAt   DateTime @default(now())
 

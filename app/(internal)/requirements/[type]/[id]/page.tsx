@@ -37,8 +37,16 @@ type BuyerReq = {
 
 type TenantReq = {
   id: string; reqNumber: string; status: string;
-  rentMin: number | null; rentMax: number | null;
+  rentMin: number | null; rentMax: number | null; depositBudget: number | null;
   areaMin: number | null; areaMax: number | null;
+  leaseDuration: number | null; lockInPeriod: number | null; moveInDate: string | null;
+  propertySubtype: string | null; furnishing: string | null; operationalReqs: string | null;
+  preferredLocations: unknown; features: unknown;
+  carParksRequired: number | null; floorPreference: string | null; propertySharing: string | null;
+  flooringType: string | null; facilityGrade: string | null; powerConnectionLevel: string | null;
+  propertyAgePreference: string | null; directionFacing: string | null; entityType: string | null;
+  paymentBreakup: string | null; brokeragePct: number | null;
+  additionalContacts: unknown;
   notes: string | null;
   contact: Contact;
   category: Category;
@@ -103,8 +111,14 @@ export default function RequirementDetailPage() {
   const isBuyerReq = isBuyer(req, type);
   const accentColor = isBuyerReq ? "#2563eb" : "#d97706";
   const Icon = isBuyerReq ? Users : Building2;
-  const locations = Array.isArray((req as BuyerReq).preferredLocations)
-    ? (req as BuyerReq).preferredLocations as string[]
+  const locations = Array.isArray(req.preferredLocations)
+    ? req.preferredLocations as string[]
+    : [];
+  const amenities = !isBuyerReq && Array.isArray((req as TenantReq).features)
+    ? (req as TenantReq).features as string[]
+    : [];
+  const additionalContacts = !isBuyerReq && Array.isArray((req as TenantReq).additionalContacts)
+    ? (req as TenantReq).additionalContacts as { name: string; phone: string; email: string }[]
     : [];
 
   return (
@@ -231,6 +245,36 @@ export default function RequirementDetailPage() {
                         </p>
                       </div>
                     )}
+                    {(req as TenantReq).depositBudget && (
+                      <div>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Deposit Budget</p>
+                        <p className="text-sm font-semibold text-gray-900 mt-0.5">₹{(req as TenantReq).depositBudget!.toLocaleString()}</p>
+                      </div>
+                    )}
+                    {[
+                      ["Lease Duration", (req as TenantReq).leaseDuration && `${(req as TenantReq).leaseDuration} months`],
+                      ["Lock-in Period", (req as TenantReq).lockInPeriod && `${(req as TenantReq).lockInPeriod} months`],
+                      ["Move-in Date", (req as TenantReq).moveInDate && new Date((req as TenantReq).moveInDate!).toLocaleDateString()],
+                      ["Sub-type", (req as TenantReq).propertySubtype],
+                      ["Furnishing", (req as TenantReq).furnishing],
+                      ["Operational Requirements", (req as TenantReq).operationalReqs],
+                      ["Car Parks Required", (req as TenantReq).carParksRequired],
+                      ["Floor Preference", (req as TenantReq).floorPreference],
+                      ["Property Sharing", (req as TenantReq).propertySharing],
+                      ["Flooring Type", (req as TenantReq).flooringType],
+                      ["Type of Facility", (req as TenantReq).facilityGrade],
+                      ["Power Connection Level", (req as TenantReq).powerConnectionLevel],
+                      ["Age of Property", (req as TenantReq).propertyAgePreference],
+                      ["Direction Facing", (req as TenantReq).directionFacing],
+                      ["Ownership Preference", (req as TenantReq).entityType],
+                      ["Payment Breakup", (req as TenantReq).paymentBreakup],
+                      ["Brokerage Agreed", (req as TenantReq).brokeragePct && `${(req as TenantReq).brokeragePct}%`],
+                    ].filter(([, v]) => v).map(([label, value]) => (
+                      <div key={label as string}>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{label}</p>
+                        <p className="text-sm font-semibold text-gray-900 mt-0.5">{value}</p>
+                      </div>
+                    ))}
                   </>
                 )}
 
@@ -252,6 +296,30 @@ export default function RequirementDetailPage() {
                       <span key={l} className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-lg">
                         <MapPin className="w-3 h-3" />{l}
                       </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {amenities.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5">Amenities Expected</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {amenities.map(a => (
+                      <span key={a} className="text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded-lg">{a}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {additionalContacts.length > 0 && (
+                <div className="mt-3 border-t border-gray-100 pt-3">
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1.5">Additional Contact Persons</p>
+                  <div className="space-y-1">
+                    {additionalContacts.map((c, i) => (
+                      <p key={i} className="text-sm text-gray-700">
+                        {c.name}{c.phone && ` · ${c.phone}`}{c.email && ` · ${c.email}`}
+                      </p>
                     ))}
                   </div>
                 </div>

@@ -61,7 +61,7 @@ export default async function ProjectsPage() {
       orderBy: { scheduledAt: "desc" },
       take: 100,
       select: {
-        id: true, visitNumber: true, status: true, scheduledAt: true, notes: true,
+        id: true, visitNumber: true, status: true, scheduledAt: true, notes: true, segment: true,
         contact: { select: { id: true, name: true, type: true } },
         project: { select: { id: true, title: true } },
       },

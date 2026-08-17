@@ -65,7 +65,7 @@ export default async function NewProposalPage() {
       },
     });
 
-    redirect(`/projects?tab=Proposals`);
+    redirect(`/proposals/${proposal.id}`);
   }
 
   return (

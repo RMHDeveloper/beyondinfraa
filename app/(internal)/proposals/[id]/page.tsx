@@ -5,9 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft, FileText, Loader2, Check, ChevronDown,
-  Building2, Users, Handshake, MapPin, ExternalLink,
+  Building2, Users, Handshake, MapPin, ExternalLink, Send, Paperclip,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import FilesTab from "@/components/project/FilesTab";
 
 type ProposalItem = {
   id: string;
@@ -34,7 +35,7 @@ type Proposal = {
   buyerRequirement: { reqNumber: string } | null;
   tenantRequirement: { reqNumber: string } | null;
   items: ProposalItem[];
-  siteVisits: { id: string; visitNumber: string; scheduledAt: string; status: string; contact: { name: string } }[];
+  siteVisits: { id: string; visitNumber: string; scheduledAt: string; status: string; contact: { name: string } | null }[];
   negotiations: { id: string; status: string; contact: { name: string }; rounds: { id: string; offerAmount: number | null; offerBy: string }[] }[];
 };
 
@@ -96,6 +97,16 @@ export default function ProposalDetailPage() {
     await fetch(`/api/proposals/${id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
+    });
+    await load();
+    setStatusSaving(false);
+  }
+
+  async function sendProposal() {
+    setStatusSaving(true);
+    await fetch(`/api/proposals/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "SENT", sentAt: new Date().toISOString() }),
     });
     await load();
     setStatusSaving(false);
@@ -167,6 +178,21 @@ export default function ProposalDetailPage() {
       {/* Body */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
 
+        {/* Draft review banner */}
+        {proposal.status === "DRAFT" && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-sm font-bold text-amber-800">This proposal is still a draft</p>
+              <p className="text-xs text-amber-700 mt-0.5">Review the details below, then send it.</p>
+            </div>
+            <button onClick={sendProposal} disabled={statusSaving}
+              className="flex items-center gap-1.5 bg-amber-600 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-colors flex-shrink-0">
+              {statusSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+              Send Proposal
+            </button>
+          </div>
+        )}
+
         {/* Contact + meta card */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-start gap-4">
           <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center font-bold text-pink-600 flex-shrink-0 text-sm">
@@ -187,6 +213,14 @@ export default function ProposalDetailPage() {
               </p>
             )}
           </div>
+        </div>
+
+        {/* Attachments */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3 flex items-center gap-1.5">
+            <Paperclip className="w-3.5 h-3.5" /> Attachments
+          </p>
+          <FilesTab apiBase={`/api/proposals/${id}/files`} readOnly={false} />
         </div>
 
         {/* Introduction / Remarks */}
@@ -288,7 +322,7 @@ export default function ProposalDetailPage() {
               {proposal.siteVisits.map(v => (
                 <div key={v.id} className="px-4 py-3 flex items-center gap-3">
                   <span className="font-mono text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{v.visitNumber}</span>
-                  <span className="text-xs text-gray-700 flex-1">{v.contact.name}</span>
+                  <span className="text-xs text-gray-700 flex-1">{v.contact?.name ?? "—"}</span>
                   <span className="text-[10px] text-gray-400">
                     {new Date(v.scheduledAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                   </span>

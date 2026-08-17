@@ -3,6 +3,10 @@ import Link from "next/link";
 import { MapPin, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const SEGMENT_LABELS: Record<string, string> = {
+  BUY: "Buy", SELL: "Sell", RENT: "Rent", REDEVELOPMENT: "Redevelopment", JV: "JV",
+};
+
 export const dynamic = "force-dynamic";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -18,6 +22,7 @@ export default async function SiteVisitsPage() {
     include: {
       contact: { select: { id: true, name: true } },
       project: { select: { id: true, title: true, projectNumber: true } },
+      category: { select: { id: true, name: true } },
     },
   });
 
@@ -70,7 +75,7 @@ export default async function SiteVisitsPage() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
-                  {["Visit #", "Property", "Contact", "Scheduled", "Location", "Notes", "Status"].map((h) => (
+                  {["Visit #", "Property", "Contact", "Category", "Segment", "Scheduled", "Location", "Map", "Notes", "Status"].map((h) => (
                     <th key={h} className="text-left px-4 py-3 font-semibold text-[10px] uppercase tracking-wider text-gray-400">{h}</th>
                   ))}
                 </tr>
@@ -80,14 +85,31 @@ export default async function SiteVisitsPage() {
                   <tr key={v.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 font-mono text-[10px] text-gray-400">{v.visitNumber}</td>
                     <td className="px-4 py-3">
-                      <Link href={`/projects/${v.project.id}`} className="font-semibold text-gray-900 hover:text-blue-600 block">{v.project.title}</Link>
-                      <p className="text-[10px] text-gray-400 font-mono">{v.project.projectNumber}</p>
+                      {v.project ? (
+                        <>
+                          <Link href={`/projects/${v.project.id}`} className="font-semibold text-gray-900 hover:text-blue-600 block">{v.project.title}</Link>
+                          <p className="text-[10px] text-gray-400 font-mono">{v.project.projectNumber}</p>
+                        </>
+                      ) : (
+                        <span className="text-gray-300">—</span>
+                      )}
                     </td>
-                    <td className="px-4 py-3 font-semibold text-gray-700">{v.contact.name}</td>
+                    <td className="px-4 py-3 font-semibold text-gray-700">{v.contact?.name ?? <span className="text-gray-300 font-normal">—</span>}</td>
+                    <td className="px-4 py-3 text-gray-500">{v.category?.name ?? "—"}</td>
+                    <td className="px-4 py-3 text-gray-500">{v.segment ? SEGMENT_LABELS[v.segment] : "—"}</td>
                     <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
                       {new Date(v.scheduledAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </td>
                     <td className="px-4 py-3 text-gray-500">{v.location ?? "—"}</td>
+                    <td className="px-4 py-3">
+                      {v.mapsLink ? (
+                        <a href={v.mapsLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
+                          <MapPin className="w-3.5 h-3.5" />
+                        </a>
+                      ) : (
+                        <span className="text-gray-300">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-gray-400 max-w-[160px] truncate">{v.notes ?? "—"}</td>
                     <td className="px-4 py-3">
                       <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase", STATUS_COLORS[v.status] ?? "bg-gray-100 text-gray-500")}>

@@ -2,9 +2,12 @@ import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
 import { apiError } from "@/lib/utils";
-import { getObject, deleteObject } from "@/lib/storage";
+import { readFile, unlink } from "fs/promises";
+import path from "path";
 
 export const dynamic = "force-dynamic";
+
+const UPLOAD_DIR = path.join(process.cwd(), "uploads", "proposals");
 
 export async function GET(
   _: NextRequest,
@@ -13,14 +16,15 @@ export async function GET(
   await requireSession();
   const { fileId } = await params;
 
-  const file = await db.projectFile.findUnique({ where: { id: fileId } });
+  const file = await db.proposalFile.findUnique({ where: { id: fileId } });
   if (!file) return apiError("Not found", 404);
 
+  const filePath = path.join(UPLOAD_DIR, file.storagePath);
   let buffer: Buffer;
   try {
-    buffer = await getObject(file.storagePath);
+    buffer = await readFile(filePath);
   } catch {
-    return apiError("File not found in storage", 404);
+    return apiError("File not found on disk", 404);
   }
 
   return new Response(new Uint8Array(buffer), {
@@ -38,21 +42,21 @@ export async function DELETE(
   const session = await requireSession();
   const { id, fileId } = await params;
 
-  const file = await db.projectFile.findUnique({ where: { id: fileId } });
+  const file = await db.proposalFile.findUnique({ where: { id: fileId } });
   if (!file) return apiError("Not found", 404);
 
-  await deleteObject(file.storagePath);
+  const filePath = path.join(UPLOAD_DIR, file.storagePath);
+  try { await unlink(filePath); } catch { /* file may already be gone */ }
 
-  await db.projectFile.delete({ where: { id: fileId } });
+  await db.proposalFile.delete({ where: { id: fileId } });
 
   await db.auditLog.create({
     data: {
-      projectId: id,
       userId: session.id,
       action: "FILE_DELETE",
-      entityType: "file",
+      entityType: "proposal_file",
       entityId: fileId,
-      before: { fileName: file.originalName } as import("@prisma/client").Prisma.InputJsonValue,
+      before: { proposalId: id, fileName: file.originalName } as import("@prisma/client").Prisma.InputJsonValue,
     },
   });
 

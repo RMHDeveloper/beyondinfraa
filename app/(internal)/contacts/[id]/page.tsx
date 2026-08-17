@@ -236,9 +236,13 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
               {contact.siteVisits.map((sv) => (
                 <div key={sv.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 text-xs">
                   <span className="font-mono text-gray-400">{sv.visitNumber}</span>
-                  <Link href={`/projects/${sv.project.id}`} className="font-semibold text-gray-700 hover:text-blue-600 truncate min-w-0">
-                    {sv.project.title}
-                  </Link>
+                  {sv.project ? (
+                    <Link href={`/projects/${sv.project.id}`} className="font-semibold text-gray-700 hover:text-blue-600 truncate min-w-0">
+                      {sv.project.title}
+                    </Link>
+                  ) : (
+                    <span className="text-gray-400 truncate min-w-0">No property linked</span>
+                  )}
                   <span className="text-gray-400 ml-auto flex-shrink-0">
                     {new Date(sv.scheduledAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                   </span>
