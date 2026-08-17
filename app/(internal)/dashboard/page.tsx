@@ -32,11 +32,14 @@ type DashboardData = {
   negByCatMap: Record<string, number>;
 };
 
+// "Redevelopment" is a sidebar/dashboard sector label, but the underlying Category
+// record is actually named "Special Projects" (it has Redevelopment + Joint Venture
+// subcategories) — catKey is what the real category.name-keyed data is looked up by.
 const SECTORS = [
-  { key: "Residential",   icon: Home,      color: "#2563eb", bg: "#eff6ff", sub: "Apartments · Villas · Plots" },
-  { key: "Commercial",    icon: Briefcase, color: "#d97706", bg: "#fffbeb", sub: "Offices · Retail · Warehouses" },
-  { key: "Industrial",    icon: Factory,   color: "#7c3aed", bg: "#f5f3ff", sub: "Factories · Logistics · Land" },
-  { key: "Redevelopment", icon: RefreshCw, color: "#0d9488", bg: "#f0fdfa", sub: "Owner Register · Developer Matching" },
+  { key: "Residential",   catKey: "Residential",      icon: Home,      color: "#2563eb", bg: "#eff6ff", sub: "Apartments · Villas · Plots" },
+  { key: "Commercial",    catKey: "Commercial",       icon: Briefcase, color: "#d97706", bg: "#fffbeb", sub: "Offices · Retail · Warehouses" },
+  { key: "Industrial",    catKey: "Industrial",       icon: Factory,   color: "#7c3aed", bg: "#f5f3ff", sub: "Factories · Logistics · Land" },
+  { key: "Redevelopment", catKey: "Special Projects", icon: RefreshCw, color: "#0d9488", bg: "#f0fdfa", sub: "Owner Register · Developer Matching" },
 ];
 
 export default function DashboardPage() {
@@ -97,12 +100,12 @@ export default function DashboardPage() {
 
         {/* Sector cards */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          {SECTORS.map(({ key, icon: Icon, color, bg, sub }) => {
-            const propCount = data.catCounts[key] ?? 0;
-            const buyerReqs = data.buyerByCatMap[key] ?? 0;
-            const tenantReqs = data.tenantByCatMap[key] ?? 0;
-            const matches    = data.matchByCatMap[key] ?? 0;
-            const negs       = data.negByCatMap[key] ?? 0;
+          {SECTORS.map(({ key, catKey, icon: Icon, color, bg, sub }) => {
+            const propCount = data.catCounts[catKey] ?? 0;
+            const buyerReqs = data.buyerByCatMap[catKey] ?? 0;
+            const tenantReqs = data.tenantByCatMap[catKey] ?? 0;
+            const matches    = data.matchByCatMap[catKey] ?? 0;
+            const negs       = data.negByCatMap[catKey] ?? 0;
             return (
               <div key={key} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                 <div className="px-4 pt-4 pb-3 flex items-start justify-between">
@@ -157,8 +160,8 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {SECTORS.map(({ key, color, bg }) => {
-              const propCount = data.catCounts[key] ?? 0;
+            {SECTORS.map(({ key, catKey, color, bg }) => {
+              const propCount = data.catCounts[catKey] ?? 0;
               return (
                 <div key={key} className="rounded-lg px-4 py-3" style={{ background: "rgba(255,255,255,0.07)" }}>
                   <span className="w-2 h-2 rounded-full inline-block mb-2" style={{ background: color }} />

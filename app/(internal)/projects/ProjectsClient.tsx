@@ -83,7 +83,11 @@ const SECTOR_COLORS: Record<string, { color: string; bg: string }> = {
   Commercial:    { color: "#d97706", bg: "#fffbeb" },
   Industrial:    { color: "#7c3aed", bg: "#f5f3ff" },
   Redevelopment: { color: "#0d9488", bg: "#f0fdfa" },
+  "Special Projects": { color: "#0d9488", bg: "#f0fdfa" },
 };
+// The "Redevelopment" sector shown in nav/filters maps to the real Category name
+// "Special Projects" (which holds the Redevelopment + Joint Venture subcategories).
+const SECTOR_TO_CATEGORY: Record<string, string> = { Redevelopment: "Special Projects" };
 const TX_COLORS: Record<string, { color: string; bg: string }> = {
   Sale:          { color: "#2563eb", bg: "#eff6ff" },
   Rent:          { color: "#d97706", bg: "#fffbeb" },
@@ -154,7 +158,7 @@ export default function ProjectsClient({
     router.replace(`/projects?${params.toString()}`, { scroll: false });
   }
 
-  const catFiltered = catParam === "All" ? projects : projects.filter((p) => p.category.name === catParam);
+  const catFiltered = catParam === "All" ? projects : projects.filter((p) => p.category.name === (SECTOR_TO_CATEGORY[catParam] ?? catParam));
   const filteredProjects = catFiltered.filter((p) => {
     if (txFilter === "For Sale") return p.subcategory.name.includes("Sale") || p.subcategory.name.includes("Buy");
     if (txFilter === "For Rent") return p.subcategory.name.includes("Rent");

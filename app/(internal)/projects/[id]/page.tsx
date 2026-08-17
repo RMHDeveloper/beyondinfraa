@@ -51,7 +51,7 @@ type ScoreBreakdown = {
 // ─── Constants ────────────────────────────────────────────────────────────────
 const SECTOR_COLORS: Record<string, string> = {
   Residential: "#2563eb", Commercial: "#d97706",
-  Industrial: "#7c3aed", Redevelopment: "#0d9488",
+  Industrial: "#7c3aed", Redevelopment: "#0d9488", "Special Projects": "#0d9488",
 };
 
 const BASE_TABS = [
