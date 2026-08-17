@@ -61,7 +61,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     db.developer.findMany({
       where: { isActive: true },
       orderBy: { createdAt: "asc" },
-      select: { id: true, contact: { select: { id: true, name: true } } },
+      select: {
+        id: true, reraNumber: true, preferredLocations: true, preferredProjectSize: true,
+        completedProjects: true, ongoingProjects: true, financialCapability: true, internalRating: true,
+        contact: { select: { id: true, name: true } },
+      },
     }),
   ]);
 

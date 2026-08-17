@@ -65,7 +65,8 @@ const REDEVELOPMENT_TABS = [...BASE_TABS, "Developers & Proposals", "Closure"];
 
 function getDetailTabs(categoryName: string, subcategoryName: string) {
   const isRedevelopment = categoryName === "Special Projects" ||
-    subcategoryName === "Joint Venture" || subcategoryName === "Redevelopment";
+    subcategoryName === "Joint Venture" || subcategoryName === "Redevelopment" ||
+    (categoryName === "Land" && subcategoryName === "Sale");
   return isRedevelopment ? REDEVELOPMENT_TABS : BASE_TABS;
 }
 
@@ -1528,6 +1529,52 @@ export default function ProjectDetailPage() {
                     </button>
                   </div>
                 </div>
+
+                {/* ── Potential Partners browser ── */}
+                {!addDevForm && (() => {
+                  const proposedDevIds = new Set(devProposals.map((dp: any) => dp.developerId));
+                  const potentialDevs = availableDevs.filter((d: any) => !proposedDevIds.has(d.id));
+                  if (availableDevs.length === 0) return (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-700">
+                      No developer profiles in the system yet. <a href="/contacts/new" className="font-bold underline">Add a Contact</a> with type <strong>Developer</strong> — their RERA number, preferred locations, project size, and rating can be captured there and they'll show up here as a potential partner.
+                    </div>
+                  );
+                  if (potentialDevs.length === 0) return null;
+                  return (
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Potential Partners ({potentialDevs.length})</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {potentialDevs.map((d: any) => {
+                          const locations = Array.isArray(d.preferredLocations) ? d.preferredLocations.join(", ") : null;
+                          return (
+                            <div key={d.id} className="bg-white border border-gray-200 rounded-xl p-3 flex flex-col gap-1.5">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-gray-900 text-sm truncate">{d.contact.name}</p>
+                                  {d.reraNumber && <p className="text-[10px] text-gray-400 font-mono">{d.reraNumber}</p>}
+                                </div>
+                                {d.internalRating != null && (
+                                  <span className="flex-shrink-0 text-[10px] font-bold bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded">★ {d.internalRating}/5</span>
+                                )}
+                              </div>
+                              <div className="text-[10px] text-gray-500 space-y-0.5">
+                                {locations && <p>📍 {locations}</p>}
+                                {d.preferredProjectSize && <p>📐 {d.preferredProjectSize}</p>}
+                                {d.financialCapability && <p>💰 {d.financialCapability}</p>}
+                                <p>{d.completedProjects ?? 0} completed · {d.ongoingProjects ?? 0} ongoing</p>
+                              </div>
+                              <button
+                                onClick={() => { setDevForm(p => ({ ...p, developerId: d.id })); setEditingDevId(null); setAddDevForm(true); }}
+                                className="mt-1 self-start text-[10px] font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-lg hover:bg-purple-100">
+                                + Add as Potential Partner
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* ── Comparison table ── */}
                 {devCompareMode && devProposals.length > 0 && (
