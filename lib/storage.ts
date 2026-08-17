@@ -1,34 +1,38 @@
-const SUPABASE_URL = process.env.SUPABASE_URL!;
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const BUCKET = "project-files";
-
-function objectUrl(path: string) {
-  return `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`;
-}
+const STORAGE_URL = process.env.HOSTINGER_STORAGE_URL!; // e.g. https://yourdomain.com/property-management-app/storage.php
+const STORAGE_KEY = process.env.HOSTINGER_STORAGE_KEY!;
+const APP_ORIGIN = process.env.VERCEL ? "https://beyondinfraa-k9zk.vercel.app" : "http://localhost:3000";
 
 function authHeaders(extra?: Record<string, string>) {
-  return {
-    Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-    apikey: SERVICE_ROLE_KEY,
-    ...extra,
-  };
+  return { "X-Api-Key": STORAGE_KEY, "X-App-Origin": APP_ORIGIN, ...extra };
 }
 
 export async function uploadObject(path: string, buffer: Buffer, mimeType: string) {
-  const res = await fetch(objectUrl(path), {
+  const fd = new FormData();
+  fd.append("path", path);
+  fd.append("file", new Blob([new Uint8Array(buffer)], { type: mimeType }), path.split("/").pop());
+
+  const res = await fetch(`${STORAGE_URL}?action=upload`, {
     method: "POST",
-    headers: authHeaders({ "Content-Type": mimeType, "x-upsert": "true" }),
-    body: new Uint8Array(buffer),
+    headers: authHeaders(),
+    body: fd,
   });
   if (!res.ok) throw new Error(`Storage upload failed: ${res.status} ${await res.text()}`);
 }
 
 export async function getObject(path: string): Promise<Buffer> {
-  const res = await fetch(objectUrl(path), { headers: authHeaders() });
+  const res = await fetch(`${STORAGE_URL}?action=get&path=${encodeURIComponent(path)}`, {
+    headers: authHeaders(),
+  });
   if (!res.ok) throw new Error(`Storage download failed: ${res.status}`);
   return Buffer.from(await res.arrayBuffer());
 }
 
 export async function deleteObject(path: string) {
-  await fetch(objectUrl(path), { method: "DELETE", headers: authHeaders() });
+  const fd = new FormData();
+  fd.append("path", path);
+  await fetch(`${STORAGE_URL}?action=delete`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: fd,
+  });
 }
