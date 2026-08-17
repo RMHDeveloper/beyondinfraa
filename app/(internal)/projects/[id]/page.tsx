@@ -6,7 +6,7 @@ import {
   Lock, Unlock, Check, Loader2,
   AlertCircle, Download, Printer,
   TrendingUp, Plus, Handshake, Users, Building2,
-  Pencil, Share2, ChevronDown,
+  Pencil, Share2, ChevronDown, Copy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import FieldRenderer from "@/components/project/FieldRenderer";
@@ -496,6 +496,7 @@ export default function ProjectDetailPage() {
   const [localValues, setLocalValues]   = useState<Record<string, string>>({});
   const [localJsonValues, setLocalJsonValues] = useState<Record<string, unknown>>({});
   const [stateLoading, setStateLoading] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   const [activeTab, setActiveTab]       = useState(() => {
     if (typeof window === "undefined") return "Project Overview";
     return new URLSearchParams(window.location.search).get("tab") ?? "Project Overview";
@@ -776,6 +777,16 @@ export default function ProjectDetailPage() {
     setStateLoading(false);
   }
 
+  async function duplicateProject() {
+    if (!confirm("Create a duplicate of this property with all its current field values?")) return;
+    setDuplicating(true);
+    const res = await fetch(`/api/projects/${id}/duplicate`, { method: "POST" });
+    setDuplicating(false);
+    if (!res.ok) { alert("Failed to duplicate property"); return; }
+    const created = await res.json();
+    router.push(`/projects/${created.id}`);
+  }
+
   if (loading) return <div className="flex items-center justify-center h-full text-sm text-gray-400">Loading…</div>;
   if (!project) return <div className="p-4 sm:p-8 text-red-500 text-sm">Project not found.</div>;
 
@@ -874,6 +885,12 @@ export default function ProjectDetailPage() {
 
         {/* Actions */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
+          <button onClick={duplicateProject} disabled={duplicating}
+            title="Create a copy of this property with all field values"
+            className="flex items-center gap-1 text-[10px] font-bold border border-gray-200 text-gray-600 px-2 py-1 rounded hover:bg-gray-50 transition-colors disabled:opacity-50">
+            <Copy className="w-3 h-3" /> {duplicating ? "Duplicating…" : "Duplicate"}
+          </button>
+
           {/* Share to client */}
           <div className="relative">
             <button onClick={() => setShowPortal(v => !v)}
@@ -1106,7 +1123,7 @@ export default function ProjectDetailPage() {
                       <div className="px-4 py-4 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 border-t" style={{ borderColor: col.border + "20" }}>
                         {tg.group.questions.map(q => {
                           if (!isVisible(q)) return null;
-                          const isWide = q.fieldType === "TEXTAREA";
+                          const isWide = q.fieldType === "TEXTAREA" || q.fieldType === "REPEATER";
                           return (
                             <div key={q.id} className={cn(isWide && "col-span-2")}>
                               <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">

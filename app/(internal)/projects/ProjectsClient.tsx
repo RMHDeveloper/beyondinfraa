@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   Plus, Printer,
   Building2, Users, FileText, MapPin, TrendingUp, Handshake,
-  CheckCircle2, Target, Send, Eye, ThumbsUp, ThumbsDown, RefreshCw, Loader2,
+  CheckCircle2, Target, Send, Eye, ThumbsUp, ThumbsDown, RefreshCw, Loader2, Copy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -145,6 +145,19 @@ export default function ProjectsClient({
   const [activeTab, setActiveTab] = useState<SubTab>("Available Properties");
   const [txFilter, setTxFilter] = useState<"All" | "For Sale" | "For Rent">("All");
   const [reqCatFilter, setReqCatFilter] = useState("All");
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+
+  async function duplicateProject(e: React.MouseEvent, projectId: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm("Create a duplicate of this property with all its current field values?")) return;
+    setDuplicatingId(projectId);
+    const res = await fetch(`/api/projects/${projectId}/duplicate`, { method: "POST" });
+    setDuplicatingId(null);
+    if (!res.ok) { alert("Failed to duplicate property"); return; }
+    const created = await res.json();
+    router.push(`/projects/${created.id}`);
+  }
 
   useEffect(() => {
     const t = sp.get("tab") as SubTab | null;
@@ -268,7 +281,7 @@ export default function ProjectsClient({
               <table className="w-full text-xs">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
-                    {["ID", "Name / Property", "Sub-type", "Transaction", "Score", "Owner", "Status", "Availability"].map((h) => (
+                    {["ID", "Name / Property", "Sub-type", "Transaction", "Score", "Owner", "Status", "Availability", ""].map((h) => (
                       <th key={h} className="text-left px-4 py-3 font-semibold text-[10px] uppercase tracking-wider text-gray-400">{h}</th>
                     ))}
                   </tr>
@@ -328,11 +341,17 @@ export default function ProjectsClient({
                             {p.state === "OPEN" ? "Available" : p.state === "LOCKED" ? "Reserved" : "Closed"}
                           </span>
                         </td>
+                        <td className="px-4 py-3">
+                          <button onClick={(e) => duplicateProject(e, p.id)} disabled={duplicatingId === p.id}
+                            title="Duplicate this property" className="text-gray-300 hover:text-blue-600 disabled:opacity-50">
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
                       </tr>
                     );
                   })}
                   {filteredProjects.length === 0 && (
-                    <tr><td colSpan={8} className="px-4 py-12 text-center text-gray-400">
+                    <tr><td colSpan={9} className="px-4 py-12 text-center text-gray-400">
                       No properties yet.{" "}
                       <Link href="/projects/new" className="text-blue-600 font-medium hover:underline">Add your first property</Link>
                     </td></tr>
