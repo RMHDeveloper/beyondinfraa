@@ -68,18 +68,9 @@ export default function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
 
       {/* Desktop: single row */}
       <div className="hidden md:flex items-center h-12 px-6 gap-4 min-w-0">
-        {/* Search */}
-        <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-          <input
-            placeholder="Search properties, leads, or tasks…"
-            className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:bg-white transition-colors"
-          />
-        </div>
-
-        {/* Tabs */}
-        <nav className="flex items-center gap-0 flex-1 justify-center">
-          {TABS.map((tab) => (
+        {/* Left tabs */}
+        <nav className="flex items-center gap-0 flex-1 justify-start">
+          {TABS.slice(0, 2).map((tab) => (
             <Link
               key={tab.label}
               href={tab.href}
@@ -95,21 +86,48 @@ export default function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
           ))}
         </nav>
 
-        {/* Right actions */}
+        {/* Center: search + create */}
         <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="relative w-64">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <input
+              placeholder="Search properties, leads, or tasks…"
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:bg-white transition-colors"
+            />
+          </div>
+          <Link
+            href="/projects/new"
+            className="flex items-center gap-1.5 bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors whitespace-nowrap"
+          >
+            <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+            New Entry
+          </Link>
+        </div>
+
+        {/* Right tabs + actions */}
+        <div className="flex items-center gap-2 flex-1 justify-end">
+          <nav className="flex items-center gap-0">
+            {TABS.slice(2).map((tab) => (
+              <Link
+                key={tab.label}
+                href={tab.href}
+                className={cn(
+                  "px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap",
+                  tabActive(tab)
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300"
+                )}
+              >
+                {tab.label}
+              </Link>
+            ))}
+          </nav>
           <button className="relative p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors">
             <Bell className="w-4 h-4" strokeWidth={1.75} />
           </button>
           <button className="p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors">
             <Settings className="w-4 h-4" strokeWidth={1.75} />
           </button>
-          <Link
-            href="/projects/new"
-            className="flex items-center gap-1.5 bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
-            New Entry
-          </Link>
         </div>
       </div>
     </header>

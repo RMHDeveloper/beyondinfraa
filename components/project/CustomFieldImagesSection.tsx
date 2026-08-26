@@ -62,7 +62,7 @@ export default function CustomFieldImagesSection({
   return (
     <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Custom Field</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Print Photo</p>
         {!readOnly && (
           <>
             <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} />
@@ -80,16 +80,19 @@ export default function CustomFieldImagesSection({
 
       {images.length === 0 ? (
         <p className="text-sm text-gray-400 py-2">
-          No images uploaded. Images uploaded here are auto-labeled as {slugify(projectTitle)}1.jpg, {slugify(projectTitle)}2.jpg, etc.
+          No photo uploaded. The first image uploaded here is used as this property&apos;s photo on the print/PDF view. Auto-labeled as {slugify(projectTitle)}1.jpg, {slugify(projectTitle)}2.jpg, etc.
         </p>
       ) : (
         <div className="space-y-2">
-          {images.map((f) => (
+          {images.map((f, i) => (
             <div key={f.id} className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg group">
               <img src={`${apiBase}/${f.id}`} alt={f.originalName} className="w-10 h-10 object-cover rounded flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">{f.originalName}</p>
-                <p className="text-xs text-gray-400">{formatBytes(f.sizeBytes)} · {new Date(f.uploadedAt).toLocaleDateString()}</p>
+                <p className="text-xs text-gray-400">
+                  {formatBytes(f.sizeBytes)} · {new Date(f.uploadedAt).toLocaleDateString()}
+                  {i === 0 && <span className="ml-2 text-blue-600 font-semibold">Used in print</span>}
+                </p>
               </div>
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <a href={`${apiBase}/${f.id}`} download={f.originalName} className="p-1.5 text-gray-400 hover:text-gray-900 rounded">
