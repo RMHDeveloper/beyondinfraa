@@ -14,11 +14,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const kindParam = req.nextUrl.searchParams.get("kind");
   const kind = kindParam === "GALLERY_IMAGE" ? FileKind.GALLERY_IMAGE
     : kindParam === "CUSTOM_FIELD_IMAGE" ? FileKind.CUSTOM_FIELD_IMAGE
+    : kindParam === "PRINT_IMAGE" ? FileKind.PRINT_IMAGE
     : kindParam === "DOCUMENT" ? FileKind.DOCUMENT : undefined;
 
+  const sortedKinds: FileKind[] = [FileKind.GALLERY_IMAGE, FileKind.CUSTOM_FIELD_IMAGE, FileKind.PRINT_IMAGE];
   const files = await db.projectFile.findMany({
     where: { projectId: id, ...(kind ? { kind } : {}) },
-    orderBy: kind === FileKind.GALLERY_IMAGE || kind === FileKind.CUSTOM_FIELD_IMAGE ? { sortOrder: "asc" } : { uploadedAt: "desc" },
+    orderBy: kind && sortedKinds.includes(kind) ? { sortOrder: "asc" } : { uploadedAt: "desc" },
   });
   return Response.json(files);
 }
@@ -38,6 +40,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const kindRaw = formData.get("kind");
   const kind = kindRaw === "GALLERY_IMAGE" ? FileKind.GALLERY_IMAGE
     : kindRaw === "CUSTOM_FIELD_IMAGE" ? FileKind.CUSTOM_FIELD_IMAGE
+    : kindRaw === "PRINT_IMAGE" ? FileKind.PRINT_IMAGE
     : FileKind.DOCUMENT;
 
   if (!file) return apiError("No file provided");
@@ -50,7 +53,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const storagePath = `${id}/${fileName}`;
   await uploadObject(storagePath, buffer, file.type);
 
-  const sortOrder = kind === FileKind.GALLERY_IMAGE || kind === FileKind.CUSTOM_FIELD_IMAGE
+  const sortOrder = kind === FileKind.GALLERY_IMAGE || kind === FileKind.CUSTOM_FIELD_IMAGE || kind === FileKind.PRINT_IMAGE
     ? await db.projectFile.count({ where: { projectId: id, kind } })
     : 0;
 

@@ -18,6 +18,7 @@ import FollowUpsTab from "@/components/project/FollowUpsTab";
 import AuditTab from "@/components/project/AuditTab";
 import CustomFieldsSection from "@/components/CustomFieldsSection";
 import CustomFieldImagesSection from "@/components/project/CustomFieldImagesSection";
+import PrintImageSection from "@/components/project/PrintImageSection";
 import FindRequirementsPanel from "@/components/project/FindRequirementsPanel";
 import CreatePptModal from "@/components/project/CreatePptModal";
 import ProjectPrintView from "@/components/project/ProjectPrintView";
@@ -526,7 +527,7 @@ export default function ProjectDetailPage() {
 
   function refreshPrintPhoto() {
     if (!id) return;
-    fetch(`/api/projects/${id}/files?kind=CUSTOM_FIELD_IMAGE`)
+    fetch(`/api/projects/${id}/files?kind=PRINT_IMAGE`)
       .then((r) => r.json())
       .then((imgs: { id: string }[]) => setPrintPhotoUrl(imgs[0] ? `/api/projects/${id}/files/${imgs[0].id}` : null))
       .catch(() => setPrintPhotoUrl(null));
@@ -1133,6 +1134,11 @@ export default function ProjectDetailPage() {
               <CustomFieldImagesSection
                 apiBase={`/api/projects/${id}/files`}
                 projectTitle={project.title}
+                readOnly={readOnly}
+              />
+
+              <PrintImageSection
+                apiBase={`/api/projects/${id}/files`}
                 readOnly={readOnly}
                 onChange={refreshPrintPhoto}
               />

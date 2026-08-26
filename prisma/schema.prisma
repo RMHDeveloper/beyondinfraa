@@ -419,6 +419,7 @@ enum FileKind {
   DOCUMENT
   GALLERY_IMAGE
   CUSTOM_FIELD_IMAGE
+  PRINT_IMAGE
 }
 
 model ProjectFile {
