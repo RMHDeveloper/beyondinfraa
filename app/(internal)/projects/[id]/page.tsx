@@ -1131,18 +1131,6 @@ export default function ProjectDetailPage() {
                 />
               </div>
 
-              <CustomFieldImagesSection
-                apiBase={`/api/projects/${id}/files`}
-                projectTitle={project.title}
-                readOnly={readOnly}
-              />
-
-              <PrintImageSection
-                apiBase={`/api/projects/${id}/files`}
-                readOnly={readOnly}
-                onChange={refreshPrintPhoto}
-              />
-
               {project.template.groups.map((tg, gi) => {
                 const visibleQs = tg.group.questions.filter(q => isVisible(q));
                 const isOpen = !!expandedGroups[tg.id];
@@ -1238,6 +1226,18 @@ export default function ProjectDetailPage() {
                   </div>
                 );
               })}
+
+              <CustomFieldImagesSection
+                apiBase={`/api/projects/${id}/files`}
+                projectTitle={project.title}
+                readOnly={readOnly}
+              />
+
+              <PrintImageSection
+                apiBase={`/api/projects/${id}/files`}
+                readOnly={readOnly}
+                onChange={refreshPrintPhoto}
+              />
             </div>
           )}
 
