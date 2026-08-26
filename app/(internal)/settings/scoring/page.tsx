@@ -17,9 +17,11 @@ type Rule = {
 };
 
 const PROFILES = [
-  { slug: "selling-buying",   label: "Selling / Buying" },
-  { slug: "special-projects", label: "Special Projects / Redevelopment" },
-  { slug: "rental",           label: "Rental / Lease" },
+  { slug: "selling-buying", label: "Selling / Buying" },
+  { slug: "rental",         label: "Rental / Lease" },
+  { slug: "land-sale",      label: "Land Sale" },
+  { slug: "joint-venture",  label: "Joint Venture" },
+  { slug: "redevelopment",  label: "Redevelopment" },
 ];
 
 const BLANK: Omit<Rule, "id"> = {

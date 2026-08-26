@@ -12,11 +12,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   await requireSession();
   const { id } = await params;
   const kindParam = req.nextUrl.searchParams.get("kind");
-  const kind = kindParam === "GALLERY_IMAGE" ? FileKind.GALLERY_IMAGE : kindParam === "DOCUMENT" ? FileKind.DOCUMENT : undefined;
+  const kind = kindParam === "GALLERY_IMAGE" ? FileKind.GALLERY_IMAGE
+    : kindParam === "CUSTOM_FIELD_IMAGE" ? FileKind.CUSTOM_FIELD_IMAGE
+    : kindParam === "DOCUMENT" ? FileKind.DOCUMENT : undefined;
 
   const files = await db.projectFile.findMany({
     where: { projectId: id, ...(kind ? { kind } : {}) },
-    orderBy: kind === FileKind.GALLERY_IMAGE ? { sortOrder: "asc" } : { uploadedAt: "desc" },
+    orderBy: kind === FileKind.GALLERY_IMAGE || kind === FileKind.CUSTOM_FIELD_IMAGE ? { sortOrder: "asc" } : { uploadedAt: "desc" },
   });
   return Response.json(files);
 }
@@ -32,7 +34,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
   const questionId = formData.get("questionId") as string | null;
-  const kind = formData.get("kind") === "GALLERY_IMAGE" ? FileKind.GALLERY_IMAGE : FileKind.DOCUMENT;
+  const category = formData.get("category") as string | null;
+  const kindRaw = formData.get("kind");
+  const kind = kindRaw === "GALLERY_IMAGE" ? FileKind.GALLERY_IMAGE
+    : kindRaw === "CUSTOM_FIELD_IMAGE" ? FileKind.CUSTOM_FIELD_IMAGE
+    : FileKind.DOCUMENT;
 
   if (!file) return apiError("No file provided");
 
@@ -44,8 +50,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const storagePath = `${id}/${fileName}`;
   await uploadObject(storagePath, buffer, file.type);
 
-  const sortOrder = kind === FileKind.GALLERY_IMAGE
-    ? await db.projectFile.count({ where: { projectId: id, kind: FileKind.GALLERY_IMAGE } })
+  const sortOrder = kind === FileKind.GALLERY_IMAGE || kind === FileKind.CUSTOM_FIELD_IMAGE
+    ? await db.projectFile.count({ where: { projectId: id, kind } })
     : 0;
 
   const record = await db.projectFile.create({
@@ -58,6 +64,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       sizeBytes: buffer.length,
       storagePath,
       kind,
+      category: kind === FileKind.DOCUMENT ? (category || null) : null,
       sortOrder,
       uploadedBy: session.id,
     },

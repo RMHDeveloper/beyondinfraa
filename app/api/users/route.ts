@@ -2,6 +2,16 @@ import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 
+export async function GET() {
+  await requireSession();
+  const users = await db.user.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true, role: true },
+    orderBy: { name: "asc" },
+  });
+  return Response.json(users);
+}
+
 export async function POST(req: Request) {
   const session = await requireSession();
   if (session.role !== "SUPER_ADMIN") {

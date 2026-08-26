@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   Lock, Unlock, Check, Loader2,
-  AlertCircle, Download, Printer,
+  AlertCircle, Printer, Presentation,
   TrendingUp, Plus, Handshake, Users, Building2,
   Pencil, Share2, ChevronDown, Copy,
 } from "lucide-react";
@@ -17,7 +17,10 @@ import NotesTab from "@/components/project/NotesTab";
 import FollowUpsTab from "@/components/project/FollowUpsTab";
 import AuditTab from "@/components/project/AuditTab";
 import CustomFieldsSection from "@/components/CustomFieldsSection";
+import CustomFieldImagesSection from "@/components/project/CustomFieldImagesSection";
 import FindRequirementsPanel from "@/components/project/FindRequirementsPanel";
+import CreatePptModal from "@/components/project/CreatePptModal";
+import ProjectPrintView from "@/components/project/ProjectPrintView";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Question = {
@@ -507,6 +510,29 @@ export default function ProjectDetailPage() {
     return new URLSearchParams(window.location.search).get("tab") ?? "Project Overview";
   });
   const [globalEdit, setGlobalEdit]     = useState(false);
+  const [showExportPpt, setShowExportPpt] = useState(false);
+  const [exportPptImages, setExportPptImages] = useState<{ id: string; originalName: string; sizeBytes: number; uploadedAt: string }[] | null>(null);
+  const [printPhotoUrl, setPrintPhotoUrl] = useState<string | null>(null);
+
+  async function openExportPpt() {
+    const [galleryRes, customRes] = await Promise.all([
+      fetch(`/api/projects/${id}/files?kind=GALLERY_IMAGE`),
+      fetch(`/api/projects/${id}/files?kind=CUSTOM_FIELD_IMAGE`),
+    ]);
+    const [gallery, custom] = await Promise.all([galleryRes.json(), customRes.json()]);
+    setExportPptImages([...gallery, ...custom]);
+    setShowExportPpt(true);
+  }
+
+  function refreshPrintPhoto() {
+    if (!id) return;
+    fetch(`/api/projects/${id}/files?kind=CUSTOM_FIELD_IMAGE`)
+      .then((r) => r.json())
+      .then((imgs: { id: string }[]) => setPrintPhotoUrl(imgs[0] ? `/api/projects/${id}/files/${imgs[0].id}` : null))
+      .catch(() => setPrintPhotoUrl(null));
+  }
+
+  useEffect(refreshPrintPhoto, [id]);
 
   // Re-sync the active tab when navigating here (even to the same route) with a ?tab= param,
   // e.g. clicking "Open Negotiation Log" from a Proposal card while this page is already mounted.
@@ -797,7 +823,8 @@ export default function ProjectDetailPage() {
 
   const isLocked   = project.state === "LOCKED";
   const isArchived = project.state === "ARCHIVED";
-  const readOnly   = isLocked || isArchived;
+  // Lock only freezes the client-facing portal link — staff can keep editing internally.
+  const readOnly   = isArchived;
   const sectorColor = SECTOR_COLORS[project.category.name] ?? "#64748b";
 
   const allQs = project.template.groups.flatMap(tg => tg.group.questions.filter(q => !q.autoCalcJson));
@@ -994,10 +1021,16 @@ export default function ProjectDetailPage() {
 
         {/* Main form area — full width, drawer overlays on top */}
         <div className="flex-1 overflow-y-auto">
-          {readOnly && (
+          {isArchived && (
             <div className="mx-4 mt-3 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">
               <Lock className="w-3.5 h-3.5 flex-shrink-0" />
-              {isArchived ? "This project is archived — read only." : "This project is locked. Unlock to edit."}
+              This project is archived — read only.
+            </div>
+          )}
+          {isLocked && !isArchived && (
+            <div className="mx-4 mt-3 flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">
+              <Lock className="w-3.5 h-3.5 flex-shrink-0" />
+              This project is locked for the client — the shared client portal link is read-only. You can still edit it here internally.
             </div>
           )}
 
@@ -1192,6 +1225,13 @@ export default function ProjectDetailPage() {
                   </div>
                 );
               })}
+
+              <CustomFieldImagesSection
+                apiBase={`/api/projects/${id}/files`}
+                projectTitle={project.title}
+                readOnly={readOnly}
+                onChange={refreshPrintPhoto}
+              />
             </div>
           )}
 
@@ -1836,10 +1876,10 @@ export default function ProjectDetailPage() {
           <button onClick={() => window.print()} className="flex items-center gap-1 border border-gray-200 text-gray-600 text-xs font-medium px-2.5 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
             <Printer className="w-3 h-3" /> Print
           </button>
-          <a href={`/api/projects/${id}/export`} download
+          <button onClick={openExportPpt}
             className="flex items-center gap-1 border border-gray-200 text-gray-600 text-xs font-medium px-2.5 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
-            <Download className="w-3 h-3" /> Export PDF
-          </a>
+            <Presentation className="w-3 h-3" /> Export PPT
+          </button>
           <button onClick={() => router.back()}
             className="border border-gray-200 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
             Cancel
@@ -1852,6 +1892,17 @@ export default function ProjectDetailPage() {
           </button>
         </div>
       </div>
+
+      {showExportPpt && exportPptImages && (
+        <CreatePptModal
+          projectId={id}
+          apiBase={`/api/projects/${id}/files`}
+          images={exportPptImages}
+          onClose={() => setShowExportPpt(false)}
+        />
+      )}
+
+      <ProjectPrintView project={project} localValues={localValues} photoUrl={printPhotoUrl} />
     </div>
   );
 }

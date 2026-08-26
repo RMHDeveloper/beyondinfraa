@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, FileText, Check } from "lucide-react";
+import { ArrowLeft, FileText, Check, Presentation, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import CreateMultiProjectPptModal, { type ProjectImageGroup } from "@/components/project/CreateMultiProjectPptModal";
 
 type Contact  = { id: string; name: string; type: string };
 type ReqItem  = { id: string; reqNumber: string; contact: Contact; category: { name: string } };
@@ -23,11 +24,27 @@ export default function NewProposalForm({
 }) {
   const [reqType, setReqType] = useState<"buyer" | "tenant">("buyer");
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const [pptGroups, setPptGroups] = useState<ProjectImageGroup[] | null>(null);
+  const [loadingPpt, setLoadingPpt] = useState(false);
 
   function toggleProject(id: string) {
     setSelectedProjects((prev) =>
       prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
     );
+  }
+
+  async function openExportPpt() {
+    setLoadingPpt(true);
+    const results = await Promise.all(
+      selectedProjects.map(async (projectId) => {
+        const res = await fetch(`/api/projects/${projectId}/files?kind=GALLERY_IMAGE`);
+        const images = await res.json();
+        const project = projects.find((p) => p.id === projectId);
+        return { projectId, projectTitle: project?.title ?? "Property", images };
+      })
+    );
+    setPptGroups(results.filter((g) => g.images.length > 0));
+    setLoadingPpt(false);
   }
 
   const reqs = reqType === "buyer" ? buyerReqs : tenantReqs;
@@ -104,9 +121,18 @@ export default function NewProposalForm({
 
           {/* Property selection */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-              Select Properties * ({selectedProjects.length} selected)
-            </p>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                Select Properties * ({selectedProjects.length} selected)
+              </p>
+              {selectedProjects.length > 0 && (
+                <button type="button" onClick={openExportPpt} disabled={loadingPpt}
+                  className="flex items-center gap-1.5 text-xs font-medium bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                  {loadingPpt ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Presentation className="w-3.5 h-3.5" />}
+                  {loadingPpt ? "Loading images…" : "Export PPT"}
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-1 gap-2 max-h-80 overflow-y-auto pr-1">
               {projects.map((p) => {
                 const selected = selectedProjects.includes(p.id);
@@ -152,6 +178,24 @@ export default function NewProposalForm({
           </div>
         </form>
       </div>
+
+      {pptGroups && (
+        pptGroups.length === 0 ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/50" onClick={() => setPptGroups(null)} />
+            <div className="relative bg-white rounded-xl shadow-xl p-6 max-w-sm text-center">
+              <p className="text-sm text-gray-700 mb-4">None of the selected properties have any Gallery images uploaded yet.</p>
+              <button onClick={() => setPptGroups(null)} className="text-sm font-bold text-blue-600 hover:underline">Close</button>
+            </div>
+          </div>
+        ) : (
+          <CreateMultiProjectPptModal
+            groups={pptGroups}
+            apiBaseFor={(projectId) => `/api/projects/${projectId}/files`}
+            onClose={() => setPptGroups(null)}
+          />
+        )
+      )}
     </div>
   );
 }

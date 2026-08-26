@@ -6,8 +6,10 @@ import { cn } from "@/lib/utils";
 
 type ProjectFile = {
   id: string; fileName: string; originalName: string;
-  mimeType: string; sizeBytes: number; uploadedAt: string;
+  mimeType: string; sizeBytes: number; uploadedAt: string; category: string | null;
 };
+
+const DOC_CATEGORIES = ["Legal", "Financial", "Agreement", "KYC/ID Proof", "Marketing", "Other"];
 
 function formatBytes(b: number) {
   if (b < 1024) return `${b} B`;
@@ -18,6 +20,7 @@ function formatBytes(b: number) {
 export default function FilesTab({ apiBase, readOnly }: { apiBase: string; readOnly: boolean }) {
   const [files, setFiles] = useState<ProjectFile[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [category, setCategory] = useState(DOC_CATEGORIES[0]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function load() {
@@ -33,6 +36,7 @@ export default function FilesTab({ apiBase, readOnly }: { apiBase: string; readO
     setUploading(true);
     const fd = new FormData();
     fd.append("file", file);
+    fd.append("category", category);
     await fetch(apiBase, { method: "POST", body: fd });
     await load();
     setUploading(false);
@@ -48,7 +52,14 @@ export default function FilesTab({ apiBase, readOnly }: { apiBase: string; readO
   return (
     <div>
       {!readOnly && (
-        <div className="mb-4">
+        <div className="mb-4 flex items-center gap-2">
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="border border-gray-300 rounded-lg px-2.5 py-2 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-900"
+          >
+            {DOC_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
           <input ref={inputRef} type="file" className="hidden" onChange={handleUpload} />
           <button
             onClick={() => inputRef.current?.click()}
@@ -69,7 +80,14 @@ export default function FilesTab({ apiBase, readOnly }: { apiBase: string; readO
             <div key={f.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg group">
               <FileText className="w-5 h-5 text-gray-400 flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{f.originalName}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-gray-900 truncate">{f.originalName}</p>
+                  {f.category && (
+                    <span className="flex-shrink-0 text-[10px] font-semibold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                      {f.category}
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-400">{formatBytes(f.sizeBytes)} · {new Date(f.uploadedAt).toLocaleDateString()}</p>
               </div>
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -42,12 +42,21 @@ const SECTORS = [
   { key: "Redevelopment", catKey: "Special Projects", icon: RefreshCw, color: "#0d9488", bg: "#f0fdfa", sub: "Owner Register · Developer Matching" },
 ];
 
+type EmployeeOption = { id: string; name: string; role: string };
+
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
+  const [employees, setEmployees] = useState<EmployeeOption[]>([]);
+  const [employeeId, setEmployeeId] = useState("");
 
   useEffect(() => {
-    fetch("/api/dashboard").then((r) => r.json()).then(setData);
+    fetch("/api/users").then((r) => r.json()).then(setEmployees);
   }, []);
+
+  useEffect(() => {
+    const qs = employeeId ? `?employeeId=${employeeId}` : "";
+    fetch(`/api/dashboard${qs}`).then((r) => r.json()).then(setData);
+  }, [employeeId]);
 
   if (!data) {
     return (
@@ -61,9 +70,21 @@ export default function DashboardPage() {
 
   return (
     <div className="overflow-y-auto h-full bg-gray-50">
-      <div className="px-4 sm:px-8 pt-6 pb-2">
-        <p className="text-xs text-gray-400">ERP System › Main Dashboard</p>
-        <h1 className="text-2xl font-bold text-gray-900 mt-0.5">Operations Overview</h1>
+      <div className="px-4 sm:px-8 pt-6 pb-2 flex items-end justify-between flex-wrap gap-2">
+        <div>
+          <p className="text-xs text-gray-400">ERP System › Main Dashboard</p>
+          <h1 className="text-2xl font-bold text-gray-900 mt-0.5">Operations Overview</h1>
+        </div>
+        <select
+          value={employeeId}
+          onChange={(e) => setEmployeeId(e.target.value)}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+        >
+          <option value="">Credit: All Employees</option>
+          {employees.map((e) => (
+            <option key={e.id} value={e.id}>Credit: {e.name}</option>
+          ))}
+        </select>
       </div>
 
       <div className="px-4 sm:px-8 pb-8 space-y-5">

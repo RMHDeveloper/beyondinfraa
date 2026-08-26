@@ -3,24 +3,40 @@
 import { useState, useRef } from "react";
 import { X, ChevronLeft, ChevronRight, Loader2, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { GalleryImage } from "./GalleryTab";
 
-export default function CreatePptModal({
-  projectId, apiBase, images, onClose,
+export type ProjectImageGroup = {
+  projectId: string;
+  projectTitle: string;
+  images: { id: string; originalName: string }[];
+};
+
+type Pick = { projectId: string; imageId: string };
+
+export default function CreateMultiProjectPptModal({
+  groups, apiBaseFor, onClose,
 }: {
-  projectId: string; apiBase: string; images: GalleryImage[]; onClose: () => void;
+  groups: ProjectImageGroup[];
+  apiBaseFor: (projectId: string) => string;
+  onClose: () => void;
 }) {
-  const [selected, setSelected] = useState<string[]>(images.map((i) => i.id));
+  const allPicks: Pick[] = groups.flatMap((g) => g.images.map((i) => ({ projectId: g.projectId, imageId: i.id })));
+  const [selected, setSelected] = useState<Pick[]>(allPicks);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [converting, setConverting] = useState(false);
   const dragIndex = useRef<number | null>(null);
 
-  const byId = new Map(images.map((i) => [i.id, i]));
+  const titleById = new Map(groups.map((g) => [g.projectId, g.projectTitle]));
+  const nameById = new Map(groups.flatMap((g) => g.images.map((i) => [i.id, i.originalName] as const)));
+  const key = (p: Pick) => `${p.projectId}:${p.imageId}`;
+  const selectedKeys = new Set(selected.map(key));
+
   const slideCount = selected.length + 2; // cover + N images + thank-you
   const clampedIndex = Math.min(previewIndex, slideCount - 1);
 
-  function toggle(id: string) {
-    setSelected((cur) => cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]);
+  function toggle(pick: Pick) {
+    setSelected((cur) =>
+      cur.some((p) => key(p) === key(pick)) ? cur.filter((p) => key(p) !== key(pick)) : [...cur, pick]
+    );
   }
 
   function handleDrop(targetIndex: number) {
@@ -39,10 +55,10 @@ export default function CreatePptModal({
     if (selected.length === 0) return;
     setConverting(true);
     try {
-      const res = await fetch(`/api/projects/${projectId}/marketing-ppt`, {
+      const res = await fetch(`/api/proposals/marketing-ppt`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageIds: selected }),
+        body: JSON.stringify({ items: selected }),
       });
       if (!res.ok) throw new Error("Generation failed");
       const blob = await res.blob();
@@ -69,21 +85,26 @@ export default function CreatePptModal({
     if (clampedIndex === slideCount - 1) {
       return <img src="/ppt-template/thankyou.png" alt="Thank you slide" className="w-full h-full object-cover" />;
     }
-    const imgId = selected[clampedIndex - 1];
-    const img = byId.get(imgId);
+    const pick = selected[clampedIndex - 1];
+    const src = pick ? `${apiBaseFor(pick.projectId)}/${pick.imageId}` : "";
     return (
       <div className="relative w-full h-full bg-white overflow-hidden">
-        {img && (
-          <img src={`${apiBase}/${imgId}`} alt="" aria-hidden
+        {pick && (
+          <img src={src} alt="" aria-hidden
             className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl brightness-75" />
         )}
-        {img && <img src={`${apiBase}/${imgId}`} alt={img.originalName} className="absolute inset-0 w-full h-full object-contain" />}
+        {pick && <img src={src} alt="" className="absolute inset-0 w-full h-full object-contain" />}
         <div className="absolute inset-0 bg-white/10" />
         <div className="absolute inset-x-0 bottom-0 h-[22%]" style={{ background: "linear-gradient(to bottom, transparent, rgba(255,255,255,0.75))" }} />
         <div className="absolute right-0 top-0 w-[45%] h-[18%]" style={{ background: "linear-gradient(to left, rgba(255,255,255,0.8), transparent)" }} />
         <img src="/ppt-template/logo-icon.png" alt="" className="absolute left-[2.5%] bottom-[12%] w-[9%]" />
         <div className="absolute right-[3%] top-[6%] text-[9px] tracking-widest text-gray-600">www.beyondinfra.com</div>
         <div className="absolute left-[9%] right-[6%] bottom-[6%] h-px bg-gray-600" />
+        {pick && (
+          <div className="absolute left-[2.5%] top-[6%] text-[10px] font-semibold bg-black/40 text-white px-2 py-1 rounded">
+            {titleById.get(pick.projectId)}
+          </div>
+        )}
       </div>
     );
   }
@@ -93,57 +114,63 @@ export default function CreatePptModal({
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200">
-          <h2 className="text-sm font-bold text-gray-900">Create Presentation</h2>
+          <h2 className="text-sm font-bold text-gray-900">Create Presentation — Selected Properties</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         <div className="flex-1 flex overflow-hidden">
-          {/* Left: image picker + order */}
+          {/* Left: image picker + order, grouped by property */}
           <div className="w-1/2 border-r border-gray-200 overflow-y-auto p-4">
             <p className="text-xs font-semibold text-gray-500 mb-2">SELECT &amp; ORDER IMAGES</p>
             <div className="space-y-1.5">
-              {selected.map((id, i) => {
-                const img = byId.get(id);
-                if (!img) return null;
-                return (
-                  <div
-                    key={id}
-                    draggable
-                    onDragStart={() => { dragIndex.current = i; }}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={() => handleDrop(i)}
-                    className="flex items-center gap-2 p-1.5 bg-blue-50 border border-blue-200 rounded-lg cursor-move"
-                  >
-                    <GripVertical className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                    <span className="text-[10px] font-bold text-blue-700 w-4">{i + 1}</span>
-                    <img src={`${apiBase}/${id}`} alt={img.originalName} className="w-8 h-8 object-cover rounded flex-shrink-0" />
-                    <span className="text-xs text-gray-700 truncate flex-1">{img.originalName}</span>
-                    <button onClick={() => toggle(id)} className="text-gray-400 hover:text-red-500 flex-shrink-0">
-                      <X className="w-3.5 h-3.5" />
-                    </button>
+              {selected.map((pick, i) => (
+                <div
+                  key={key(pick)}
+                  draggable
+                  onDragStart={() => { dragIndex.current = i; }}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => handleDrop(i)}
+                  className="flex items-center gap-2 p-1.5 bg-blue-50 border border-blue-200 rounded-lg cursor-move"
+                >
+                  <GripVertical className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                  <span className="text-[10px] font-bold text-blue-700 w-4">{i + 1}</span>
+                  <img src={`${apiBaseFor(pick.projectId)}/${pick.imageId}`} alt="" className="w-8 h-8 object-cover rounded flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-gray-700 truncate">{nameById.get(pick.imageId)}</p>
+                    <p className="text-[10px] text-gray-400 truncate">{titleById.get(pick.projectId)}</p>
                   </div>
-                );
-              })}
+                  <button onClick={() => toggle(pick)} className="text-gray-400 hover:text-red-500 flex-shrink-0">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+              {selected.length === 0 && (
+                <p className="text-xs text-gray-400 py-4 text-center">No images selected.</p>
+              )}
             </div>
 
-            {images.some((i) => !selected.includes(i.id)) && (
-              <>
-                <p className="text-xs font-semibold text-gray-400 mt-4 mb-2">NOT INCLUDED</p>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {images.filter((i) => !selected.includes(i.id)).map((img) => (
-                    <button
-                      key={img.id}
-                      onClick={() => toggle(img.id)}
-                      className="relative rounded overflow-hidden border border-gray-200 opacity-50 hover:opacity-100 transition-opacity"
-                    >
-                      <img src={`${apiBase}/${img.id}`} alt={img.originalName} className="w-full h-14 object-cover" />
-                    </button>
-                  ))}
+            {groups.map((g) => {
+              const remaining = g.images.filter((img) => !selectedKeys.has(key({ projectId: g.projectId, imageId: img.id })));
+              if (remaining.length === 0) return null;
+              return (
+                <div key={g.projectId} className="mt-4">
+                  <p className="text-xs font-semibold text-gray-400 mb-2">NOT INCLUDED — {g.projectTitle}</p>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {remaining.map((img) => (
+                      <button
+                        key={img.id}
+                        onClick={() => toggle({ projectId: g.projectId, imageId: img.id })}
+                        className="relative rounded overflow-hidden border border-gray-200 opacity-50 hover:opacity-100 transition-opacity"
+                      >
+                        <img src={`${apiBaseFor(g.projectId)}/${img.id}`} alt={img.originalName} className="w-full h-14 object-cover" />
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </>
-            )}
+              );
+            })}
           </div>
 
           {/* Right: preview, with slide navigation on the preview itself */}

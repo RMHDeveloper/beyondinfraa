@@ -13,12 +13,20 @@ export default function GalleryTab({ projectId, apiBase, readOnly }: { projectId
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [uploading, setUploading] = useState(false);
   const [showPptModal, setShowPptModal] = useState(false);
+  const [pptImages, setPptImages] = useState<GalleryImage[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const dragIndex = useRef<number | null>(null);
 
   async function load() {
     const res = await fetch(`${apiBase}?kind=GALLERY_IMAGE`);
     setImages(await res.json());
+  }
+
+  async function openPptModal() {
+    const res = await fetch(`${apiBase}?kind=CUSTOM_FIELD_IMAGE`);
+    const custom: GalleryImage[] = await res.json();
+    setPptImages([...images, ...custom]);
+    setShowPptModal(true);
   }
 
   useEffect(() => { load(); }, [apiBase]);
@@ -76,14 +84,12 @@ export default function GalleryTab({ projectId, apiBase, readOnly }: { projectId
             {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
             {uploading ? "Uploading…" : "Upload Images"}
           </button>
-          {images.length > 0 && (
-            <button
-              onClick={() => setShowPptModal(true)}
-              className="flex items-center gap-2 text-sm font-medium bg-blue-600 text-white px-3.5 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Presentation className="w-4 h-4" /> Create PPT
-            </button>
-          )}
+          <button
+            onClick={openPptModal}
+            className="flex items-center gap-2 text-sm font-medium bg-blue-600 text-white px-3.5 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Presentation className="w-4 h-4" /> Create PPT
+          </button>
         </div>
       )}
 
@@ -127,7 +133,7 @@ export default function GalleryTab({ projectId, apiBase, readOnly }: { projectId
         <CreatePptModal
           projectId={projectId}
           apiBase={apiBase}
-          images={images}
+          images={pptImages}
           onClose={() => setShowPptModal(false)}
         />
       )}

@@ -5,6 +5,7 @@ const tabs = [
   { href: "/settings/templates",  label: "Templates" },
   { href: "/settings/statuses",   label: "Statuses & Tags" },
   { href: "/settings/scoring",    label: "Scoring Rules" },
+  { href: "/settings/ppt-template", label: "PPT Template" },
   { href: "/settings/app",        label: "App Settings" },
 ];
 

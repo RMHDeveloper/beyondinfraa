@@ -418,6 +418,7 @@ model Response {
 enum FileKind {
   DOCUMENT
   GALLERY_IMAGE
+  CUSTOM_FIELD_IMAGE
 }
 
 model ProjectFile {
@@ -430,6 +431,7 @@ model ProjectFile {
   sizeBytes    Int
   storagePath  String
   kind         FileKind @default(DOCUMENT)
+  category     String?  // Document classification (DOCUMENT kind only), e.g. "Legal", "Financial"
   sortOrder    Int      @default(0)
   uploadedBy   String?
   uploadedAt   DateTime @default(now())

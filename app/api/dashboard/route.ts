@@ -3,8 +3,10 @@ import { requireSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
   await requireSession();
+  const employeeId = new URL(req.url).searchParams.get("employeeId") || undefined;
+  const projectWhere = employeeId ? { assigneeId: employeeId } : {};
 
   const [
     totalProjects,
@@ -23,11 +25,12 @@ export async function GET() {
     activeNegotiations,
     pipelineValue,
   ] = await Promise.all([
-    db.project.count(),
-    db.project.groupBy({ by: ["state"], _count: { id: true } }),
-    db.project.groupBy({ by: ["categoryId"], _count: { id: true } }),
-    db.project.groupBy({ by: ["statusId"], _count: { id: true } }),
+    db.project.count({ where: projectWhere }),
+    db.project.groupBy({ by: ["state"], _count: { id: true }, where: projectWhere }),
+    db.project.groupBy({ by: ["categoryId"], _count: { id: true }, where: projectWhere }),
+    db.project.groupBy({ by: ["statusId"], _count: { id: true }, where: projectWhere }),
     db.project.findMany({
+      where: projectWhere,
       orderBy: { createdAt: "desc" },
       take: 5,
       select: {
@@ -65,12 +68,13 @@ export async function GET() {
     db.$queryRaw<{ categoryId: string; cnt: bigint }[]>`
       SELECT p."categoryId", COUNT(*)::bigint AS cnt
       FROM matches m JOIN projects p ON p.id = m."projectId"
+      WHERE ${employeeId ?? null}::text IS NULL OR p."assigneeId" = ${employeeId ?? null}
       GROUP BY p."categoryId"
     `,
     db.$queryRaw<{ categoryId: string; cnt: bigint }[]>`
       SELECT p."categoryId", COUNT(*)::bigint AS cnt
       FROM negotiations n JOIN projects p ON p.id = n."projectId"
-      WHERE n.status = 'ACTIVE'
+      WHERE n.status = 'ACTIVE' AND (${employeeId ?? null}::text IS NULL OR p."assigneeId" = ${employeeId ?? null})
       GROUP BY p."categoryId"
     `,
   ]);
