@@ -36,7 +36,9 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // In production, send via SMS. Dev: return in response.
-  const isDev = process.env.NODE_ENV !== "production";
-  return Response.json({ ok: true, ...(isDev ? { otp } : {}) });
+  // No real SMS delivery is wired up (Firebase isn't configured), so when the
+  // fixed dev-bypass OTP is in use, return it directly -- otherwise there'd be
+  // no way to know the code at all. If a real OTP provider is added later,
+  // gate this back to dev-only.
+  return Response.json({ ok: true, ...(process.env.OTP_DEV_BYPASS ? { otp } : {}) });
 }
