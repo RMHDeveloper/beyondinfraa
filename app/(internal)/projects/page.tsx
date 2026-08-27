@@ -4,7 +4,7 @@ import ProjectsClient from "./ProjectsClient";
 export const dynamic = "force-dynamic";
 
 export default async function ProjectsPage() {
-  const [projects, buyerReqs, tenantReqs, contacts, categories, matches, proposals, siteVisits, negotiations, deals] = await Promise.all([
+  const [projects, buyerReqs, tenantReqs, contacts, categories, matches, proposals, siteVisits, deals] = await Promise.all([
     db.project.findMany({
       orderBy: { createdAt: "desc" },
       take: 200,
@@ -66,16 +66,6 @@ export default async function ProjectsPage() {
         project: { select: { id: true, title: true } },
       },
     }),
-    db.negotiation.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 100,
-      select: {
-        id: true, status: true, createdAt: true,
-        contact: { select: { id: true, name: true, type: true } },
-        project: { select: { id: true, title: true } },
-        rounds:  { orderBy: { createdAt: "asc" }, take: 20, select: { id: true, createdAt: true, notes: true, offerAmount: true, offerBy: true } },
-      },
-    }),
     db.deal.findMany({
       orderBy: { createdAt: "desc" },
       take: 100,
@@ -97,7 +87,6 @@ export default async function ProjectsPage() {
       matches={matches}
       proposals={proposals}
       siteVisits={siteVisits}
-      negotiations={negotiations}
       deals={deals}
     />
   );

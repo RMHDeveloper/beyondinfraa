@@ -36,16 +36,6 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
           contact: { select: { id: true, name: true } },
         },
       },
-      negotiations: {
-        select: {
-          id: true, status: true, createdAt: true,
-          contact: { select: { id: true, name: true } },
-          rounds: {
-            orderBy: { roundNumber: "asc" },
-            select: { id: true, roundNumber: true, offerBy: true, offerAmount: true, notes: true, createdAt: true },
-          },
-        },
-      },
     },
   });
   if (!proposal) return Response.json({ error: "Not found" }, { status: 404 });

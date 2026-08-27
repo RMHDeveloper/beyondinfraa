@@ -6,10 +6,9 @@ import { Search, Bell, Settings, Plus, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { label: "Overview",     href: "/dashboard",                        match: "/dashboard" },
-  { label: "Matching",     href: "/projects?tab=Matching",            match: "/projects" },
-  { label: "Proposals",    href: "/projects?tab=Proposals",           match: null },
-  { label: "Negotiations", href: "/projects?tab=Negotiations",        match: null },
+  { label: "Overview",  href: "/dashboard",             match: "/dashboard" },
+  { label: "Matching",  href: "/projects?tab=Matching", match: "/projects" },
+  { label: "Proposals", href: "/projects?tab=Proposals", match: null },
 ];
 
 export default function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {

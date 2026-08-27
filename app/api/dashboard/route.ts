@@ -22,7 +22,6 @@ export async function GET(req: Request) {
     totalProposals,
     totalSiteVisits,
     totalDeals,
-    activeNegotiations,
     pipelineValue,
   ] = await Promise.all([
     db.project.count({ where: projectWhere }),
@@ -48,7 +47,6 @@ export async function GET(req: Request) {
     db.proposal.count(),
     db.siteVisit.count(),
     db.deal.count(),
-    db.negotiation.count({ where: { status: "ACTIVE" } }),
     db.buyerRequirement.aggregate({ _sum: { budgetMax: true }, where: { status: { in: ["NEW", "ACTIVE"] } } }),
   ]);
 
@@ -62,7 +60,7 @@ export async function GET(req: Request) {
     byCategory.map((r) => [catMap[r.categoryId] ?? r.categoryId, r._count.id])
   );
 
-  const [buyerByCat, tenantByCat, matchByCatRaw, negByCatRaw] = await Promise.all([
+  const [buyerByCat, tenantByCat, matchByCatRaw] = await Promise.all([
     db.buyerRequirement.groupBy({ by: ["categoryId"], _count: { id: true } }),
     db.tenantRequirement.groupBy({ by: ["categoryId"], _count: { id: true } }),
     db.$queryRaw<{ categoryId: string; cnt: bigint }[]>`
@@ -71,18 +69,11 @@ export async function GET(req: Request) {
       WHERE ${employeeId ?? null}::text IS NULL OR p."assigneeId" = ${employeeId ?? null}
       GROUP BY p."categoryId"
     `,
-    db.$queryRaw<{ categoryId: string; cnt: bigint }[]>`
-      SELECT p."categoryId", COUNT(*)::bigint AS cnt
-      FROM negotiations n JOIN projects p ON p.id = n."projectId"
-      WHERE n.status = 'ACTIVE' AND (${employeeId ?? null}::text IS NULL OR p."assigneeId" = ${employeeId ?? null})
-      GROUP BY p."categoryId"
-    `,
   ]);
 
   const buyerByCatMap  = Object.fromEntries(buyerByCat.map((r) => [catMap[r.categoryId] ?? "", r._count.id]));
   const tenantByCatMap = Object.fromEntries(tenantByCat.map((r) => [catMap[r.categoryId] ?? "", r._count.id]));
   const matchByCatMap  = Object.fromEntries(matchByCatRaw.map((r) => [catMap[r.categoryId] ?? "Unknown", Number(r.cnt)]));
-  const negByCatMap    = Object.fromEntries(negByCatRaw.map((r) => [catMap[r.categoryId] ?? "Unknown", Number(r.cnt)]));
 
   const openCount = byState.find((s) => s.state === "OPEN")?._count.id ?? 0;
 
@@ -108,12 +99,10 @@ export async function GET(req: Request) {
     totalProposals,
     totalSiteVisits,
     totalDeals,
-    activeNegotiations,
     pipelineValue: pipelineValue._sum.budgetMax ?? 0,
     catCounts,
     buyerByCatMap,
     tenantByCatMap,
     matchByCatMap,
-    negByCatMap,
   });
 }

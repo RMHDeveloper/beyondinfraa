@@ -107,21 +107,6 @@ export async function POST() {
     ],
   });
 
-  // ── Contact + Negotiation ────────────────────────────────────────────────────
-  const contact = await db.contact.findFirst({ where: { phone: "9123456780" } })
-    ?? await db.contact.create({ data: { name: "Karthik Buyer", phone: "9123456780", email: "karthik@example.com", type: "BUYER" } });
-
-  const negotiation = await db.negotiation.create({
-    data: { projectId: project.id, contactId: contact.id, status: "ACTIVE" },
-  });
-  await db.negotiationRound.createMany({
-    data: [
-      { negotiationId: negotiation.id, roundNumber: 1, offerBy: "buyer", offerAmount: 7800000, notes: "Initial offer" },
-      { negotiationId: negotiation.id, roundNumber: 2, offerBy: "seller", offerAmount: 8800000, notes: "Counter offer — below guideline value" },
-      { negotiationId: negotiation.id, roundNumber: 3, offerBy: "buyer", offerAmount: 8200000, notes: "Revised offer, including registration charges" },
-    ],
-  });
-
   // ── Meeting log (stored as ProjectNote) ─────────────────────────────────────
   const MEETING_PREFIX = "__meeting__:";
   await db.projectNote.createMany({

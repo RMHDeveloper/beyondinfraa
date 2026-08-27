@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Plus, Printer,
-  Building2, Users, FileText, MapPin, TrendingUp, Handshake,
+  Building2, Users, FileText, MapPin, TrendingUp,
   CheckCircle2, Target, Send, Eye, ThumbsUp, ThumbsDown, RefreshCw, Loader2, Copy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -53,12 +53,6 @@ type SiteVisit = {
   id: string; status: string; notes: string | null; scheduledAt: Date | string; segment: string | null;
   contact: Contact | null; project: { id: string; title: string } | null;
 };
-type NegRound = { id: string; offerAmount: number | null; offerBy: string; notes: string | null; createdAt: Date | string };
-type Negotiation = {
-  id: string; status: string; rounds: NegRound[];
-  contact: Contact; project: { id: string; title: string };
-  createdAt: Date | string;
-};
 type Deal = {
   id: string; type: string; finalPrice: number | null; finalRent: number | null; closureDate: Date | string | null;
   contact: Contact; project: { id: string; title: string; category: Category };
@@ -73,7 +67,6 @@ type Props = {
   matches: Match[];
   proposals: Proposal[];
   siteVisits: SiteVisit[];
-  negotiations: Negotiation[];
   deals: Deal[];
 };
 
@@ -112,10 +105,6 @@ const VISIT_STATUS_COLORS: Record<string, string> = {
 const SEGMENT_LABELS: Record<string, string> = {
   BUY: "Buy", SELL: "Sell", RENT: "Rent", REDEVELOPMENT: "Redevelopment", JV: "JV",
 };
-const NEG_STATUS_COLORS: Record<string, string> = {
-  ACTIVE: "bg-blue-50 text-blue-700", AGREED: "bg-green-50 text-green-700",
-  STALLED: "bg-amber-50 text-amber-700", WITHDRAWN: "bg-red-50 text-red-700",
-};
 const DEAL_TYPE_COLORS: Record<string, string> = {
   SOLD: "bg-blue-50 text-blue-700", RENTED: "bg-amber-50 text-amber-700",
   LEASED: "bg-purple-50 text-purple-700", REDEVELOPMENT_CONFIRMED: "bg-pink-50 text-pink-700",
@@ -124,7 +113,7 @@ const DEAL_TYPE_COLORS: Record<string, string> = {
 
 const SUB_TABS = [
   "Overview", "Available Properties", "Buyer Requirements", "Tenant Requirements",
-  "Matching", "Proposals", "Site Visits", "Negotiations", "Closed Deals",
+  "Matching", "Proposals", "Site Visits", "Closed Deals",
 ] as const;
 type SubTab = typeof SUB_TABS[number];
 
@@ -136,7 +125,7 @@ function fmtDate(d: Date | string | null | undefined) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function ProjectsClient({
   projects, buyerReqs, tenantReqs, contacts, categories,
-  matches, proposals, siteVisits, negotiations, deals,
+  matches, proposals, siteVisits, deals,
 }: Props) {
   const router = useRouter();
 
@@ -573,59 +562,6 @@ export default function ProjectsClient({
           </div>
         )}
 
-        {/* ── NEGOTIATIONS ─────────────────────────────────── */}
-        {activeTab === "Negotiations" && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Handshake className="w-4 h-4 text-teal-600" />
-                <span className="text-sm font-bold text-gray-900">Negotiations</span>
-                <span className="text-xs text-gray-400">({negotiations.length})</span>
-              </div>
-            </div>
-            {negotiations.length === 0 ? (
-              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-                <Handshake className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                <p className="text-sm font-medium text-gray-500">No active negotiations</p>
-                <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
-                  Once a proposal is accepted, open the Property page → Negotiation Log tab to start tracking offer rounds.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {negotiations.map((n) => (
-                  <div key={n.id} className="bg-white rounded-xl border border-gray-200 p-4">
-                    <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
-                      <div>
-                        <p className="font-bold text-gray-900 text-sm">{n.project.title}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">with <span className="font-semibold">{n.contact.name}</span> · started {fmtDate(n.createdAt)}</p>
-                      </div>
-                      <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase", NEG_STATUS_COLORS[n.status] ?? "bg-gray-100 text-gray-500")}>{n.status}</span>
-                    </div>
-                    {n.rounds.length > 0 && (
-                      <div className="border-t border-gray-100 pt-3 space-y-2">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Round History</p>
-                        {n.rounds.map((r, i) => (
-                          <div key={r.id} className="flex items-start gap-3 text-xs">
-                            <span className="w-5 h-5 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center flex-shrink-0 font-bold text-[10px]">{i + 1}</span>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-4">
-                                {r.offerAmount && <span className={cn("font-semibold", r.offerBy === "buyer" ? "text-blue-700" : "text-amber-700")}>{r.offerBy === "buyer" ? "Buyer offer" : "Seller offer"}: ₹{(r.offerAmount / 1e7).toFixed(2)}Cr</span>}
-                                <span className="text-gray-400 ml-auto">{fmtDate(r.createdAt)}</span>
-                              </div>
-                              {r.notes && <p className="text-gray-400 mt-0.5">{r.notes}</p>}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
         {/* ── CLOSED DEALS ─────────────────────────────────── */}
         {activeTab === "Closed Deals" && (
           <div className="space-y-3">
@@ -639,7 +575,7 @@ export default function ProjectsClient({
                 <TrendingUp className="w-10 h-10 text-gray-200 mx-auto mb-3" />
                 <p className="text-sm font-medium text-gray-500">No closed deals yet</p>
                 <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
-                  Close a deal from the Property page → Negotiation Log tab once both parties agree on final price.
+                  Close a deal from the Property page → Closure tab once both parties agree on final price.
                 </p>
               </div>
             ) : (
@@ -847,10 +783,8 @@ const PROPOSAL_STATUS_FLOW = ["DRAFT", "SENT", "VIEWED", "ACCEPTED", "REJECTED"]
 type ProposalStatus = typeof PROPOSAL_STATUS_FLOW[number];
 
 function ProposalCard({ proposal }: { proposal: Proposal }) {
-  const router = useRouter();
   const [status, setStatus] = useState(proposal.status as ProposalStatus);
   const [updating, setUpdating] = useState(false);
-  const [startingNegotiation, setStartingNegotiation] = useState(false);
 
   async function updateStatus(next: ProposalStatus) {
     setUpdating(true);
@@ -861,20 +795,6 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
     });
     setStatus(next);
     setUpdating(false);
-  }
-
-  async function startNegotiation() {
-    const projectId = proposal.items[0]?.project.id;
-    if (!projectId) return;
-    setStartingNegotiation(true);
-    const res = await fetch(`/api/projects/${projectId}/negotiations`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contactId: proposal.contact.id, proposalId: proposal.id }),
-    });
-    setStartingNegotiation(false);
-    if (!res.ok) { alert("Failed to start negotiation"); return; }
-    router.push(`/projects/${projectId}?tab=Negotiation+Log`);
   }
 
   const STATUS_CFG: Record<ProposalStatus, { color: string; bg: string; border: string }> = {
@@ -936,12 +856,6 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
               <ThumbsDown className="w-3 h-3" /> Rejected
             </button>
           </>
-        )}
-        {status === "ACCEPTED" && proposal.items[0] && (
-          <button onClick={startNegotiation} disabled={startingNegotiation}
-            className="flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-50 px-3 py-1.5 rounded-lg hover:bg-green-100 disabled:opacity-50">
-            <Handshake className="w-3 h-3" /> {startingNegotiation ? "Starting…" : "Start Negotiation"}
-          </button>
         )}
         {status === "REJECTED" && (
           <span className="text-[10px] text-gray-400">Revise and create a new proposal for this contact.</span>

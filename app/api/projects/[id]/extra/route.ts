@@ -7,7 +7,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   await requireSession();
   const { id } = await params;
 
-  const [ownerUnits, negotiations, developerProposals, matches, proposals, developers] = await Promise.all([
+  const [ownerUnits, developerProposals, matches, proposals, developers] = await Promise.all([
     db.ownerUnit.findMany({
       where: { projectId: id },
       orderBy: { unitNumber: "asc" },
@@ -15,18 +15,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         id: true, unitNumber: true, ownerName: true, phone: true, email: true,
         existingArea: true, uds: true, occupancyStatus: true, consentStatus: true,
         conditions: true, meetingAttended: true, notes: true,
-      },
-    }),
-    db.negotiation.findMany({
-      where: { projectId: id },
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true, status: true, createdAt: true,
-        contact: { select: { id: true, name: true, phone: true } },
-        rounds: {
-          orderBy: { createdAt: "asc" },
-          select: { id: true, roundNumber: true, offerBy: true, offerAmount: true, notes: true, createdAt: true },
-        },
       },
     }),
     db.developerProposal.findMany({
@@ -69,7 +57,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     }),
   ]);
 
-  return Response.json({ ownerUnits, negotiations, developerProposals, matches, proposals, developers });
+  return Response.json({ ownerUnits, developerProposals, matches, proposals, developers });
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -95,19 +83,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       },
     });
     return Response.json(unit);
-  }
-
-  if (body.type === "negotiationRound") {
-    const round = await db.negotiationRound.create({
-      data: {
-        negotiationId: body.negotiationId,
-        roundNumber:   body.roundNumber,
-        offerBy:       body.offerBy,
-        offerAmount:   body.offerAmount ? parseFloat(body.offerAmount) : null,
-        notes:         body.notes || null,
-      },
-    });
-    return Response.json(round);
   }
 
   if (body.type === "deal") {
@@ -190,14 +165,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       },
     });
     return Response.json(unit);
-  }
-
-  if (body.type === "negotiation") {
-    const negotiation = await db.negotiation.update({
-      where: { id: body.id },
-      data: { status: body.status },
-    });
-    return Response.json(negotiation);
   }
 
   if (body.type === "developerProposal") {

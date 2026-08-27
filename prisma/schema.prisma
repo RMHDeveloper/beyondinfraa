@@ -134,12 +134,6 @@ enum SiteVisitSegment {
   JV
 }
 
-enum NegotiationStatus {
-  ACTIVE
-  AGREED
-  COLLAPSED
-}
-
 enum DealType {
   SOLD
   RENTED
@@ -388,7 +382,6 @@ model Project {
   customFields       ProjectCustomField[]
   proposalProperties ProposalProperty[]
   siteVisits         SiteVisit[]
-  negotiations       Negotiation[]
   deal               Deal?
   developerProposals DeveloperProposal[]
   ownerUnits         OwnerUnit[]
@@ -548,7 +541,6 @@ model Contact {
   tenantRequirements TenantRequirement[]
   proposals          Proposal[]
   siteVisits         SiteVisit[]
-  negotiations       Negotiation[]
   deals              Deal[]
   developerProfile   Developer?
   referredProjects   Project[] @relation("ProjectReferrer")
@@ -719,7 +711,6 @@ model Proposal {
   tenantRequirement TenantRequirement? @relation(fields: [tenantRequirementId], references: [id])
   items             ProposalProperty[]
   siteVisits        SiteVisit[]
-  negotiations      Negotiation[]
   files             ProposalFile[]
 
   @@map("proposals")
@@ -787,47 +778,6 @@ model SiteVisit {
   category Category? @relation(fields: [categoryId], references: [id])
 
   @@map("site_visits")
-}
-
-// ─── Negotiations ─────────────────────────────────────────────────────────────
-
-model Negotiation {
-  id           String            @id @default(cuid())
-  projectId    String
-  contactId    String
-  proposalId   String?
-  status       NegotiationStatus @default(ACTIVE)
-  askingPrice  Float?
-  agreedTerms  Json?
-  notes        String?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-
-  project  Project            @relation(fields: [projectId], references: [id])
-  contact  Contact            @relation(fields: [contactId], references: [id])
-  proposal Proposal?          @relation(fields: [proposalId], references: [id])
-  rounds   NegotiationRound[]
-
-  @@map("negotiations")
-}
-
-model NegotiationRound {
-  id            String   @id @default(cuid())
-  negotiationId String
-  roundNumber   Int
-  offerBy       String   // "buyer" | "seller"
-  offerAmount   Float?
-  deposit       Float?
-  maintenance   Float?
-  leaseTerm     Int?
-  lockIn        Int?
-  brokerage     Float?
-  notes         String?
-  createdAt     DateTime @default(now())
-
-  negotiation Negotiation @relation(fields: [negotiationId], references: [id], onDelete: Cascade)
-
-  @@map("negotiation_rounds")
 }
 
 // ─── Deals ────────────────────────────────────────────────────────────────────

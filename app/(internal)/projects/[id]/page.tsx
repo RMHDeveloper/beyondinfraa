@@ -67,7 +67,7 @@ const SECTOR_COLORS: Record<string, string> = {
 
 const BASE_TABS = [
   "Project Overview", "Find Buyers/Tenants", "Files", "Gallery", "Notes", "Tasks",
-  "Negotiation Log", "Meetings", "Timeline", "Audit",
+  "Meetings", "Timeline", "Audit",
 ];
 const REDEVELOPMENT_TABS = [...BASE_TABS, "Developers & Proposals", "Closure"];
 
