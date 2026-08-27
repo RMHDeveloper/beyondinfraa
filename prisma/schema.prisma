@@ -447,7 +447,7 @@ model ProjectFile {
 model ClientLink {
   id          String    @id @default(cuid())
   projectId   String
-  phone       String
+  phone       String?
   token       String    @unique @default(cuid())
   otp         String?
   otpExpiresAt DateTime?

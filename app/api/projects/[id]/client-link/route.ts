@@ -9,27 +9,26 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await requireSession();
   const { id } = await params;
-  const { phone } = await req.json();
-  if (!phone) return apiError("phone required");
+  const { phone } = await req.json().catch(() => ({ phone: undefined }));
 
   const project = await db.project.findUnique({ where: { id } });
   if (!project) return apiError("Not found", 404);
 
-  // Deactivate existing links for this project
-  await db.clientLink.updateMany({
+  // Reuse an existing active link instead of invalidating it on every click
+  const existing = await db.clientLink.findFirst({
     where: { projectId: id, isActive: true },
-    data: { isActive: false },
+    orderBy: { createdAt: "desc" },
   });
 
-  const link = await db.clientLink.create({
-    data: { projectId: id, phone },
+  const link = existing ?? await db.clientLink.create({
+    data: { projectId: id, phone: phone || null },
   });
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://beyondinfraa-k9zk.vercel.app";
   const url = `${baseUrl}/p/${link.token}`;
 
-  // Send email if client email is on the project
-  if (project.clientEmail) {
+  // Send email only when a new link was actually created, not on every reuse
+  if (!existing && project.clientEmail) {
     sendClientPortalLink(project.clientEmail, project.clientName ?? "", project.title, url).catch(
       (e) => console.error("[mailer] client portal email failed:", e)
     );
