@@ -167,17 +167,17 @@ export default function ClientPortalPage() {
             <input
               type="text"
               inputMode="numeric"
-              maxLength={10}
+              maxLength={6}
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
               placeholder="000000"
               className="w-full border border-gray-300 rounded-lg px-3.5 py-3 text-center text-2xl font-mono tracking-widest focus:outline-none focus:ring-1 focus:ring-gray-900"
-              onKeyDown={(e) => e.key === "Enter" && otp.length > 0 && verifyOtp()}
+              onKeyDown={(e) => e.key === "Enter" && otp.length === 6 && verifyOtp()}
             />
             {error && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
             <button
               onClick={verifyOtp}
-              disabled={otp.length === 0 || loading}
+              disabled={otp.length !== 6 || loading}
               className="w-full py-3 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}

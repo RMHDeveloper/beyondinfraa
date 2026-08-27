@@ -11,9 +11,8 @@ export async function POST(req: NextRequest) {
   const link = await db.clientLink.findUnique({ where: { token } });
   if (!link || !link.isActive) return apiError("Invalid or expired link", 404);
 
-  // No phone-matching restriction -- the link itself is the access control.
-  // Record whichever number verifies so it shows up in the audit trail.
-  if (link.phone !== phone) await db.clientLink.update({ where: { token }, data: { phone } });
+  // Validate phone matches
+  if (link.phone !== phone) return apiError("Phone number does not match", 400);
 
   const otp =
     process.env.OTP_DEV_BYPASS ??
@@ -36,9 +35,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // No real SMS delivery is wired up (Firebase isn't configured), so when the
-  // fixed dev-bypass OTP is in use, return it directly -- otherwise there'd be
-  // no way to know the code at all. If a real OTP provider is added later,
-  // gate this back to dev-only.
-  return Response.json({ ok: true, ...(process.env.OTP_DEV_BYPASS ? { otp } : {}) });
+  // In production, send via SMS. Dev: return in response.
+  const isDev = process.env.NODE_ENV !== "production";
+  return Response.json({ ok: true, ...(isDev ? { otp } : {}) });
 }

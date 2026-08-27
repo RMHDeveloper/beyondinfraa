@@ -581,6 +581,7 @@ export default function ProjectDetailPage() {
   const [statusDropdown, setStatusDropdown] = useState(false);
 
   // Client portal
+  const [clientPhone, setClientPhone] = useState("");
   const [clientLinkUrl, setClientLinkUrl] = useState("");
   const [linkLoading, setLinkLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -645,10 +646,11 @@ export default function ProjectDetailPage() {
   }
 
   async function generateLink() {
+    if (!clientPhone.trim()) return;
     setLinkLoading(true);
     const res = await fetch(`/api/projects/${id}/client-link`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
+      body: JSON.stringify({ phone: clientPhone.trim() }),
     });
     setClientLinkUrl((await res.json()).url);
     setLinkLoading(false);
@@ -930,11 +932,9 @@ export default function ProjectDetailPage() {
           {/* Share to client */}
           <div className="relative">
             <button ref={shareBtnRef} onClick={() => {
-                const opening = !showPortal;
-                if (opening && shareBtnRef.current) {
+                if (!showPortal && shareBtnRef.current) {
                   const r = shareBtnRef.current.getBoundingClientRect();
                   setSharePos({ top: r.bottom + 4, right: window.innerWidth - r.right });
-                  if (!clientLinkUrl) generateLink();
                 }
                 setShowPortal(v => !v);
               }}
@@ -949,12 +949,17 @@ export default function ProjectDetailPage() {
                   className="fixed bg-white border border-gray-200 rounded-xl shadow-lg z-50 p-3 w-64"
                   style={{ top: sharePos.top, right: sharePos.right }}
                 >
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Client Portal Link</p>
-                  {linkLoading || !clientLinkUrl ? (
-                    <div className="flex items-center gap-2 text-xs text-gray-400 py-1.5">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating link…
-                    </div>
-                  ) : (
+                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Send Client Portal Link</p>
+                  <div className="flex gap-1.5 mb-2">
+                    <input value={clientPhone} onChange={e => setClientPhone(e.target.value)}
+                      placeholder="Client phone"
+                      className="flex-1 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                    <button onClick={generateLink} disabled={!clientPhone.trim() || linkLoading}
+                      className="bg-blue-600 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                      {linkLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Send"}
+                    </button>
+                  </div>
+                  {clientLinkUrl && (
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 flex items-center gap-2">
                       <p className="text-[10px] text-gray-600 flex-1 min-w-0 truncate font-mono">{clientLinkUrl}</p>
                       <button onClick={() => { navigator.clipboard.writeText(clientLinkUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
@@ -963,7 +968,6 @@ export default function ProjectDetailPage() {
                       </button>
                     </div>
                   )}
-                  <p className="text-[10px] text-gray-400 mt-2">Works on any device. The customer verifies with an OTP on their own phone.</p>
                 </div>
               </>,
               document.body
