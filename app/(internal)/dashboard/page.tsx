@@ -126,7 +126,7 @@ export default function DashboardPage() {
             const buyerReqs = data.buyerByCatMap[catKey] ?? 0;
             const tenantReqs = data.tenantByCatMap[catKey] ?? 0;
             const matches    = data.matchByCatMap[catKey] ?? 0;
-            const negs       = data.negByCatMap[catKey] ?? 0;
+            const negs       = data.negByCatMap?.[catKey] ?? 0;
             return (
               <div key={key} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                 <div className="px-4 pt-4 pb-3 flex items-start justify-between">
