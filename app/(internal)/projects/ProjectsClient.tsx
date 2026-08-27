@@ -150,6 +150,15 @@ export default function ProjectsClient({
   const [reqCatFilter, setReqCatFilter] = useState("All");
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
 
+  // Browser back/forward can restore this page from Next's router cache with whatever
+  // project list was current when it was cached — e.g. before a project was just
+  // created or duplicated. Force a fresh server fetch every time this page mounts so
+  // returning here (via back button or otherwise) never shows stale data.
+  useEffect(() => {
+    router.refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function duplicateProject(e: React.MouseEvent, projectId: string) {
     e.preventDefault();
     e.stopPropagation();
@@ -159,6 +168,9 @@ export default function ProjectsClient({
     setDuplicatingId(null);
     if (!res.ok) { alert("Failed to duplicate property"); return; }
     const created = await res.json();
+    // Bust the router cache for this list so navigating back here (e.g. to duplicate
+    // the next flat) doesn't show a stale snapshot from before the duplicate existed.
+    router.refresh();
     router.push(`/projects/${created.id}`);
   }
 

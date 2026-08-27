@@ -54,6 +54,34 @@ export async function sendClientPortalLink(to: string, clientName: string, proje
   );
 }
 
+export async function sendSiteVisitReminder(
+  to: string,
+  staffName: string,
+  visitNumber: string,
+  propertyTitle: string,
+  location: string | null,
+  mapsLink: string | null,
+  scheduledAt: Date
+) {
+  await sendEmail(
+    to,
+    `Site Visit Today — ${propertyTitle}`,
+    `
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;color:#1a1a1a">
+      <h2 style="font-size:18px;font-weight:700">Hi ${staffName},</h2>
+      <p style="color:#555;line-height:1.6">
+        You have a site visit scheduled today for <strong>${propertyTitle}</strong> (${visitNumber}):
+      </p>
+      <div style="background:#f5f5f5;border-radius:8px;padding:16px;margin:16px 0">
+        <p style="margin:0;font-weight:600">${scheduledAt.toLocaleString("en-IN", { weekday: "long", hour: "numeric", minute: "2-digit", hour12: true })}</p>
+        ${location ? `<p style="margin:8px 0 0;color:#555">${location}</p>` : ""}
+        ${mapsLink ? `<p style="margin:8px 0 0"><a href="${mapsLink}" style="color:#2563eb">Open location in Google Maps →</a></p>` : ""}
+      </div>
+    </div>
+    `
+  );
+}
+
 export async function sendFollowUpReminder(
   to: string,
   staffName: string,

@@ -11,8 +11,8 @@ export const dynamic = "force-dynamic";
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await requireSession();
   const { id } = await params;
-  const files = await db.proposalFile.findMany({
-    where: { proposalId: id },
+  const files = await db.developerProposalFile.findMany({
+    where: { developerProposalId: id },
     orderBy: { uploadedAt: "desc" },
   });
   return Response.json(files);
@@ -22,8 +22,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const session = await requireSession();
   const { id } = await params;
 
-  const proposal = await db.proposal.findUnique({ where: { id }, select: { id: true } });
-  if (!proposal) return apiError("Not found", 404);
+  const dp = await db.developerProposal.findUnique({ where: { id }, select: { id: true } });
+  if (!dp) return apiError("Not found", 404);
 
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
@@ -34,12 +34,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const ext = path.extname(file.name);
   const fileName = `${id}_${Date.now()}${ext}`;
-  const storagePath = `proposals/${id}/${fileName}`;
+  const storagePath = `developer-proposals/${id}/${fileName}`;
   await uploadObject(storagePath, buffer, file.type);
 
-  const record = await db.proposalFile.create({
+  const record = await db.developerProposalFile.create({
     data: {
-      proposalId: id,
+      developerProposalId: id,
       fileName,
       originalName: file.name,
       mimeType: file.type,
@@ -53,9 +53,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     data: {
       userId: session.id,
       action: "FILE_UPLOAD",
-      entityType: "proposal_file",
+      entityType: "developer_proposal_file",
       entityId: record.id,
-      after: { proposalId: id, fileName: file.name, sizeBytes: buffer.length } as Prisma.InputJsonValue,
+      after: { developerProposalId: id, fileName: file.name, sizeBytes: buffer.length } as Prisma.InputJsonValue,
     },
   });
 

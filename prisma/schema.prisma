@@ -905,8 +905,25 @@ model DeveloperProposal {
 
   developer Developer @relation(fields: [developerId], references: [id])
   project   Project   @relation(fields: [projectId], references: [id])
+  files     DeveloperProposalFile[]
 
   @@map("developer_proposals")
+}
+
+model DeveloperProposalFile {
+  id                  String   @id @default(cuid())
+  developerProposalId String
+  fileName            String
+  originalName        String
+  mimeType            String
+  sizeBytes           Int
+  storagePath         String
+  uploadedBy          String?
+  uploadedAt          DateTime @default(now())
+
+  developerProposal DeveloperProposal @relation(fields: [developerProposalId], references: [id], onDelete: Cascade)
+
+  @@map("developer_proposal_files")
 }
 
 // ─── Owner Units (Redevelopment flat register) ────────────────────────────────

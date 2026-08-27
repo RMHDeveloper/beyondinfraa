@@ -14,6 +14,7 @@ type ReqForScoring = {
 };
 type ProjectForScoring = {
   id: string; title: string; projectNumber: string; categoryId: string;
+  subcategory: { name: string };
   responses: { question: { label: string }; value: string | null }[];
 };
 
@@ -21,8 +22,16 @@ function rMap(p: ProjectForScoring) {
   return Object.fromEntries(p.responses.map(r => [r.question.label.toLowerCase(), r.value ?? ""]));
 }
 
+// See /api/matching/run for why this filter exists — buyer reqs only match Sell/Sale
+// inventory, tenant reqs only match Rent inventory.
+function isSellSide(subcategoryName: string) {
+  return subcategoryName === "Sell" || subcategoryName === "Sale";
+}
+
 function scoreReq(req: ReqForScoring, project: ProjectForScoring, mode: "buyer" | "tenant") {
   if (project.categoryId !== req.categoryId) return null;
+  if (mode === "buyer" && !isSellSide(project.subcategory.name)) return null;
+  if (mode === "tenant" && project.subcategory.name !== "Rent") return null;
   const map = rMap(project);
   const matched: string[] = [], missed: string[] = [];
 
@@ -83,6 +92,7 @@ export async function POST(req: Request) {
       take: 500,
       select: {
         id: true, title: true, projectNumber: true, categoryId: true,
+        subcategory: { select: { name: true } },
         responses: { select: { value: true, question: { select: { label: true } } } },
       },
     }),

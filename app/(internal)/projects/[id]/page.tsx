@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   Lock, Unlock, Check, Loader2,
@@ -20,6 +21,8 @@ import CustomFieldsSection from "@/components/CustomFieldsSection";
 import CustomFieldImagesSection from "@/components/project/CustomFieldImagesSection";
 import PrintImageSection from "@/components/project/PrintImageSection";
 import FindRequirementsPanel from "@/components/project/FindRequirementsPanel";
+import SentToPanel from "@/components/project/SentToPanel";
+import DeveloperProposalFiles from "@/components/project/DeveloperProposalFiles";
 import CreatePptModal from "@/components/project/CreatePptModal";
 import ProjectPrintView from "@/components/project/ProjectPrintView";
 
@@ -583,6 +586,8 @@ export default function ProjectDetailPage() {
   const [linkLoading, setLinkLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showPortal, setShowPortal] = useState(false);
+  const shareBtnRef = useRef<HTMLButtonElement>(null);
+  const [sharePos, setSharePos] = useState<{ top: number; right: number } | null>(null);
 
 
   const { status: saveStatus, debouncedSave, immediateSave } = useAutosave(id);
@@ -926,15 +931,24 @@ export default function ProjectDetailPage() {
 
           {/* Share to client */}
           <div className="relative">
-            <button onClick={() => setShowPortal(v => !v)}
+            <button ref={shareBtnRef} onClick={() => {
+                if (!showPortal && shareBtnRef.current) {
+                  const r = shareBtnRef.current.getBoundingClientRect();
+                  setSharePos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+                }
+                setShowPortal(v => !v);
+              }}
               className={cn("flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded border transition-colors",
                 showPortal ? "border-blue-400 bg-blue-50 text-blue-600" : "border-gray-200 text-gray-500 hover:bg-gray-50")}>
               <Share2 className="w-3 h-3" /> Share
             </button>
-            {showPortal && (
+            {showPortal && sharePos && createPortal(
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowPortal(false)} />
-                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 p-3 w-64">
+                <div className="fixed inset-0 z-40" onClick={() => setShowPortal(false)} />
+                <div
+                  className="fixed bg-white border border-gray-200 rounded-xl shadow-lg z-50 p-3 w-64"
+                  style={{ top: sharePos.top, right: sharePos.right }}
+                >
                   <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Send Client Portal Link</p>
                   <div className="flex gap-1.5 mb-2">
                     <input value={clientPhone} onChange={e => setClientPhone(e.target.value)}
@@ -955,7 +969,8 @@ export default function ProjectDetailPage() {
                     </div>
                   )}
                 </div>
-              </>
+              </>,
+              document.body
             )}
           </div>
 
@@ -1254,6 +1269,8 @@ export default function ProjectDetailPage() {
               <div className="bg-white rounded-xl border border-gray-200 p-4">
                 <FindRequirementsPanel projectId={id} />
               </div>
+
+              <SentToPanel projectId={id} />
             </div>
           )}
 
@@ -1804,6 +1821,7 @@ export default function ProjectDetailPage() {
                         {dp.internalRemarks && (
                           <p className="text-[10px] text-gray-400 italic border-t border-gray-100 pt-2">{dp.internalRemarks}</p>
                         )}
+                        <DeveloperProposalFiles developerProposalId={dp.id} />
                       </div>
                     ))}
                   </div>

@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   if (!Array.isArray(items) || items.length === 0) return apiError("items required");
 
   const files = await db.projectFile.findMany({
-    where: { id: { in: items.map((i) => i.imageId) }, kind: "GALLERY_IMAGE" },
+    where: { id: { in: items.map((i) => i.imageId) }, kind: { in: ["GALLERY_IMAGE", "CUSTOM_FIELD_IMAGE"] } },
   });
   const byId = new Map(files.map((f) => [f.id, f]));
   // Only keep pairs where the file genuinely belongs to the stated project — trust nothing from the client.

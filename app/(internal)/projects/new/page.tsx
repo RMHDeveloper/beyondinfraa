@@ -82,6 +82,9 @@ export default function NewProjectPage() {
         return;
       }
       const project = await res.json();
+      // Bust the router cache so navigating back to the properties list (or its
+      // category views) doesn't show a stale snapshot from before this project existed.
+      router.refresh();
       router.push(`/projects/${project.id}`);
     } finally {
       setSaving(false);

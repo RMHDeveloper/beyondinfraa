@@ -13,7 +13,7 @@ export async function GET(
   await requireSession();
   const { fileId } = await params;
 
-  const file = await db.proposalFile.findUnique({ where: { id: fileId } });
+  const file = await db.developerProposalFile.findUnique({ where: { id: fileId } });
   if (!file) return apiError("Not found", 404);
 
   let buffer: Buffer;
@@ -38,20 +38,20 @@ export async function DELETE(
   const session = await requireSession();
   const { id, fileId } = await params;
 
-  const file = await db.proposalFile.findUnique({ where: { id: fileId } });
+  const file = await db.developerProposalFile.findUnique({ where: { id: fileId } });
   if (!file) return apiError("Not found", 404);
 
   await deleteObject(file.storagePath);
 
-  await db.proposalFile.delete({ where: { id: fileId } });
+  await db.developerProposalFile.delete({ where: { id: fileId } });
 
   await db.auditLog.create({
     data: {
       userId: session.id,
       action: "FILE_DELETE",
-      entityType: "proposal_file",
+      entityType: "developer_proposal_file",
       entityId: fileId,
-      before: { proposalId: id, fileName: file.originalName } as import("@prisma/client").Prisma.InputJsonValue,
+      before: { developerProposalId: id, fileName: file.originalName } as import("@prisma/client").Prisma.InputJsonValue,
     },
   });
 

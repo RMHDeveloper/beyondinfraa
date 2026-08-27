@@ -15,6 +15,7 @@ type ReqForScoring = {
 type ProjectForScoring = {
   id: string;
   categoryId: string;
+  subcategory: { name: string };
   responses: { question: { label: string }; value: string | null }[];
 };
 
@@ -22,8 +23,17 @@ function rMap(project: ProjectForScoring): Record<string, string> {
   return Object.fromEntries(project.responses.map(r => [r.question.label.toLowerCase(), r.value ?? ""]));
 }
 
+// A buyer requirement should only match inventory listed for sale (Land uses "Sale", others use "Sell");
+// a tenant requirement should only match inventory listed for rent. Without this, matching pulled in
+// unrelated inventory — e.g. a tenant looking to rent could match against a "Buy" mandate project.
+function isSellSide(subcategoryName: string) {
+  return subcategoryName === "Sell" || subcategoryName === "Sale";
+}
+
 function scoreReq(req: ReqForScoring, project: ProjectForScoring, mode: "buyer" | "tenant") {
   if (project.categoryId !== req.categoryId) return null;
+  if (mode === "buyer" && !isSellSide(project.subcategory.name)) return null;
+  if (mode === "tenant" && project.subcategory.name !== "Rent") return null;
 
   const map = rMap(project);
   const matched: string[] = [];
@@ -90,6 +100,7 @@ export async function POST() {
       where: { state: "OPEN" },
       select: {
         id: true, categoryId: true,
+        subcategory: { select: { name: true } },
         responses: { select: { value: true, question: { select: { label: true } } } },
       },
     }),

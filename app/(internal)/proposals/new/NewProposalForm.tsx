@@ -37,10 +37,13 @@ export default function NewProposalForm({
     setLoadingPpt(true);
     const results = await Promise.all(
       selectedProjects.map(async (projectId) => {
-        const res = await fetch(`/api/projects/${projectId}/files?kind=GALLERY_IMAGE`);
-        const images = await res.json();
+        const [galleryRes, customRes] = await Promise.all([
+          fetch(`/api/projects/${projectId}/files?kind=GALLERY_IMAGE`),
+          fetch(`/api/projects/${projectId}/files?kind=CUSTOM_FIELD_IMAGE`),
+        ]);
+        const [gallery, custom] = await Promise.all([galleryRes.json(), customRes.json()]);
         const project = projects.find((p) => p.id === projectId);
-        return { projectId, projectTitle: project?.title ?? "Property", images };
+        return { projectId, projectTitle: project?.title ?? "Property", images: [...gallery, ...custom] };
       })
     );
     setPptGroups(results.filter((g) => g.images.length > 0));
