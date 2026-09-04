@@ -7,25 +7,23 @@ export const dynamic = "force-dynamic";
 export default async function NewProposalPage() {
   const [contacts, buyerReqs, tenantReqs, projects] = await Promise.all([
     db.contact.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true, type: true } }),
-    db.buyerRequirement.findMany({
-      where: { status: { in: ["NEW", "ACTIVE"] } },
+    db.project.findMany({
+      where: { subcategory: { name: "Buy" }, state: { not: "ARCHIVED" } },
       orderBy: { createdAt: "desc" },
       take: 500,
       select: {
-        id: true, reqNumber: true, status: true,
-        budgetMin: true, budgetMax: true,
-        contact:  { select: { id: true, name: true } },
+        id: true, projectNumber: true, state: true,
+        clientContact: { select: { id: true, name: true } },
         category: { select: { id: true, name: true } },
       },
     }),
-    db.tenantRequirement.findMany({
-      where: { status: { in: ["NEW", "ACTIVE"] } },
+    db.project.findMany({
+      where: { subcategory: { name: "Tenant" }, state: { not: "ARCHIVED" } },
       orderBy: { createdAt: "desc" },
       take: 500,
       select: {
-        id: true, reqNumber: true, status: true,
-        rentMin: true, rentMax: true,
-        contact:  { select: { id: true, name: true } },
+        id: true, projectNumber: true, state: true,
+        clientContact: { select: { id: true, name: true } },
         category: { select: { id: true, name: true } },
       },
     }),
@@ -39,12 +37,11 @@ export default async function NewProposalPage() {
 
   async function createProposal(formData: FormData) {
     "use server";
-    const contactId          = formData.get("contactId") as string;
-    const buyerRequirementId = (formData.get("buyerRequirementId") as string) || null;
-    const tenantRequirementId= (formData.get("tenantRequirementId") as string) || null;
-    const projectIds         = formData.getAll("projectIds") as string[];
-    const introduction       = (formData.get("introduction") as string) || null;
-    const remarks            = (formData.get("remarks") as string) || null;
+    const contactId      = formData.get("contactId") as string;
+    const demandProjectId= (formData.get("demandProjectId") as string) || null;
+    const projectIds     = formData.getAll("projectIds") as string[];
+    const introduction   = (formData.get("introduction") as string) || null;
+    const remarks        = (formData.get("remarks") as string) || null;
 
     if (!contactId || projectIds.length === 0) return;
 
@@ -55,8 +52,7 @@ export default async function NewProposalPage() {
       data: {
         proposalNumber,
         contactId,
-        buyerRequirementId,
-        tenantRequirementId,
+        demandProjectId,
         introduction,
         remarks,
         items: {

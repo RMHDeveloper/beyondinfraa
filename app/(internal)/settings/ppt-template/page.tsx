@@ -5,7 +5,7 @@ import { Upload, Loader2, Check } from "lucide-react";
 
 const SLOTS = [
   { key: "cover", label: "Welcome / Cover Slide", help: "The fixed first slide of every marketing PPT." },
-  { key: "logo", label: "Property Slide Branding", help: "Logo shown on every property photo slide." },
+  { key: "middle", label: "Middle Slide Background", help: "Background used on every slide except the first (Cover) and last (Thank You)." },
   { key: "thankyou", label: "Thank You Slide", help: "The fixed last slide of every marketing PPT." },
 ] as const;
 
@@ -37,7 +37,7 @@ export default function PptTemplateSettingsPage() {
   return (
     <div className="max-w-lg">
       <p className="text-sm text-gray-500 mb-6">
-        These three slides are used for every marketing PPT generated from a project&apos;s Gallery. Upload a
+        These are used for every marketing PPT generated from a project&apos;s Gallery. Upload a
         16:9 image to replace the default for each. Leave any of them unset to keep using the built-in default.
       </p>
       <div className="space-y-6">

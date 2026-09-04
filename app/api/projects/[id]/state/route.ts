@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
-import { apiError } from "@/lib/utils";
+import { apiError, withErrorHandling } from "@/lib/utils";
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withErrorHandling(async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireSession();
   if (!["SUPER_ADMIN", "OWNER"].includes(session.role)) return apiError("Forbidden", 403);
 
@@ -41,4 +41,4 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   });
 
   return Response.json(updated);
-}
+});

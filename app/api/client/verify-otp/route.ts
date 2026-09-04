@@ -1,28 +1,33 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { apiError } from "@/lib/utils";
+import { apiError, withErrorHandling } from "@/lib/utils";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandling(async function POST(req: NextRequest) {
   const { token, otp } = await req.json();
   if (!token || !otp) return apiError("token and otp required");
 
-  const link = await db.clientLink.findUnique({
-    where: { token },
+  const link = await db.clientLink.findFirst({
+    where: { OR: [{ token }, { slug: token }] },
     include: { project: { select: { id: true, title: true, state: true } } },
   });
 
   if (!link || !link.isActive) return apiError("Invalid link", 404);
   if (!link.otp || !link.otpExpiresAt) return apiError("OTP not sent", 400);
   if (new Date() > link.otpExpiresAt) return apiError("OTP expired", 400);
-  if (link.otp !== otp) return apiError("Incorrect OTP", 400);
+  if (link.otpAttempts >= 5) return apiError("Too many incorrect attempts. Please request a new OTP.", 429);
+
+  if (link.otp !== otp) {
+    await db.clientLink.update({ where: { id: link.id }, data: { otpAttempts: { increment: 1 } } });
+    return apiError("Incorrect OTP", 400);
+  }
 
   await db.clientLink.update({
-    where: { token },
-    data: { verifiedAt: new Date(), otp: null },
+    where: { id: link.id },
+    data: { verifiedAt: new Date(), otp: null, otpAttempts: 0 },
   });
 
   await db.auditLog.create({
@@ -50,4 +55,4 @@ export async function POST(req: NextRequest) {
   });
 
   return Response.json({ ok: true, projectId: link.projectId });
-}
+});

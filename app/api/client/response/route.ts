@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { apiError } from "@/lib/utils";
+import { apiError, formatResponseValue } from "@/lib/utils";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { Prisma } from "@prisma/client";
@@ -40,10 +40,14 @@ export async function PATCH(req: NextRequest) {
   // Verify question is not internal
   const question = await db.question.findUnique({
     where: { id: questionId },
-    select: { isInternal: true },
+    select: { isInternal: true, label: true, fieldType: true },
   });
   if (!question) return apiError("Question not found", 404);
   if (question.isInternal) return apiError("Cannot edit internal fields", 403);
+
+  const existing = await db.response.findUnique({ where: { projectId_questionId: { projectId, questionId } } });
+  const beforeText = existing ? formatResponseValue(existing.value, existing.jsonValue, question.fieldType) : null;
+  const afterText = formatResponseValue(value ?? null, jsonValue, question.fieldType);
 
   const response = await db.response.upsert({
     where: { projectId_questionId: { projectId, questionId } },
@@ -68,6 +72,18 @@ export async function PATCH(req: NextRequest) {
           : Prisma.JsonNull,
     },
   });
+
+  if (beforeText !== afterText) {
+    await db.auditLog.create({
+      data: {
+        projectId,
+        action: "UPDATE",
+        entityType: "response",
+        entityId: questionId,
+        meta: { label: question.label, before: beforeText, after: afterText, source: "client" } as Prisma.InputJsonValue,
+      },
+    });
+  }
 
   return Response.json(response);
 }

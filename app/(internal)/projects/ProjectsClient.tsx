@@ -23,17 +23,13 @@ type Contact = { id: string; name: string; type: string };
 type Category = { id: string; name: string };
 
 type BuyerReq = {
-  id: string; reqNumber: string; status: string;
-  budgetMin: number | null; budgetMax: number | null;
-  areaMin: number | null; areaMax: number | null; notes: string | null;
-  contact: Contact; category: Category;
+  id: string; projectNumber: string; state: string;
+  clientContact: Contact | null; category: Category;
   createdAt: Date | string;
 };
 type TenantReq = {
-  id: string; reqNumber: string; status: string;
-  rentMin: number | null; rentMax: number | null;
-  areaMin: number | null; areaMax: number | null; leaseDuration: number | null; notes: string | null;
-  contact: Contact; category: Category;
+  id: string; projectNumber: string; state: string;
+  clientContact: Contact | null; category: Category;
   createdAt: Date | string;
 };
 type Match = {
@@ -41,7 +37,7 @@ type Match = {
   isManual: boolean; confirmedAt: Date | string | null;
   criteriaMatched: unknown; criteriaMissed: unknown;
   project: { id: string; title: string; projectNumber: string };
-  buyerRequirementId: string | null; tenantRequirementId: string | null;
+  demandProjectId: string | null;
 };
 type ProposalItem = { project: { id: string; title: string }; response: string };
 type Proposal = {
@@ -93,9 +89,9 @@ const AVAIL_COLORS: Record<string, { color: string; bg: string }> = {
   ARCHIVED: { color: "#64748b", bg: "#f1f5f9" },
 };
 const REQ_STATUS_COLORS: Record<string, string> = {
-  NEW: "bg-blue-50 text-blue-700", ACTIVE: "bg-green-50 text-green-700",
-  ON_HOLD: "bg-amber-50 text-amber-700", CLOSED: "bg-gray-100 text-gray-500",
-  CONVERTED: "bg-purple-50 text-purple-700",
+  OPEN: "bg-blue-50 text-blue-700",
+  LOCKED: "bg-amber-50 text-amber-700",
+  ARCHIVED: "bg-gray-100 text-gray-500",
 };
 const MATCH_COLORS = (pct: number) => pct >= 80 ? "#059669" : pct >= 50 ? "#d97706" : "#dc2626";
 const VISIT_STATUS_COLORS: Record<string, string> = {
@@ -160,7 +156,7 @@ export default function ProjectsClient({
     // Bust the router cache for this list so navigating back here (e.g. to duplicate
     // the next flat) doesn't show a stale snapshot from before the duplicate existed.
     router.refresh();
-    router.push(`/projects/${created.id}`);
+    router.push(`/projects/${created.projectNumber}`);
   }
 
   useEffect(() => {
@@ -210,12 +206,6 @@ export default function ProjectsClient({
             {tab}
           </button>
         ))}
-        <div className="ml-auto flex items-center gap-2 py-2 flex-shrink-0 pl-2">
-          <Link href="/projects/new"
-            className="flex items-center gap-1.5 bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors whitespace-nowrap">
-            <Plus className="w-3.5 h-3.5" strokeWidth={2.5} /> <span className="hidden sm:inline">Add Property</span>
-          </Link>
-        </div>
       </div>
 
       {/* Tab content */}
@@ -284,9 +274,9 @@ export default function ProjectsClient({
             <div className="bg-white rounded-xl border border-gray-200">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+                  <tr className="border-b border-gray-200">
                     {["ID", "Name / Property", "Sub-type", "Transaction", "Score", "Owner", "Status", "Availability", ""].map((h) => (
-                      <th key={h} className="text-left px-4 py-3 font-semibold text-[10px] uppercase tracking-wider text-gray-400">{h}</th>
+                      <th key={h} className="text-left px-4 py-3 font-semibold text-[10px] uppercase tracking-wider text-gray-400 sticky top-0 z-10 bg-gray-50">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -381,32 +371,26 @@ export default function ProjectsClient({
             categories={categories}
             catFilter={reqCatFilter}
             onCatFilter={setReqCatFilter}
-            newHref="/requirements/buyer/new"
+            newHref="/projects/new"
             renderRow={(r: BuyerReq) => (
               <>
-                <td className="px-4 py-3 font-mono text-[10px] text-gray-400">{r.reqNumber}</td>
+                <td className="px-4 py-3 font-mono text-[10px] text-gray-400">{r.projectNumber}</td>
                 <td className="px-4 py-3">
-                  <p className="font-semibold text-gray-900">{r.contact.name}</p>
-                  <p className="text-[10px] text-gray-400">{r.contact.type}</p>
+                  <p className="font-semibold text-gray-900">{r.clientContact?.name ?? "—"}</p>
+                  <p className="text-[10px] text-gray-400">{r.clientContact?.type ?? ""}</p>
                 </td>
                 <td className="px-4 py-3">
                   <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold" style={{ background: SECTOR_COLORS[r.category.name]?.bg ?? "#f1f5f9", color: SECTOR_COLORS[r.category.name]?.color ?? "#64748b" }}>
                     {r.category.name}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-gray-600 text-xs">
-                  {r.budgetMin && r.budgetMax ? `₹${(r.budgetMin / 1e7).toFixed(1)}Cr – ₹${(r.budgetMax / 1e7).toFixed(1)}Cr` : "—"}
-                </td>
-                <td className="px-4 py-3 text-gray-600 text-xs">
-                  {r.areaMin && r.areaMax ? `${r.areaMin}–${r.areaMax} sq.ft` : "—"}
-                </td>
                 <td className="px-4 py-3 text-gray-400 text-xs">{fmtDate(r.createdAt)}</td>
                 <td className="px-4 py-3">
-                  <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase", REQ_STATUS_COLORS[r.status] ?? "bg-gray-100 text-gray-500")}>{r.status}</span>
+                  <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase", REQ_STATUS_COLORS[r.state] ?? "bg-gray-100 text-gray-500")}>{r.state}</span>
                 </td>
               </>
             )}
-            headers={["Req #", "Contact", "Category", "Budget", "Area", "Date", "Status"]}
+            headers={["Req #", "Contact", "Category", "Date", "Status"]}
           />
         )}
 
@@ -420,32 +404,26 @@ export default function ProjectsClient({
             categories={categories}
             catFilter={reqCatFilter}
             onCatFilter={setReqCatFilter}
-            newHref="/requirements/tenant/new"
+            newHref="/projects/new"
             renderRow={(r: TenantReq) => (
               <>
-                <td className="px-4 py-3 font-mono text-[10px] text-gray-400">{r.reqNumber}</td>
+                <td className="px-4 py-3 font-mono text-[10px] text-gray-400">{r.projectNumber}</td>
                 <td className="px-4 py-3">
-                  <p className="font-semibold text-gray-900">{r.contact.name}</p>
-                  <p className="text-[10px] text-gray-400">{r.contact.type}</p>
+                  <p className="font-semibold text-gray-900">{r.clientContact?.name ?? "—"}</p>
+                  <p className="text-[10px] text-gray-400">{r.clientContact?.type ?? ""}</p>
                 </td>
                 <td className="px-4 py-3">
                   <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold" style={{ background: SECTOR_COLORS[r.category.name]?.bg ?? "#f1f5f9", color: SECTOR_COLORS[r.category.name]?.color ?? "#64748b" }}>
                     {r.category.name}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-gray-600 text-xs">
-                  {r.rentMax ? `Up to ₹${r.rentMax.toLocaleString()}/mo` : "—"}
-                </td>
-                <td className="px-4 py-3 text-gray-600 text-xs">
-                  {r.areaMin && r.areaMax ? `${r.areaMin}–${r.areaMax} sq.ft` : "—"}
-                </td>
                 <td className="px-4 py-3 text-gray-400 text-xs">{fmtDate(r.createdAt)}</td>
                 <td className="px-4 py-3">
-                  <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase", REQ_STATUS_COLORS[r.status] ?? "bg-gray-100 text-gray-500")}>{r.status}</span>
+                  <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase", REQ_STATUS_COLORS[r.state] ?? "bg-gray-100 text-gray-500")}>{r.state}</span>
                 </td>
               </>
             )}
-            headers={["Req #", "Contact", "Category", "Rent Budget", "Area", "Date", "Status"]}
+            headers={["Req #", "Contact", "Category", "Date", "Status"]}
           />
         )}
 
@@ -536,9 +514,9 @@ export default function ProjectsClient({
               <div className="bg-white rounded-xl border border-gray-200">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+                    <tr className="border-b border-gray-200">
                       {["Property", "Contact", "Segment", "Scheduled", "Notes", "Status"].map((h) => (
-                        <th key={h} className="text-left px-4 py-3 font-semibold text-[10px] uppercase tracking-wider text-gray-400">{h}</th>
+                        <th key={h} className="text-left px-4 py-3 font-semibold text-[10px] uppercase tracking-wider text-gray-400 sticky top-0 z-10 bg-gray-50">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -582,9 +560,9 @@ export default function ProjectsClient({
               <div className="bg-white rounded-xl border border-gray-200">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+                    <tr className="border-b border-gray-200">
                       {["Property", "Category", "Contact", "Type", "Agreed Price", "Closed On"].map((h) => (
-                        <th key={h} className="text-left px-4 py-3 font-semibold text-[10px] uppercase tracking-wider text-gray-400">{h}</th>
+                        <th key={h} className="text-left px-4 py-3 font-semibold text-[10px] uppercase tracking-wider text-gray-400 sticky top-0 z-10 bg-gray-50">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -626,7 +604,7 @@ function MatchingPanel({ matches, buyerReqs, tenantReqs }: {
 }) {
   const confirmedMatches = matches.filter(m => m.confirmedAt);
 
-  // Group confirmed matches by requirement
+  // Group confirmed matches by demand project
   type GroupedMatch = { reqId: string; reqNumber: string; contactName: string; type: "buyer" | "tenant"; matches: Match[] };
   const grouped: GroupedMatch[] = [];
   const buyerReqMap = Object.fromEntries(buyerReqs.map(r => [r.id, r]));
@@ -634,19 +612,19 @@ function MatchingPanel({ matches, buyerReqs, tenantReqs }: {
   const seenReqs = new Set<string>();
 
   for (const m of confirmedMatches) {
-    const reqId = m.buyerRequirementId ?? m.tenantRequirementId ?? "";
+    const reqId = m.demandProjectId ?? "";
     if (!reqId || seenReqs.has(reqId)) continue;
     seenReqs.add(reqId);
-    const isBuyer = !!m.buyerRequirementId;
+    const isBuyer = !!buyerReqMap[reqId];
     const req = isBuyer ? buyerReqMap[reqId] : tenantReqMap[reqId];
     if (!req) continue;
     grouped.push({
       reqId,
-      reqNumber: req.reqNumber,
-      contactName: req.contact.name,
+      reqNumber: req.projectNumber,
+      contactName: req.clientContact?.name ?? "Unknown",
       type: isBuyer ? "buyer" : "tenant",
       matches: confirmedMatches
-        .filter(mx => (isBuyer ? mx.buyerRequirementId : mx.tenantRequirementId) === reqId)
+        .filter(mx => mx.demandProjectId === reqId)
         .sort((a, b) => b.matchPct - a.matchPct),
     });
   }
@@ -677,13 +655,13 @@ function MatchingPanel({ matches, buyerReqs, tenantReqs }: {
           </p>
           <div className="flex items-center justify-center gap-3">
             {buyerReqs.length > 0 && (
-              <Link href={`/requirements/buyer/${buyerReqs[0].id}`}
+              <Link href={`/projects/${buyerReqs[0].id}`}
                 className="text-xs font-bold text-blue-600 hover:underline">
                 Open Buyer Req →
               </Link>
             )}
             {tenantReqs.length > 0 && (
-              <Link href={`/requirements/tenant/${tenantReqs[0].id}`}
+              <Link href={`/projects/${tenantReqs[0].id}`}
                 className="text-xs font-bold text-amber-600 hover:underline">
                 Open Tenant Req →
               </Link>
@@ -702,18 +680,18 @@ function MatchingPanel({ matches, buyerReqs, tenantReqs }: {
                     g.type === "buyer" ? "bg-green-200 text-green-800" : "bg-amber-200 text-amber-800")}>
                     {g.type === "buyer" ? "BUYER" : "TENANT"}
                   </span>
-                  <Link href={`/requirements/${g.type}/${g.reqId}`}
+                  <Link href={`/projects/${g.reqId}`}
                     className="font-bold text-gray-900 text-sm hover:text-blue-600 truncate">
                     {g.contactName}
                   </Link>
                   <span className="text-xs text-gray-400 flex-shrink-0">{g.reqNumber}</span>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <Link href={`/requirements/${g.type}/${g.reqId}`}
+                  <Link href={`/projects/${g.reqId}`}
                     className="text-[10px] font-bold border border-gray-200 text-gray-600 px-2.5 py-1 rounded-lg hover:bg-gray-50">
                     View Req
                   </Link>
-                  <Link href={`/proposals/new?${g.type === "buyer" ? "buyerReqId" : "tenantReqId"}=${g.reqId}`}
+                  <Link href={`/proposals/new?demandProjectId=${g.reqId}`}
                     className="flex items-center gap-1 text-[10px] font-bold bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700">
                     <Send className="w-3 h-3" /> Create Proposal
                   </Link>
@@ -921,9 +899,9 @@ function RequirementsTab<T>({
         <div className="bg-white rounded-xl border border-gray-200">
           <table className="w-full text-xs">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+              <tr className="border-b border-gray-200">
                 {headers.map((h) => (
-                  <th key={h} className="text-left px-4 py-3 font-semibold text-[10px] uppercase tracking-wider text-gray-400">{h}</th>
+                  <th key={h} className="text-left px-4 py-3 font-semibold text-[10px] uppercase tracking-wider text-gray-400 sticky top-0 z-10 bg-gray-50">{h}</th>
                 ))}
               </tr>
             </thead>

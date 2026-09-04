@@ -16,23 +16,23 @@ export default async function ProjectsPage() {
         status:      { select: { id: true, name: true, color: true } },
       },
     }),
-    db.buyerRequirement.findMany({
+    db.project.findMany({
+      where: { subcategory: { name: "Buy" } },
       orderBy: { createdAt: "desc" },
       take: 200,
       select: {
-        id: true, reqNumber: true, status: true, createdAt: true, notes: true,
-        budgetMin: true, budgetMax: true, areaMin: true, areaMax: true,
-        contact:  { select: { id: true, name: true, type: true } },
+        id: true, projectNumber: true, state: true, createdAt: true,
+        clientContact: { select: { id: true, name: true, type: true } },
         category: { select: { id: true, name: true } },
       },
     }),
-    db.tenantRequirement.findMany({
+    db.project.findMany({
+      where: { subcategory: { name: "Tenant" } },
       orderBy: { createdAt: "desc" },
       take: 200,
       select: {
-        id: true, reqNumber: true, status: true, createdAt: true, notes: true,
-        rentMin: true, rentMax: true, areaMin: true, areaMax: true, leaseDuration: true,
-        contact:  { select: { id: true, name: true, type: true } },
+        id: true, projectNumber: true, state: true, createdAt: true,
+        clientContact: { select: { id: true, name: true, type: true } },
         category: { select: { id: true, name: true } },
       },
     }),
@@ -44,7 +44,7 @@ export default async function ProjectsPage() {
       select: {
         id: true, matchPct: true, confirmedAt: true, criteriaMatched: true, criteriaMissed: true,
         alreadySent: true, isManual: true,
-        buyerRequirementId: true, tenantRequirementId: true,
+        demandProjectId: true,
         project: { select: { id: true, title: true, projectNumber: true } },
       },
     }),

@@ -41,13 +41,13 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
   const contact = await db.contact.findUnique({
     where: { id },
     include: {
-      buyerRequirements: {
-        include: { category: true, matches: { where: { confirmedAt: { not: null } }, select: { id: true } } },
-        orderBy: { createdAt: "desc" }, take: 20,
-      },
-      tenantRequirements: {
-        include: { category: true, matches: { where: { confirmedAt: { not: null } }, select: { id: true } } },
-        orderBy: { createdAt: "desc" }, take: 20,
+      clientProjects: {
+        where: { subcategory: { name: { in: ["Buy", "Tenant"] } } },
+        include: {
+          category: true, subcategory: true,
+          demandMatches: { where: { confirmedAt: { not: null } }, select: { id: true } },
+        },
+        orderBy: { createdAt: "desc" }, take: 40,
       },
       proposals: {
         include: { items: { include: { project: { select: { id: true, title: true } } } } },
@@ -63,6 +63,8 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
 
   const tc = TYPE_COLORS[contact.type] ?? TYPE_COLORS.OTHER;
   const initials = contact.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+  const buyerProjects = contact.clientProjects.filter((p) => p.subcategory.name === "Buy");
+  const tenantProjects = contact.clientProjects.filter((p) => p.subcategory.name === "Tenant");
 
   return (
     <div className="flex flex-col h-full bg-gray-50 overflow-y-auto">
@@ -118,34 +120,31 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
           <div className="flex items-center justify-between mb-3">
             <p className="font-bold text-gray-900 flex items-center gap-1.5 text-sm">
               <FileText className="w-4 h-4 text-green-600" /> Buyer Requirements
-              {contact.buyerRequirements.length > 0 && (
-                <span className="text-[10px] text-gray-400">({contact.buyerRequirements.length})</span>
+              {buyerProjects.length > 0 && (
+                <span className="text-[10px] text-gray-400">({buyerProjects.length})</span>
               )}
             </p>
-            <Link href={`/requirements/buyer/new?contactId=${id}`}
+            <Link href="/projects/new"
               className="flex items-center gap-1 text-[10px] font-bold text-green-700 hover:text-green-900">
               <Plus className="w-3 h-3" /> Add
             </Link>
           </div>
-          {contact.buyerRequirements.length === 0 ? (
+          {buyerProjects.length === 0 ? (
             <p className="text-xs text-gray-400 italic">No buyer requirements yet.</p>
           ) : (
             <div className="space-y-2">
-              {contact.buyerRequirements.map((r) => (
-                <Link key={r.id} href={`/requirements/buyer/${r.id}`}
+              {buyerProjects.map((p) => (
+                <Link key={p.id} href={`/projects/${p.id}`}
                   className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:border-green-200 hover:bg-green-50/30 transition-all group text-xs">
-                  <span className="font-mono text-gray-400">{r.reqNumber}</span>
-                  <span className="font-semibold text-gray-700">{r.category.name}</span>
-                  {r.budgetMin && r.budgetMax && (
-                    <span className="text-gray-500">₹{(r.budgetMin / 1e7).toFixed(1)}Cr – ₹{(r.budgetMax / 1e7).toFixed(1)}Cr</span>
-                  )}
-                  {r.matches.length > 0 && (
+                  <span className="font-mono text-gray-400">{p.projectNumber}</span>
+                  <span className="font-semibold text-gray-700">{p.category.name}</span>
+                  {p.demandMatches.length > 0 && (
                     <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full">
-                      {r.matches.length} matched
+                      {p.demandMatches.length} matched
                     </span>
                   )}
-                  <span className={`ml-auto px-2 py-0.5 rounded text-[10px] font-bold uppercase ${REQ_STATUS_COLORS[r.status] ?? "bg-gray-100 text-gray-500"}`}>
-                    {r.status}
+                  <span className={`ml-auto px-2 py-0.5 rounded text-[10px] font-bold uppercase ${REQ_STATUS_COLORS[p.state] ?? "bg-gray-100 text-gray-500"}`}>
+                    {p.state}
                   </span>
                   <ArrowRight className="w-3 h-3 text-gray-300 group-hover:text-green-500 flex-shrink-0 transition-colors" />
                 </Link>
@@ -159,32 +158,31 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
           <div className="flex items-center justify-between mb-3">
             <p className="font-bold text-gray-900 flex items-center gap-1.5 text-sm">
               <FileText className="w-4 h-4 text-amber-600" /> Tenant Requirements
-              {contact.tenantRequirements.length > 0 && (
-                <span className="text-[10px] text-gray-400">({contact.tenantRequirements.length})</span>
+              {tenantProjects.length > 0 && (
+                <span className="text-[10px] text-gray-400">({tenantProjects.length})</span>
               )}
             </p>
-            <Link href={`/requirements/tenant/new?contactId=${id}`}
+            <Link href="/projects/new"
               className="flex items-center gap-1 text-[10px] font-bold text-amber-700 hover:text-amber-900">
               <Plus className="w-3 h-3" /> Add
             </Link>
           </div>
-          {contact.tenantRequirements.length === 0 ? (
+          {tenantProjects.length === 0 ? (
             <p className="text-xs text-gray-400 italic">No tenant requirements yet.</p>
           ) : (
             <div className="space-y-2">
-              {contact.tenantRequirements.map((r) => (
-                <Link key={r.id} href={`/requirements/tenant/${r.id}`}
+              {tenantProjects.map((p) => (
+                <Link key={p.id} href={`/projects/${p.id}`}
                   className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:border-amber-200 hover:bg-amber-50/30 transition-all group text-xs">
-                  <span className="font-mono text-gray-400">{r.reqNumber}</span>
-                  <span className="font-semibold text-gray-700">{r.category.name}</span>
-                  {r.rentMax && <span className="text-gray-500">Up to ₹{r.rentMax.toLocaleString()}/mo</span>}
-                  {r.matches.length > 0 && (
+                  <span className="font-mono text-gray-400">{p.projectNumber}</span>
+                  <span className="font-semibold text-gray-700">{p.category.name}</span>
+                  {p.demandMatches.length > 0 && (
                     <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full">
-                      {r.matches.length} matched
+                      {p.demandMatches.length} matched
                     </span>
                   )}
-                  <span className={`ml-auto px-2 py-0.5 rounded text-[10px] font-bold uppercase ${REQ_STATUS_COLORS[r.status] ?? "bg-gray-100 text-gray-500"}`}>
-                    {r.status}
+                  <span className={`ml-auto px-2 py-0.5 rounded text-[10px] font-bold uppercase ${REQ_STATUS_COLORS[p.state] ?? "bg-gray-100 text-gray-500"}`}>
+                    {p.state}
                   </span>
                   <ArrowRight className="w-3 h-3 text-gray-300 group-hover:text-amber-500 flex-shrink-0 transition-colors" />
                 </Link>

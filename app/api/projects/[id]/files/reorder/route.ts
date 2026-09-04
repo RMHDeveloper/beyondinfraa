@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
-import { apiError } from "@/lib/utils";
+import { apiError, withErrorHandling } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withErrorHandling(async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await requireSession();
   const { id } = await params;
   const { orderedIds } = await req.json() as { orderedIds: string[] };
@@ -22,4 +22,4 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   );
 
   return Response.json({ ok: true });
-}
+});

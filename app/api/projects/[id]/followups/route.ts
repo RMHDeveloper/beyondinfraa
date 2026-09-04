@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
-import { apiError } from "@/lib/utils";
+import { apiError, withErrorHandling } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withErrorHandling(async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await requireSession();
   const { id } = await params;
   const followups = await db.followUp.findMany({
@@ -13,9 +13,9 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
     orderBy: { dueAt: "asc" },
   });
   return Response.json(followups);
-}
+});
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withErrorHandling(async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireSession();
   const { id } = await params;
   const { description, dueAt, assigneeId } = await req.json();
@@ -30,9 +30,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     },
   });
   return Response.json(followup);
-}
+});
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withErrorHandling(async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireSession();
   const { id: projectId } = await params;
   const { id, isDone } = await req.json();
@@ -46,4 +46,4 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     },
   });
   return Response.json(updated);
-}
+});

@@ -1,9 +1,10 @@
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
+import { withErrorHandling } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export const GET = withErrorHandling(async function GET() {
   await requireSession();
   const proposals = await db.proposal.findMany({
     orderBy: { createdAt: "desc" },
@@ -17,9 +18,8 @@ export async function GET() {
           project: { select: { id: true, title: true, projectNumber: true, category: { select: { name: true } } } },
         },
       },
-      buyerRequirement: { select: { reqNumber: true } },
-      tenantRequirement: { select: { reqNumber: true } },
+      demandProject: { select: { projectNumber: true } },
     },
   });
   return Response.json(proposals);
-}
+});

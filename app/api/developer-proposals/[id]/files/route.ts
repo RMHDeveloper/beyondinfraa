@@ -1,14 +1,14 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
-import { apiError } from "@/lib/utils";
+import { apiError, withErrorHandling } from "@/lib/utils";
 import { uploadObject } from "@/lib/storage";
 import path from "path";
 import { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withErrorHandling(async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await requireSession();
   const { id } = await params;
   const files = await db.developerProposalFile.findMany({
@@ -16,9 +16,9 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
     orderBy: { uploadedAt: "desc" },
   });
   return Response.json(files);
-}
+});
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withErrorHandling(async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireSession();
   const { id } = await params;
 
@@ -60,4 +60,4 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   });
 
   return Response.json(record);
-}
+});

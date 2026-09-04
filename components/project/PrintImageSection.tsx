@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Upload, Download, Trash2, Loader2 } from "lucide-react";
+import { Upload, Download, Trash2, Loader2, Star } from "lucide-react";
 
 type PrintImage = {
   id: string; originalName: string; sizeBytes: number; uploadedAt: string;
@@ -14,15 +14,19 @@ function formatBytes(b: number) {
 }
 
 export default function PrintImageSection({
-  apiBase, readOnly, onChange,
-}: { apiBase: string; readOnly: boolean; onChange?: () => void }) {
+  apiBase, readOnly, onChange, label = "Print Image",
+}: { apiBase: string; readOnly: boolean; onChange?: () => void; label?: string }) {
   const [images, setImages] = useState<PrintImage[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const [settingPrimary, setSettingPrimary] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function load() {
     const res = await fetch(`${apiBase}?kind=PRINT_IMAGE`);
-    setImages(await res.json());
+    const imgs: PrintImage[] = await res.json();
+    setImages(imgs);
+    setSelectedIndex(0);
     onChange?.();
   }
 
@@ -46,14 +50,28 @@ export default function PrintImageSection({
   async function handleDelete(fileId: string) {
     if (!confirm("Delete this image?")) return;
     await fetch(`${apiBase}/${fileId}`, { method: "DELETE" });
-    setImages((f) => f.filter((x) => x.id !== fileId));
-    onChange?.();
+    await load();
   }
 
+  async function handleSetPrimary(index: number) {
+    if (index === 0 || settingPrimary) return;
+    setSettingPrimary(true);
+    const reordered = [images[index].id, ...images.filter((_, i) => i !== index).map((f) => f.id)];
+    await fetch(`${apiBase}/reorder`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderedIds: reordered }),
+    });
+    await load();
+    setSettingPrimary(false);
+  }
+
+  const selected = images[selectedIndex];
+
   return (
-    <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
+    <div className="bg-white rounded-xl border border-gray-200 px-4 py-3 h-full">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Print Image</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{label}</p>
         {!readOnly && (
           <>
             <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} />
@@ -75,28 +93,52 @@ export default function PrintImageSection({
         </p>
       ) : (
         <div className="space-y-2">
-          {images.map((f, i) => (
-            <div key={f.id} className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg group">
-              <img src={`${apiBase}/${f.id}`} alt={f.originalName} className="w-10 h-10 object-cover rounded flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{f.originalName}</p>
-                <p className="text-xs text-gray-400">
-                  {formatBytes(f.sizeBytes)} · {new Date(f.uploadedAt).toLocaleDateString()}
-                  {i === 0 && <span className="ml-2 text-blue-600 font-semibold">Used in print</span>}
-                </p>
-              </div>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <a href={`${apiBase}/${f.id}`} download={f.originalName} className="p-1.5 text-gray-400 hover:text-gray-900 rounded">
-                  <Download className="w-3.5 h-3.5" />
-                </a>
-                {!readOnly && (
-                  <button onClick={() => handleDelete(f.id)} className="p-1.5 text-gray-400 hover:text-red-500 rounded">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
+          <div className="relative rounded-lg overflow-hidden bg-gray-100 aspect-video">
+            <img src={`${apiBase}/${selected.id}`} alt={selected.originalName} className="w-full h-full object-cover" />
+            {selectedIndex === 0 && (
+              <span className="absolute top-2 left-2 flex items-center gap-1 bg-blue-600 text-white text-[10px] font-semibold px-2 py-1 rounded-full">
+                <Star className="w-3 h-3 fill-current" /> Primary
+              </span>
+            )}
+            <div className="absolute top-2 right-2 flex items-center gap-1">
+              <a href={`${apiBase}/${selected.id}`} download={selected.originalName}
+                className="p-1.5 bg-white/90 text-gray-700 hover:text-gray-900 rounded-full shadow">
+                <Download className="w-3.5 h-3.5" />
+              </a>
+              {!readOnly && (
+                <button onClick={() => handleDelete(selected.id)}
+                  className="p-1.5 bg-white/90 text-gray-700 hover:text-red-500 rounded-full shadow">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
-          ))}
+          </div>
+
+          <p className="text-xs text-gray-400 truncate">
+            {selected.originalName} · {formatBytes(selected.sizeBytes)}
+          </p>
+
+          {images.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {images.map((f, i) => (
+                <button key={f.id} onClick={() => setSelectedIndex(i)}
+                  className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-colors ${
+                    i === selectedIndex ? "border-blue-600" : "border-transparent hover:border-gray-300"
+                  }`}>
+                  <img src={`${apiBase}/${f.id}`} alt={f.originalName} className="w-full h-full object-cover" />
+                  {i === 0 && <span className="absolute bottom-0 right-0 bg-blue-600 rounded-tl px-1"><Star className="w-2.5 h-2.5 text-white fill-current" /></span>}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {!readOnly && selectedIndex !== 0 && (
+            <button onClick={() => handleSetPrimary(selectedIndex)} disabled={settingPrimary}
+              className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50">
+              {settingPrimary ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Star className="w-3.5 h-3.5" />}
+              Set as primary
+            </button>
+          )}
         </div>
       )}
     </div>

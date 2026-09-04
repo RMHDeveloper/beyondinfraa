@@ -1,8 +1,9 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Search, Bell, Settings, Plus, Menu } from "lucide-react";
+import { Search, Bell, Settings, Plus, Menu, Building2, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -11,9 +12,48 @@ const TABS = [
   { label: "Proposals", href: "/projects?tab=Proposals", match: null },
 ];
 
+type SearchResults = {
+  projects: { id: string; title: string; projectNumber: string; category: { name: string }; subcategory: { name: string } }[];
+  contacts: { id: string; name: string; phone: string | null; email: string | null; type: string }[];
+};
+
 export default function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
   const pathname = usePathname();
+  const router = useRouter();
   const tabParam = useSearchParams().get("tab");
+
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<SearchResults | null>(null);
+  const [open, setOpen] = useState(false);
+  const searchBoxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (query.trim().length < 2) { setResults(null); return; }
+    const handle = setTimeout(() => {
+      fetch(`/api/search?q=${encodeURIComponent(query.trim())}`)
+        .then(r => r.json())
+        .then(setResults)
+        .catch(() => setResults(null));
+    }, 250);
+    return () => clearTimeout(handle);
+  }, [query]);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
+
+  function goTo(href: string) {
+    setOpen(false);
+    setQuery("");
+    setResults(null);
+    router.push(href);
+  }
+
+  const hasResults = !!results && (results.projects.length > 0 || results.contacts.length > 0);
 
   function tabActive(tab: typeof TABS[number]) {
     if (tab.label === "Overview") return pathname === "/dashboard";
@@ -87,12 +127,66 @@ export default function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
 
         {/* Center: search + create */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="relative w-64">
+          <div className="relative w-64" ref={searchBoxRef}>
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
             <input
-              placeholder="Search properties, leads, or tasks…"
+              value={query}
+              onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+              onFocus={() => setOpen(true)}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter" || !results) return;
+                if (results.projects.length > 0) goTo(`/projects/${results.projects[0].id}`);
+                else if (results.contacts.length > 0) goTo(`/contacts/${results.contacts[0].id}`);
+              }}
+              placeholder="Search projects or contacts…"
               className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:bg-white transition-colors"
             />
+            {open && query.trim().length >= 2 && (
+              <div className="absolute top-full left-0 mt-1 w-96 max-h-96 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg z-30">
+                {!results && (
+                  <p className="text-xs text-gray-400 px-3 py-3">Searching…</p>
+                )}
+                {results && !hasResults && (
+                  <p className="text-xs text-gray-400 px-3 py-3">No results for "{query.trim()}"</p>
+                )}
+                {results && results.projects.length > 0 && (
+                  <div className="py-1.5">
+                    <p className="px-3 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Projects</p>
+                    {results.projects.map(p => (
+                      <button
+                        key={p.id}
+                        onClick={() => goTo(`/projects/${p.projectNumber}`)}
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-gray-50 transition-colors"
+                      >
+                        <Building2 className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs text-gray-800 truncate">{p.title}</p>
+                          <p className="text-[10px] text-gray-400 truncate">{p.projectNumber} · {p.category.name} / {p.subcategory.name}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {results && results.contacts.length > 0 && (
+                  <div className="py-1.5 border-t border-gray-100">
+                    <p className="px-3 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Contacts</p>
+                    {results.contacts.map(c => (
+                      <button
+                        key={c.id}
+                        onClick={() => goTo(`/contacts/${c.id}`)}
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-gray-50 transition-colors"
+                      >
+                        <User className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs text-gray-800 truncate">{c.name}</p>
+                          <p className="text-[10px] text-gray-400 truncate">{c.phone ?? c.email ?? c.type}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <Link
             href="/projects/new"

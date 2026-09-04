@@ -6,10 +6,10 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   Lock, Unlock, Check, Loader2,
   AlertCircle, Printer, Presentation,
-  TrendingUp, Plus, Handshake, Users, Building2,
-  Pencil, Share2, ChevronDown, Copy,
+  TrendingUp, Plus, Users, Building2,
+  Pencil, Share2, ChevronDown, Copy, X,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, blurOnWheel, isBlankResponseValue } from "@/lib/utils";
 import FieldRenderer from "@/components/project/FieldRenderer";
 import { useAutosave } from "@/components/project/useAutosave";
 import FilesTab from "@/components/project/FilesTab";
@@ -17,12 +17,13 @@ import GalleryTab from "@/components/project/GalleryTab";
 import NotesTab from "@/components/project/NotesTab";
 import FollowUpsTab from "@/components/project/FollowUpsTab";
 import AuditTab from "@/components/project/AuditTab";
-import CustomFieldsSection from "@/components/CustomFieldsSection";
-import CustomFieldImagesSection from "@/components/project/CustomFieldImagesSection";
+import AdditionalFieldsSection from "@/components/AdditionalFieldsSection";
 import PrintImageSection from "@/components/project/PrintImageSection";
 import FindRequirementsPanel from "@/components/project/FindRequirementsPanel";
+import FindPropertiesPanel from "@/components/requirement/FindPropertiesPanel";
 import SentToPanel from "@/components/project/SentToPanel";
 import DeveloperProposalFiles from "@/components/project/DeveloperProposalFiles";
+import NewDeveloperModal from "@/components/project/NewDeveloperModal";
 import CreatePptModal from "@/components/project/CreatePptModal";
 import ProjectPrintView from "@/components/project/ProjectPrintView";
 
@@ -33,10 +34,23 @@ type Question = {
   conditionalJson: { parentLabel: string; matchValue: string } | null;
   autoCalcJson: { formula: string; sourceField: string } | null;
   sortOrder: number;
+  showInPrint: boolean; showInPptExport: boolean;
 };
 type Group = { id: string; name: string; isShared: boolean; questions: Question[] };
 type TemplateGroup = { id: string; sortOrder: number; group: Group };
+export type PptExportConfig = {
+  groupOrder: string[];
+  groups: Record<string, { included: boolean; questionOrder: string[]; excludedQuestionIds: string[] }>;
+  excludedCustomFieldIds?: string[];
+};
 type Response = { questionId: string; value: string | null; jsonValue: unknown };
+type Deal = {
+  id: string; dealNumber: string; type: string; finalPrice: number | null; finalRent: number | null;
+  closureDate: string | null; notes: string | null; createdAt: string;
+  contact: { id: string; name: string };
+  match: { id: string; matchPct: number } | null;
+  developerProposal: { id: string; developer: { contact: { id: string; name: string } } } | null;
+};
 type Project = {
   id: string; projectNumber: string; title: string; state: string;
   potentialScore: number | null; clientName: string | null;
@@ -48,6 +62,7 @@ type Project = {
   leadSource?: string | null;
   leadDate?: string | null;
   referredBy?: { id: string; name: string; phone: string | null } | null;
+  deal?: Deal | null;
 };
 
 // ─── Score breakdown type ─────────────────────────────────────────────────────
@@ -67,9 +82,9 @@ const SECTOR_COLORS: Record<string, string> = {
 
 const BASE_TABS = [
   "Project Overview", "Find Buyers/Tenants", "Files", "Gallery", "Notes", "Tasks",
-  "Meetings", "Timeline", "Audit",
+  "Meetings", "Award", "Audit",
 ];
-const REDEVELOPMENT_TABS = [...BASE_TABS, "Developers & Proposals", "Closure"];
+const REDEVELOPMENT_TABS = [...BASE_TABS.slice(0, -2), "Developers & Proposals", "Award", "Audit"];
 
 function getDetailTabs(categoryName: string, subcategoryName: string) {
   const isRedevelopment = categoryName === "Special Projects" ||
@@ -292,215 +307,203 @@ function MeetingsTab({ projectId }: { projectId: string }) {
   );
 }
 
-// ─── Timeline Tab ─────────────────────────────────────────────────────────────
-type TimelineEntry = { id: string; action: string; entityType: string | null; createdAt: string; user?: { name: string } | null };
-
-const TIMELINE_ICONS: Record<string, { icon: string; color: string }> = {
-  CREATE:       { icon: "✦", color: "#2563eb" },
-  UPDATE:       { icon: "✎", color: "#0891b2" },
-  LOCK:         { icon: "🔒", color: "#d97706" },
-  UNLOCK:       { icon: "🔓", color: "#059669" },
-  ARCHIVE:      { icon: "📦", color: "#6b7280" },
-  FILE_UPLOAD:  { icon: "📎", color: "#7c3aed" },
-  FILE_DELETE:  { icon: "🗑", color: "#dc2626" },
-  OTP_SENT:     { icon: "📲", color: "#0891b2" },
-  OTP_VERIFIED: { icon: "✅", color: "#059669" },
+// ─── Award Tab ───────────────────────────────────────────────────────────────
+const DEAL_TYPES = ["SOLD", "RENTED", "LEASED", "REDEVELOPMENT_CONFIRMED", "WITHDRAWN", "REQUIREMENT_CLOSED"];
+const DEAL_TYPES_BY_SIDE: Record<"PRICE" | "RENT", string[]> = {
+  PRICE: ["SOLD", "WITHDRAWN", "REQUIREMENT_CLOSED"],
+  RENT: ["RENTED", "LEASED", "WITHDRAWN", "REQUIREMENT_CLOSED"],
 };
 
-const ACTION_LABELS: Record<string, string> = {
-  CREATE: "Project created",
-  UPDATE: "Field updated",
-  LOCK: "Project locked",
-  UNLOCK: "Project unlocked",
-  ARCHIVE: "Project archived",
-  FILE_UPLOAD: "File uploaded",
-  FILE_DELETE: "File deleted",
-  OTP_SENT: "Client OTP sent",
-  OTP_VERIFIED: "Client verified",
-};
+type AwardMatchOption = { id: string; matchPct: number; label: string; dealSide: "PRICE" | "RENT" };
+type AwardDevProposalOption = { id: string; status: string; developerName: string };
 
-function TimelineTab({ projectId }: { projectId: string }) {
-  const [entries, setEntries] = useState<TimelineEntry[]>([]);
-  useEffect(() => {
-    fetch(`/api/projects/${projectId}/audit`).then(r => r.json()).then(setEntries);
-  }, [projectId]);
-
-  if (entries.length === 0) {
-    return (
-      <div className="p-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
-          <TrendingUp className="w-8 h-8 text-gray-200 mx-auto mb-2" />
-          <p className="text-sm text-gray-400">No activity yet.</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-4">
-      <div className="relative pl-6 space-y-0">
-        {/* Vertical line */}
-        <div className="absolute left-2.5 top-2 bottom-2 w-px bg-gray-200" />
-        {entries.map((e, i) => {
-          const meta = TIMELINE_ICONS[e.action] ?? { icon: "•", color: "#9ca3af" };
-          return (
-            <div key={e.id} className="relative flex items-start gap-3 pb-4">
-              {/* Dot */}
-              <div className="absolute -left-3.5 w-6 h-6 rounded-full bg-white border-2 flex items-center justify-center text-xs flex-shrink-0"
-                style={{ borderColor: meta.color, top: "2px" }}>
-                <span style={{ fontSize: "10px" }}>{meta.icon}</span>
-              </div>
-              <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-semibold text-gray-800">{ACTION_LABELS[e.action] ?? e.action}</p>
-                  <span className="text-[10px] text-gray-400 whitespace-nowrap">
-                    {new Date(e.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-                  </span>
-                </div>
-                {e.entityType && e.entityType !== "project" && (
-                  <p className="text-[10px] text-gray-400 mt-0.5">{e.entityType}</p>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─── Closure Tab ─────────────────────────────────────────────────────────────
-const BLANK_CLOSURE = {
-  selectedDeveloper: "",
-  finalAdditionalArea: "",
-  finalCorpus: "",
-  finalRent: "",
-  finalTimeline: "",
-  bankGuarantee: "",
-  agreementDate: "",
-  registrationDate: "",
-  biplCommission: "",
-  paymentStatus: "Pending",
-  commerciallyClosed: false,
-  projectCompleted: false,
-  closureNotes: "",
-};
-type ClosureData = typeof BLANK_CLOSURE;
-
-function ClosureTab({ projectId, readOnly }: { projectId: string; readOnly: boolean }) {
-  const [data, setData] = useState<ClosureData>(BLANK_CLOSURE);
-  const [loaded, setLoaded] = useState(false);
+function AwardTab({
+  projectId, isRedevelopment, isDemandSide, deal, matchOptions, devProposalOptions,
+  preselectMatchId, preselectDevProposalId, readOnly, onAwarded,
+}: {
+  projectId: string; isRedevelopment: boolean; isDemandSide: boolean; deal: Deal | null | undefined;
+  matchOptions: AwardMatchOption[]; devProposalOptions: AwardDevProposalOption[];
+  preselectMatchId: string | null; preselectDevProposalId: string | null;
+  readOnly: boolean; onAwarded: () => void;
+}) {
+  const [matchId, setMatchId] = useState(preselectMatchId ?? "");
+  const [developerProposalId, setDeveloperProposalId] = useState(preselectDevProposalId ?? "");
+  const [dealType, setDealType] = useState(isRedevelopment ? "REDEVELOPMENT_CONFIRMED" : "SOLD");
+  const [finalPrice, setFinalPrice] = useState("");
+  const [finalRent, setFinalRent] = useState("");
+  const [closureDate, setClosureDate] = useState(new Date().toISOString().slice(0, 10));
+  const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
+  const selectedMatch = matchOptions.find(m => m.id === matchId);
+  const dealSide: "PRICE" | "RENT" = isRedevelopment ? "PRICE" : selectedMatch?.dealSide ?? "PRICE";
+  const availableDealTypes = isRedevelopment ? ["REDEVELOPMENT_CONFIRMED", "WITHDRAWN"] : DEAL_TYPES_BY_SIDE[dealSide];
+
+  useEffect(() => { if (preselectMatchId) setMatchId(preselectMatchId); }, [preselectMatchId]);
+  useEffect(() => { if (preselectDevProposalId) setDeveloperProposalId(preselectDevProposalId); }, [preselectDevProposalId]);
   useEffect(() => {
-    fetch(`/api/projects/${projectId}/closure`).then(r => r.json()).then((d: Partial<ClosureData>) => {
-      setData({ ...BLANK_CLOSURE, ...d });
-      setLoaded(true);
-    });
-  }, [projectId]);
+    if (!isRedevelopment && !availableDealTypes.includes(dealType)) setDealType(availableDealTypes[0]);
+  }, [dealSide, isRedevelopment]);
 
-  async function save() {
+  async function submit() {
+    setError("");
     setSaving(true);
-    await fetch(`/api/projects/${projectId}/closure`, {
+    const res = await fetch(`/api/projects/${projectId}/award`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        matchId: isRedevelopment ? undefined : (matchId || undefined),
+        developerProposalId: isRedevelopment ? (developerProposalId || undefined) : undefined,
+        dealType, finalPrice, finalRent, closureDate, notes,
+      }),
     });
     setSaving(false);
+    if (!res.ok) { const e = await res.json(); setError(e.error ?? "Failed to award"); return; }
+    onAwarded();
   }
 
-  function field(label: string, key: keyof ClosureData, type: "text" | "number" | "date" = "text") {
+  if (deal) {
+    const winnerName = deal.match
+      ? matchOptions.find(m => m.id === deal.match!.id)?.label ?? deal.contact.name
+      : deal.developerProposal?.developer.contact.name ?? deal.contact.name;
     return (
-      <div>
-        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">{label}</label>
-        <input type={type} value={data[key] as string} disabled={readOnly || !loaded}
-          onChange={e => setData(p => ({ ...p, [key]: e.target.value }))}
-          className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-gray-50 disabled:text-gray-400" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-4 space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <p className="font-bold text-gray-900 text-sm">Redevelopment Closure</p>
-          <p className="text-xs text-gray-400 mt-0.5">Record final agreed terms and deal milestones.</p>
+      <div className="p-4 space-y-4">
+        <div className="rounded-xl px-4 py-3 flex items-center gap-2 text-sm font-bold bg-green-100 text-green-700">
+          <Check className="w-4 h-4 flex-shrink-0" />
+          Awarded — {deal.dealNumber}
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          <label className="flex items-center gap-1.5 text-xs font-semibold text-teal-700 cursor-pointer">
-            <input type="checkbox" checked={data.commerciallyClosed} disabled={readOnly}
-              onChange={e => setData(p => ({ ...p, commerciallyClosed: e.target.checked }))}
-              className="w-4 h-4 rounded accent-teal-600" />
-            Commercially Closed
-          </label>
-          <label className="flex items-center gap-1.5 text-xs font-semibold text-green-700 cursor-pointer">
-            <input type="checkbox" checked={data.projectCompleted} disabled={readOnly}
-              onChange={e => setData(p => ({ ...p, projectCompleted: e.target.checked }))}
-              className="w-4 h-4 rounded accent-green-600" />
-            Project Completed
-          </label>
-          {!readOnly && (
-            <button onClick={save} disabled={saving || !loaded}
-              className="text-xs font-bold bg-teal-600 text-white px-3 py-1.5 rounded-lg hover:bg-teal-700 disabled:opacity-50">
-              {saving ? "Saving…" : "Save"}
-            </button>
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <div><p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Awarded To</p><p className="mt-1">{winnerName}</p></div>
+            <div><p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Deal Type</p><p className="mt-1">{deal.type.replace(/_/g, " ")}</p></div>
+            {deal.finalPrice != null && <div><p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Final Price (₹)</p><p className="mt-1">{deal.finalPrice.toLocaleString("en-IN")}</p></div>}
+            {deal.finalRent != null && <div><p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Final Rent (₹/mo)</p><p className="mt-1">{deal.finalRent.toLocaleString("en-IN")}</p></div>}
+            {deal.closureDate && <div><p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Closure Date</p><p className="mt-1">{new Date(deal.closureDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p></div>}
+          </div>
+          {deal.notes && (
+            <div className="border-t border-gray-100 pt-3">
+              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Notes</p>
+              <p className="mt-1 text-sm text-gray-700">{deal.notes}</p>
+            </div>
           )}
         </div>
       </div>
+    );
+  }
 
-      {(data.commerciallyClosed || data.projectCompleted) && (
-        <div className={cn("rounded-xl px-4 py-3 flex items-center gap-2 text-sm font-bold",
-          data.projectCompleted ? "bg-green-100 text-green-700" : "bg-teal-50 text-teal-700")}>
-          <Check className="w-4 h-4 flex-shrink-0" />
-          {data.projectCompleted ? "Project Completed" : "Commercially Closed"}
+  const winnerOptions = isRedevelopment ? devProposalOptions : matchOptions;
+  const hasWinnerOption = isRedevelopment ? !!developerProposalId : !!matchId;
+
+  return (
+    <div className="p-4 space-y-4">
+      <div>
+        <p className="font-bold text-gray-900 text-sm">Award</p>
+        <p className="text-xs text-gray-400 mt-0.5">
+          {isRedevelopment ? "Pick the winning developer and record final terms." : "Pick the winning match and record final terms."}
+        </p>
+      </div>
+
+      {winnerOptions.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-200 p-6 text-center text-sm text-gray-400">
+          {isRedevelopment ? "No shortlisted developers yet." : "No confirmed matches yet."}
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+          <div>
+            <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
+              {isRedevelopment ? "Winning Developer" : isDemandSide ? "Awarded Property" : "Winning Match"}
+            </label>
+            {isRedevelopment ? (
+              <select value={developerProposalId} disabled={readOnly}
+                onChange={e => setDeveloperProposalId(e.target.value)}
+                className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-gray-50">
+                <option value="">Select a developer…</option>
+                {devProposalOptions.map(o => <option key={o.id} value={o.id}>{o.developerName} ({o.status.replace(/_/g, " ")})</option>)}
+              </select>
+            ) : (
+              <select value={matchId} disabled={readOnly}
+                onChange={e => setMatchId(e.target.value)}
+                className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-gray-50">
+                <option value="">{isDemandSide ? "Select a property…" : "Select a match…"}</option>
+                {matchOptions.map(o => <option key={o.id} value={o.id}>{o.label} ({o.matchPct}%)</option>)}
+              </select>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Deal Type</label>
+              <select value={dealType} disabled={readOnly}
+                onChange={e => setDealType(e.target.value)}
+                className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-gray-50">
+                {availableDealTypes.map(t => <option key={t} value={t}>{t.replace(/_/g, " ")}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Closure Date</label>
+              <input type="date" value={closureDate} disabled={readOnly}
+                onChange={e => setClosureDate(e.target.value)}
+                className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-gray-50" />
+            </div>
+            {dealSide === "PRICE" ? (
+              <div>
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Final Price (₹)</label>
+                <input type="number" value={finalPrice} disabled={readOnly}
+                  onChange={e => setFinalPrice(e.target.value)} onWheel={blurOnWheel}
+                  className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-gray-50" />
+              </div>
+            ) : (
+              <div>
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Final Rent (₹/mo)</label>
+                <input type="number" value={finalRent} disabled={readOnly}
+                  onChange={e => setFinalRent(e.target.value)} onWheel={blurOnWheel}
+                  className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-gray-50" />
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Notes</label>
+            <textarea rows={3} value={notes} disabled={readOnly}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="Additional notes on deal closure, conditions…"
+              className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-teal-500 resize-none disabled:bg-gray-50" />
+          </div>
+
+          {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
+
+          {!readOnly && (
+            <button onClick={submit} disabled={saving || !hasWinnerOption}
+              className="text-xs font-bold bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50">
+              {saving ? "Awarding…" : "✓ Confirm Award"}
+            </button>
+          )}
         </div>
       )}
-
-      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Selected Developer & Final Terms</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {field("Selected Developer", "selectedDeveloper")}
-          {field("Final Additional Area (sqft)", "finalAdditionalArea", "number")}
-          {field("Final Corpus Fund (₹)", "finalCorpus", "number")}
-          {field("Final Monthly Rent (₹)", "finalRent", "number")}
-          {field("Final Construction Timeline (months)", "finalTimeline", "number")}
-          {field("Bank Guarantee", "bankGuarantee")}
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Agreement & Registration</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {field("Agreement Date", "agreementDate", "date")}
-          {field("Registration Date", "registrationDate", "date")}
-          {field("BIPL Commission (₹)", "biplCommission", "number")}
-          <div>
-            <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Payment Status</label>
-            <select value={data.paymentStatus} disabled={readOnly || !loaded}
-              onChange={e => setData(p => ({ ...p, paymentStatus: e.target.value }))}
-              className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-teal-500 bg-white disabled:bg-gray-50">
-              {["Pending","Partial","Received"].map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-2">
-        <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Closure Notes</label>
-        <textarea rows={4} value={data.closureNotes} disabled={readOnly || !loaded}
-          onChange={e => setData(p => ({ ...p, closureNotes: e.target.value }))}
-          placeholder="Additional notes on deal closure, pending items, conditions…"
-          className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-teal-500 resize-none disabled:bg-gray-50 disabled:text-gray-400" />
-      </div>
     </div>
   );
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ProjectDetailPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id: urlKey } = useParams<{ id: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // The URL segment may be either the project's internal id or its readable
+  // projectNumber (e.g. "BI-RES-0023") — resolve it once to the real id, which
+  // every fetch in this page (and every child component it passes id/projectId to)
+  // uses. Sub-resource API routes are unaffected — they only ever see the real id.
+  const [id, setId] = useState<string | null>(null);
+  const [resolveFailed, setResolveFailed] = useState(false);
+  useEffect(() => {
+    setId(null);
+    setResolveFailed(false);
+    fetch(`/api/projects/resolve/${urlKey}`)
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(data => setId(data.id))
+      .catch(() => setResolveFailed(true));
+  }, [urlKey]);
 
   const [project, setProject]           = useState<Project | null>(null);
   const [loading, setLoading]           = useState(true);
@@ -516,15 +519,17 @@ export default function ProjectDetailPage() {
   const [globalEdit, setGlobalEdit]     = useState(false);
   const [showExportPpt, setShowExportPpt] = useState(false);
   const [exportPptImages, setExportPptImages] = useState<{ id: string; originalName: string; sizeBytes: number; uploadedAt: string }[] | null>(null);
+  const [pptExportConfig, setPptExportConfig] = useState<PptExportConfig | null>(null);
   const [printPhotoUrl, setPrintPhotoUrl] = useState<string | null>(null);
 
   async function openExportPpt() {
-    const [galleryRes, customRes] = await Promise.all([
+    const [galleryRes, configRes] = await Promise.all([
       fetch(`/api/projects/${id}/files?kind=GALLERY_IMAGE`),
-      fetch(`/api/projects/${id}/files?kind=CUSTOM_FIELD_IMAGE`),
+      fetch(`/api/projects/${id}/ppt-export-config`),
     ]);
-    const [gallery, custom] = await Promise.all([galleryRes.json(), customRes.json()]);
-    setExportPptImages([...gallery, ...custom]);
+    const [gallery, config] = await Promise.all([galleryRes.json(), configRes.json()]);
+    setExportPptImages(gallery);
+    setPptExportConfig(config.pptExportConfig ?? null);
     setShowExportPpt(true);
   }
 
@@ -538,8 +543,7 @@ export default function ProjectDetailPage() {
 
   useEffect(refreshPrintPhoto, [id]);
 
-  // Re-sync the active tab when navigating here (even to the same route) with a ?tab= param,
-  // e.g. clicking "Open Negotiation Log" from a Proposal card while this page is already mounted.
+  // Re-sync the active tab when navigating here (even to the same route) with a ?tab= param.
   useEffect(() => {
     const tabParam = searchParams.get("tab");
     if (tabParam) setActiveTab(tabParam);
@@ -547,8 +551,12 @@ export default function ProjectDetailPage() {
 
   // Extra data (per-project relationships)
   const [extraData, setExtraData] = useState<{
-    ownerUnits: any[]; negotiations: any[]; developerProposals: any[]; matches: any[]; proposals: any[]; developers: any[];
+    ownerUnits: any[]; developerProposals: any[]; matches: any[]; proposals: any[]; developers: any[];
   } | null>(null);
+
+  // Pre-selection when jumping into the Award tab from elsewhere (a match row, a developer proposal)
+  const [awardPreselectMatchId, setAwardPreselectMatchId] = useState<string | null>(null);
+  const [awardPreselectDevProposalId, setAwardPreselectDevProposalId] = useState<string | null>(null);
 
   // Owner unit form (add + edit)
   const BLANK_OWNER = { unitNumber: "", ownerName: "", phone: "", email: "", existingArea: "", uds: "", occupancyStatus: "", consentStatus: "NOT_CONTACTED", conditions: "", meetingAttended: false, notes: "" };
@@ -561,17 +569,8 @@ export default function ProjectDetailPage() {
   const [addDevForm, setAddDevForm] = useState(false);
   const [devForm, setDevForm] = useState<typeof BLANK_DEV>(BLANK_DEV);
   const [editingDevId, setEditingDevId] = useState<string | null>(null);
+  const [showNewDevModal, setShowNewDevModal] = useState(false);
   const [devCompareMode, setDevCompareMode] = useState(false);
-
-  // Negotiation round form
-  const BLANK_ROUND = { offerBy: "buyer", offerAmount: "", notes: "" };
-  const [addRoundNegId, setAddRoundNegId] = useState<string | null>(null);
-  const [roundForm, setRoundForm] = useState<typeof BLANK_ROUND>(BLANK_ROUND);
-
-  // Close deal form
-  const BLANK_DEAL = { dealType: "SOLD", finalPrice: "", finalRent: "", closureDate: new Date().toISOString().slice(0, 10), notes: "" };
-  const [closeDealNegId, setCloseDealNegId] = useState<string | null>(null);
-  const [dealForm, setDealForm] = useState<typeof BLANK_DEAL>(BLANK_DEAL);
 
   // Score breakdown
   const [scoreBreakdown, setScoreBreakdown] = useState<ScoreBreakdown | null>(null);
@@ -579,20 +578,27 @@ export default function ProjectDetailPage() {
   // Status dropdown
   const [allStatuses, setAllStatuses] = useState<{ id: string; name: string; color: string }[]>([]);
   const [statusDropdown, setStatusDropdown] = useState(false);
+  const statusBtnRef = useRef<HTMLButtonElement>(null);
+  const [statusPos, setStatusPos] = useState<{ top: number; left: number } | null>(null);
 
   // Client portal
-  const [clientPhone, setClientPhone] = useState("");
   const [clientLinkUrl, setClientLinkUrl] = useState("");
+  const [clientLinkSlug, setClientLinkSlug] = useState("");
+  const [slugInput, setSlugInput] = useState("");
+  const [slugSaving, setSlugSaving] = useState(false);
+  const [slugError, setSlugError] = useState("");
   const [linkLoading, setLinkLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showPortal, setShowPortal] = useState(false);
   const shareBtnRef = useRef<HTMLButtonElement>(null);
   const [sharePos, setSharePos] = useState<{ top: number; right: number } | null>(null);
+  const [pendingCompletedStatusId, setPendingCompletedStatusId] = useState<string | null>(null);
 
 
-  const { status: saveStatus, debouncedSave, immediateSave } = useAutosave(id);
+  const { status: saveStatus, debouncedSave, immediateSave } = useAutosave(id ?? "");
 
   const load = useCallback(async () => {
+    if (!id) return;
     const safeJson = async (r: globalThis.Response) => {
       try { return r.ok ? await r.json() : null; }
       catch { return null; }
@@ -646,14 +652,28 @@ export default function ProjectDetailPage() {
   }
 
   async function generateLink() {
-    if (!clientPhone.trim()) return;
     setLinkLoading(true);
-    const res = await fetch(`/api/projects/${id}/client-link`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: clientPhone.trim() }),
-    });
-    setClientLinkUrl((await res.json()).url);
+    const res = await fetch(`/api/projects/${id}/client-link`, { method: "POST" });
+    const data = await res.json();
+    setClientLinkUrl(data.url);
+    setClientLinkSlug(data.slug ?? "");
+    setSlugInput(data.slug ?? "");
     setLinkLoading(false);
+  }
+
+  async function saveSlug() {
+    setSlugSaving(true);
+    setSlugError("");
+    const res = await fetch(`/api/projects/${id}/client-link`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slug: slugInput.trim() }),
+    });
+    const data = await res.json();
+    setSlugSaving(false);
+    if (!res.ok) { setSlugError(data.error ?? "Failed to update link"); return; }
+    setClientLinkUrl(data.url);
+    setClientLinkSlug(data.slug ?? "");
+    setSlugInput(data.slug ?? "");
   }
 
   async function reloadExtra() {
@@ -743,47 +763,6 @@ export default function ProjectDetailPage() {
     await reloadExtra();
   }
 
-  async function startNegotiationWithDev(contactId: string) {
-    const res = await fetch(`/api/projects/${id}/negotiations`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contactId }),
-    });
-    if (!res.ok) { const e = await res.json(); alert(e.error ?? "Failed to start negotiation"); return; }
-    await reloadExtra();
-    setActiveTab("Negotiation Log");
-  }
-
-  async function addNegotiationRound(negotiationId: string, roundNumber: number) {
-    if (!roundForm.offerAmount) return;
-    await fetch(`/api/projects/${id}/extra`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "negotiationRound", negotiationId, roundNumber, ...roundForm }),
-    });
-    await reloadExtra();
-    setAddRoundNegId(null);
-    setRoundForm(BLANK_ROUND);
-  }
-
-  async function updateNegotiationStatus(negotiationId: string, status: string) {
-    await fetch(`/api/projects/${id}/extra`, {
-      method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "negotiation", id: negotiationId, status }),
-    });
-    await reloadExtra();
-  }
-
-  async function closeDeal(contactId: string) {
-    if (!dealForm.finalPrice && !dealForm.finalRent) return;
-    const res = await fetch(`/api/projects/${id}/extra`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "deal", contactId, ...dealForm }),
-    });
-    if (!res.ok) { const e = await res.json(); alert(e.error ?? "Failed to close deal"); return; }
-    await reloadExtra();
-    setCloseDealNegId(null);
-    setDealForm(BLANK_DEAL);
-  }
-
   const labelValueMap: Record<string, string> = {};
   if (project) {
     for (const tg of project.template.groups)
@@ -800,8 +779,10 @@ export default function ProjectDetailPage() {
     setLocalValues(p => ({ ...p, [q.id]: value ?? "" }));
     if (jsonValue !== undefined) setLocalJsonValues(p => ({ ...p, [q.id]: jsonValue }));
     const immediate = ["RADIO","DROPDOWN","MULTISELECT","REPEATER","DATE"].includes(q.fieldType);
-    if (immediate) immediateSave(q.id, value, jsonValue);
-    else debouncedSave(q.id, value ?? "");
+    if (immediate) {
+      const isBlankRepeater = q.fieldType === "REPEATER" && isBlankResponseValue(value, "REPEATER");
+      immediateSave(q.id, isBlankRepeater ? null : value, isBlankRepeater ? null : jsonValue);
+    } else debouncedSave(q.id, value ?? "");
   }
 
   async function changeState(state: string) {
@@ -821,17 +802,36 @@ export default function ProjectDetailPage() {
     setDuplicating(false);
     if (!res.ok) { alert("Failed to duplicate property"); return; }
     const created = await res.json();
-    router.push(`/projects/${created.id}`);
+    router.push(`/projects/${created.projectNumber}`);
   }
 
+  if (resolveFailed) return <div className="p-4 sm:p-8 text-red-500 text-sm">Project not found.</div>;
   if (loading) return <div className="flex items-center justify-center h-full text-sm text-gray-400">Loading…</div>;
-  if (!project) return <div className="p-4 sm:p-8 text-red-500 text-sm">Project not found.</div>;
+  if (!project || !id) return <div className="p-4 sm:p-8 text-red-500 text-sm">Project not found.</div>;
 
   const isLocked   = project.state === "LOCKED";
   const isArchived = project.state === "ARCHIVED";
   // Lock only freezes the client-facing portal link — staff can keep editing internally.
   const readOnly   = isArchived;
   const sectorColor = SECTOR_COLORS[project.category.name] ?? "#64748b";
+  const isRedevelopmentProject = getDetailTabs(project.category.name, project.subcategory.name) === REDEVELOPMENT_TABS;
+  const isDemandSideProject = project.subcategory.name === "Buy" || project.subcategory.name === "Tenant";
+
+  const awardMatchOptions: AwardMatchOption[] = (extraData?.matches ?? [])
+    .filter((m: any) => m.confirmedAt)
+    .map((m: any) => {
+      const listingSubcategory = m.project?.subcategory?.name;
+      const dealSide: "PRICE" | "RENT" = listingSubcategory === "Rent" ? "RENT" : "PRICE";
+      return {
+        id: m.id, matchPct: m.matchPct, dealSide,
+        label: isDemandSideProject
+          ? `${m.project?.title ?? "Unknown"} (${m.project?.projectNumber ?? ""})`
+          : m.demandProject?.clientContact?.name ?? m.demandProject?.title ?? "Unknown",
+      };
+    });
+  const awardDevProposalOptions: AwardDevProposalOption[] = (extraData?.developerProposals ?? [])
+    .filter((dp: any) => ["SHORTLISTED", "FINAL_NEGOTIATION", "SELECTED"].includes(dp.status))
+    .map((dp: any) => ({ id: dp.id, status: dp.status, developerName: dp.developer.contact.name }));
 
   const allQs = project.template.groups.flatMap(tg => tg.group.questions.filter(q => !q.autoCalcJson));
   const filled = allQs.filter(q => localValues[q.id]?.trim()).length;
@@ -868,7 +868,14 @@ export default function ProjectDetailPage() {
         {/* Status — clickable dropdown */}
         <div className="relative flex-shrink-0">
           <button
-            onClick={() => setStatusDropdown(v => !v)}
+            ref={statusBtnRef}
+            onClick={() => {
+              if (!statusDropdown && statusBtnRef.current) {
+                const r = statusBtnRef.current.getBoundingClientRect();
+                setStatusPos({ top: r.bottom + 4, left: r.left });
+              }
+              setStatusDropdown(v => !v);
+            }}
             className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border transition-colors hover:opacity-80"
             style={project.status
               ? { borderColor: project.status.color, color: project.status.color, background: project.status.color + "12" }
@@ -876,12 +883,22 @@ export default function ProjectDetailPage() {
             {project.status?.name ?? "No Status"}
             <ChevronDown className="w-2.5 h-2.5" />
           </button>
-          {statusDropdown && (
+          {statusDropdown && statusPos && createPortal(
             <>
-              <div className="fixed inset-0 z-10" onClick={() => setStatusDropdown(false)} />
-              <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1 min-w-[140px]">
+              <div className="fixed inset-0 z-40" onClick={() => setStatusDropdown(false)} />
+              <div
+                className="fixed bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1 min-w-[140px]"
+                style={{ top: statusPos.top, left: statusPos.left }}
+              >
                 {allStatuses.map(s => (
-                  <button key={s.id} onClick={() => changeStatus(s.id)}
+                  <button key={s.id} onClick={() => {
+                    if (s.name.trim().toLowerCase() === "completed" && !project.deal) {
+                      setStatusDropdown(false);
+                      setPendingCompletedStatusId(s.id);
+                      return;
+                    }
+                    changeStatus(s.id);
+                  }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-gray-50 transition-colors text-left">
                     <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
                     <span className="font-medium text-gray-800">{s.name}</span>
@@ -889,7 +906,8 @@ export default function ProjectDetailPage() {
                   </button>
                 ))}
               </div>
-            </>
+            </>,
+            document.body
           )}
         </div>
 
@@ -936,7 +954,9 @@ export default function ProjectDetailPage() {
                   const r = shareBtnRef.current.getBoundingClientRect();
                   setSharePos({ top: r.bottom + 4, right: window.innerWidth - r.right });
                 }
-                setShowPortal(v => !v);
+                const next = !showPortal;
+                setShowPortal(next);
+                if (next && !clientLinkUrl) generateLink();
               }}
               className={cn("flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded border transition-colors",
                 showPortal ? "border-blue-400 bg-blue-50 text-blue-600" : "border-gray-200 text-gray-500 hover:bg-gray-50")}>
@@ -949,24 +969,41 @@ export default function ProjectDetailPage() {
                   className="fixed bg-white border border-gray-200 rounded-xl shadow-lg z-50 p-3 w-64"
                   style={{ top: sharePos.top, right: sharePos.right }}
                 >
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Send Client Portal Link</p>
-                  <div className="flex gap-1.5 mb-2">
-                    <input value={clientPhone} onChange={e => setClientPhone(e.target.value)}
-                      placeholder="Client phone"
-                      className="flex-1 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                    <button onClick={generateLink} disabled={!clientPhone.trim() || linkLoading}
-                      className="bg-blue-600 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
-                      {linkLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Send"}
-                    </button>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Client Portal Link</p>
+                    <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded-full",
+                      project.state === "OPEN" ? "bg-green-100 text-green-700" :
+                      project.state === "LOCKED" ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-500")}>
+                      {project.state === "OPEN" ? "Open — editable" : project.state === "LOCKED" ? "Locked" : "Archived"}
+                    </span>
                   </div>
-                  {clientLinkUrl && (
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 flex items-center gap-2">
-                      <p className="text-[10px] text-gray-600 flex-1 min-w-0 truncate font-mono">{clientLinkUrl}</p>
-                      <button onClick={() => { navigator.clipboard.writeText(clientLinkUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-                        className="text-gray-400 hover:text-blue-600 flex-shrink-0">
-                        {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <span className="text-[10px] font-bold">Copy</span>}
-                      </button>
+                  {linkLoading && !clientLinkUrl ? (
+                    <div className="flex items-center justify-center py-3">
+                      <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
                     </div>
+                  ) : (
+                    <>
+                      {clientLinkUrl && (
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 flex items-center gap-2 mb-2">
+                          <p className="text-[10px] text-gray-600 flex-1 min-w-0 truncate font-mono">{clientLinkUrl}</p>
+                          <button onClick={() => { navigator.clipboard.writeText(clientLinkUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                            className="text-gray-400 hover:text-blue-600 flex-shrink-0">
+                            {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <span className="text-[10px] font-bold">Copy</span>}
+                          </button>
+                        </div>
+                      )}
+                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Custom Link Name</p>
+                      <div className="flex gap-1.5">
+                        <input value={slugInput} onChange={e => { setSlugInput(e.target.value); setSlugError(""); }}
+                          placeholder={clientLinkSlug || "e.g. 123-main-st"}
+                          className="flex-1 min-w-0 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        <button onClick={saveSlug} disabled={slugSaving || slugInput.trim() === (clientLinkSlug || "")}
+                          className="bg-blue-600 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                          {slugSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save"}
+                        </button>
+                      </div>
+                      {slugError && <p className="text-[10px] text-red-500 mt-1">{slugError}</p>}
+                    </>
                   )}
                 </div>
               </>,
@@ -1027,7 +1064,9 @@ export default function ProjectDetailPage() {
             className={cn("px-3 h-full text-[11px] font-medium whitespace-nowrap border-b-2 transition-colors flex-shrink-0",
               activeTab === tab ? "text-blue-600" : "border-transparent text-gray-500 hover:text-gray-800")}
             style={activeTab === tab ? { borderColor: sectorColor, color: sectorColor } : undefined}>
-            {tab}
+            {tab === "Find Buyers/Tenants" && (project.subcategory.name === "Buy" || project.subcategory.name === "Tenant")
+              ? "Find Properties"
+              : tab === "Audit" ? "Logs" : tab}
           </button>
         ))}
       </div>
@@ -1073,8 +1112,9 @@ export default function ProjectDetailPage() {
                 </div>
               )}
 
-              {/* Score Analysis Panel */}
-              {scoreBreakdown && scoreBreakdown.breakdown.length > 0 && (() => {
+              {/* Score Analysis + Property/Buyer Image gallery */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {scoreBreakdown && scoreBreakdown.breakdown.length > 0 && (() => {
                 const sb = scoreBreakdown;
                 const earned = sb.totalEarned;
                 const possible = sb.totalPossible;
@@ -1136,13 +1176,13 @@ export default function ProjectDetailPage() {
                     </div>
                   </div>
                 );
-              })()}
+                })()}
 
-              {/* Custom fields — ad-hoc fields discovered after client call */}
-              <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
-                <CustomFieldsSection
-                  apiBase={`/api/projects/${id}/custom-fields`}
+                <PrintImageSection
+                  apiBase={`/api/projects/${id}/files`}
                   readOnly={readOnly}
+                  onChange={refreshPrintPhoto}
+                  label={project.subcategory.name.includes("Buy") ? "Buyer Image" : "Property Image"}
                 />
               </div>
 
@@ -1199,7 +1239,7 @@ export default function ProjectDetailPage() {
                           if (!isVisible(q)) return null;
                           const isWide = q.fieldType === "TEXTAREA" || q.fieldType === "REPEATER";
                           return (
-                            <div key={q.id} className={cn(isWide && "col-span-2")}>
+                            <div key={q.id} className={cn("min-w-0", isWide && "col-span-2")}>
                               <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">
                                 {q.label}
                                 {q.isRequired && <span className="ml-0.5" style={{ color: col.dot }}>*</span>}
@@ -1223,55 +1263,113 @@ export default function ProjectDetailPage() {
                     ) : (
                       /* Collapsed read-only summary */
                       <div className="px-4 py-3 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
-                        {tg.group.questions.slice(0, 6).map(q => {
+                        {tg.group.questions.map(q => {
                           if (!isVisible(q)) return null;
                           const val = localValues[q.id];
                           return (
-                            <div key={q.id}>
-                              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{q.label}</p>
-                              <p className="text-sm text-gray-800 mt-0.5 truncate">{val || <span className="text-gray-300">—</span>}</p>
+                            <div key={q.id} className="min-w-0">
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 truncate">{q.label}</p>
+                              <p className="text-sm text-gray-800 mt-0.5 truncate">{!isBlankResponseValue(val, q.fieldType) ? val : <span className="text-gray-300">—</span>}</p>
                             </div>
                           );
                         })}
-                        {tg.group.questions.length > 6 && (
-                          <p className="col-span-2 text-[10px] text-gray-400">+{tg.group.questions.length - 6} more fields…</p>
-                        )}
                       </div>
                     )}
                   </div>
                 );
               })}
 
-              <CustomFieldImagesSection
-                apiBase={`/api/projects/${id}/files`}
-                projectTitle={project.title}
-                readOnly={readOnly}
-              />
-
-              <PrintImageSection
-                apiBase={`/api/projects/${id}/files`}
-                readOnly={readOnly}
-                onChange={refreshPrintPhoto}
-              />
+              {/* Additional fields — ad-hoc text/image fields discovered after client call */}
+              <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
+                <AdditionalFieldsSection
+                  apiBase={`/api/projects/${id}/custom-fields`}
+                  filesApiBase={`/api/projects/${id}/files`}
+                  readOnly={readOnly}
+                />
+              </div>
             </div>
           )}
 
-          {/* ── FIND BUYERS / TENANTS ── */}
-          {activeTab === "Find Buyers/Tenants" && (
-            <div className="p-4 space-y-3">
-              <div className="flex items-center gap-2 mb-1">
-                <Users className="w-4 h-4 text-blue-600" />
-                <span className="font-bold text-gray-900 text-sm">Find Matching Buyers & Tenants</span>
-              </div>
-              <p className="text-xs text-gray-400">
-                Tick the requirements this property is a good fit for. Save Matches to confirm. Use "Auto-scan" to get score-based suggestions first.
-              </p>
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <FindRequirementsPanel projectId={id} />
-              </div>
+          {/* ── FIND BUYERS / TENANTS (listing projects) / FIND PROPERTIES (demand projects) ── */}
+          {activeTab === "Find Buyers/Tenants" && project && (
+            project.subcategory.name === "Buy" || project.subcategory.name === "Tenant" ? (
+              <div className="p-4 space-y-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Users className="w-4 h-4 text-blue-600" />
+                  <span className="font-bold text-gray-900 text-sm">Find Matching Properties</span>
+                </div>
+                <p className="text-xs text-gray-400">
+                  Tick the properties that fit this requirement. Save Matches to confirm. Use "Auto-scan" to get score-based suggestions first.
+                </p>
+                <div className="bg-white rounded-xl border border-gray-200 p-4">
+                  <FindPropertiesPanel demandProjectId={id} />
+                </div>
 
-              <SentToPanel projectId={id} />
-            </div>
+                {(extraData?.matches ?? []).some((m: any) => m.confirmedAt) && (
+                  <div className="bg-white rounded-xl border border-gray-200 p-4">
+                    <p className="font-bold text-gray-900 text-sm mb-1">Confirmed Matches</p>
+                    <p className="text-xs text-gray-400 mb-3">Ready to award once terms are finalized.</p>
+                    <div className="space-y-2">
+                      {(extraData?.matches ?? []).filter((m: any) => m.confirmedAt).map((m: any) => (
+                        <div key={m.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-gray-100">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {m.project?.title} <span className="text-gray-400 font-normal">({m.project?.projectNumber})</span>
+                            </p>
+                            <p className="text-xs text-gray-400">{m.matchPct}% match</p>
+                          </div>
+                          {m.deal ? (
+                            <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-green-100 text-green-700 flex-shrink-0">Awarded</span>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-4 space-y-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Users className="w-4 h-4 text-blue-600" />
+                  <span className="font-bold text-gray-900 text-sm">Find Matching Buyers & Tenants</span>
+                </div>
+                <p className="text-xs text-gray-400">
+                  Tick the requirements this property is a good fit for. Save Matches to confirm. Use "Auto-scan" to get score-based suggestions first.
+                </p>
+                <div className="bg-white rounded-xl border border-gray-200 p-4">
+                  <FindRequirementsPanel projectId={id} />
+                </div>
+
+                {(extraData?.matches ?? []).some((m: any) => m.confirmedAt) && (
+                  <div className="bg-white rounded-xl border border-gray-200 p-4">
+                    <p className="font-bold text-gray-900 text-sm mb-1">Confirmed Matches</p>
+                    <p className="text-xs text-gray-400 mb-3">Ready to award once terms are finalized.</p>
+                    <div className="space-y-2">
+                      {(extraData?.matches ?? []).filter((m: any) => m.confirmedAt).map((m: any) => (
+                        <div key={m.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-gray-100">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {m.demandProject?.clientContact?.name ?? m.demandProject?.title}
+                            </p>
+                            <p className="text-xs text-gray-400">{m.matchPct}% match</p>
+                          </div>
+                          {m.deal ? (
+                            <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-green-100 text-green-700 flex-shrink-0">Awarded</span>
+                          ) : project?.state !== "ARCHIVED" ? (
+                            <button onClick={() => { setAwardPreselectMatchId(m.id); setActiveTab("Award"); }}
+                              className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100 flex-shrink-0">
+                              Award
+                            </button>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <SentToPanel projectId={id} />
+              </div>
+            )
           )}
 
           {/* ── OWNERS REGISTER — removed, covered by template questions ── */}
@@ -1329,8 +1427,8 @@ export default function ProjectDetailPage() {
                       <input placeholder="Owner Name *" value={ownerForm.ownerName} onChange={e => setOwnerForm(p => ({ ...p, ownerName: e.target.value }))} className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                       <input placeholder="Phone" value={ownerForm.phone} onChange={e => setOwnerForm(p => ({ ...p, phone: e.target.value }))} className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                       <input placeholder="Email" type="email" value={ownerForm.email} onChange={e => setOwnerForm(p => ({ ...p, email: e.target.value }))} className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                      <input placeholder="Existing Area (sqft)" type="number" value={ownerForm.existingArea} onChange={e => setOwnerForm(p => ({ ...p, existingArea: e.target.value }))} className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                      <input placeholder="UDS (sqft)" type="number" value={ownerForm.uds} onChange={e => setOwnerForm(p => ({ ...p, uds: e.target.value }))} className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                      <input placeholder="Existing Area (sqft)" type="number" value={ownerForm.existingArea} onChange={e => setOwnerForm(p => ({ ...p, existingArea: e.target.value }))} onWheel={blurOnWheel} className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                      <input placeholder="UDS (sqft)" type="number" value={ownerForm.uds} onChange={e => setOwnerForm(p => ({ ...p, uds: e.target.value }))} onWheel={blurOnWheel} className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                       <select value={ownerForm.occupancyStatus} onChange={e => setOwnerForm(p => ({ ...p, occupancyStatus: e.target.value }))} className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
                         <option value="">Occupancy Status</option>
                         {["Owner Occupied","Tenant Occupied","Vacant","Joint"].map(s => <option key={s} value={s}>{s}</option>)}
@@ -1406,149 +1504,6 @@ export default function ProjectDetailPage() {
           })()}
 
           {/* ── LEGAL — removed, covered by template questions ── */}
-
-          {/* ── NEGOTIATION LOG ── */}
-          {activeTab === "Negotiation Log" && (
-            <div className="p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Handshake className="w-4 h-4 text-teal-600" />
-                <span className="font-bold text-gray-900 text-sm">Negotiation History</span>
-                <span className="text-xs text-gray-400">({extraData?.negotiations.length ?? 0})</span>
-              </div>
-              {extraData && extraData.negotiations.length > 0 ? extraData.negotiations.map((n: any) => (
-                <div key={n.id} className="bg-white rounded-xl border border-gray-200 p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <p className="font-semibold text-gray-900 text-sm">with {n.contact.name}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{new Date(n.createdAt).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</p>
-                    </div>
-                    <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase",
-                      n.status==="AGREED"?"bg-green-50 text-green-700":n.status==="ACTIVE"?"bg-blue-50 text-blue-700":"bg-gray-100 text-gray-500")}>
-                      {n.status}
-                    </span>
-                  </div>
-                  {n.rounds.length > 0 && (
-                    <div className="border-t border-gray-100 pt-3 space-y-2 mb-3">
-                      {n.rounds.map((r: any, i: number) => (
-                        <div key={r.id} className="flex items-start gap-3 text-xs">
-                          <span className="w-5 h-5 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center flex-shrink-0 font-bold text-[10px]">{i+1}</span>
-                          <div>
-                            <span className={cn("font-semibold", r.offerBy==="buyer"?"text-blue-700":"text-amber-700")}>
-                              {r.offerBy==="buyer"?"Buyer":"Seller"}: ₹{r.offerAmount?(r.offerAmount/1e7).toFixed(2)+"Cr":"—"}
-                            </span>
-                            {r.notes && <p className="text-gray-400 mt-0.5">{r.notes}</p>}
-                          </div>
-                          <span className="ml-auto text-gray-400">{new Date(r.createdAt).toLocaleDateString("en-IN",{day:"numeric",month:"short"})}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Add round form */}
-                  {addRoundNegId === n.id && (
-                    <div className="border-t border-gray-100 pt-3 space-y-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        <select value={roundForm.offerBy} onChange={e => setRoundForm(p => ({ ...p, offerBy: e.target.value }))}
-                          className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500">
-                          <option value="buyer">Buyer offer</option>
-                          <option value="seller">Seller offer</option>
-                        </select>
-                        <input placeholder="Amount (₹)" type="number" value={roundForm.offerAmount}
-                          onChange={e => setRoundForm(p => ({ ...p, offerAmount: e.target.value }))}
-                          className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                      </div>
-                      <input placeholder="Notes (optional)" value={roundForm.notes}
-                        onChange={e => setRoundForm(p => ({ ...p, notes: e.target.value }))}
-                        className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                      <div className="flex gap-2">
-                        <button onClick={() => addNegotiationRound(n.id, n.rounds.length + 1)}
-                          className="bg-blue-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-blue-700">Save Round</button>
-                        <button onClick={() => { setAddRoundNegId(null); setRoundForm(BLANK_ROUND); }}
-                          className="border border-gray-200 text-[10px] text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-50">Cancel</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Close deal form */}
-                  {closeDealNegId === n.id && (
-                    <div className="border-t border-gray-100 pt-3 space-y-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        <select value={dealForm.dealType} onChange={e => setDealForm(p => ({ ...p, dealType: e.target.value }))}
-                          className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500">
-                          {["SOLD","RENTED","LEASED","REDEVELOPMENT_CONFIRMED","WITHDRAWN","REQUIREMENT_CLOSED"].map(t => (
-                            <option key={t} value={t}>{t.replace(/_/g," ")}</option>
-                          ))}
-                        </select>
-                        <input type="date" value={dealForm.closureDate}
-                          onChange={e => setDealForm(p => ({ ...p, closureDate: e.target.value }))}
-                          className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                        <input placeholder="Final Price (₹)" type="number" value={dealForm.finalPrice}
-                          onChange={e => setDealForm(p => ({ ...p, finalPrice: e.target.value }))}
-                          className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                        <input placeholder="Final Rent (₹/mo)" type="number" value={dealForm.finalRent}
-                          onChange={e => setDealForm(p => ({ ...p, finalRent: e.target.value }))}
-                          className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                      </div>
-                      <input placeholder="Notes (optional)" value={dealForm.notes}
-                        onChange={e => setDealForm(p => ({ ...p, notes: e.target.value }))}
-                        className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                      <div className="flex gap-2">
-                        <button onClick={() => closeDeal(n.contact.id)}
-                          className="bg-green-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg hover:bg-green-700">Confirm Deal Closed</button>
-                        <button onClick={() => { setCloseDealNegId(null); setDealForm(BLANK_DEAL); }}
-                          className="border border-gray-200 text-[10px] text-gray-500 px-3 py-1.5 rounded-lg hover:bg-gray-50">Cancel</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Action buttons */}
-                  {addRoundNegId !== n.id && closeDealNegId !== n.id && (
-                    <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
-                      {n.status === "ACTIVE" && project?.state !== "ARCHIVED" && (
-                        <>
-                          <button onClick={() => { setAddRoundNegId(n.id); setRoundForm(BLANK_ROUND); }}
-                            className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100">
-                            + Add Round
-                          </button>
-                          <button onClick={() => updateNegotiationStatus(n.id, "AGREED")}
-                            className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-green-50 text-green-700 hover:bg-green-100">
-                            Mark Agreed
-                          </button>
-                          <button onClick={() => updateNegotiationStatus(n.id, "COLLAPSED")}
-                            className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-red-50 text-red-600 hover:bg-red-100">
-                            Mark Collapsed
-                          </button>
-                        </>
-                      )}
-                      {n.status === "AGREED" && project?.state !== "ARCHIVED" && (
-                        <button onClick={() => { setCloseDealNegId(n.id); setDealForm(BLANK_DEAL); }}
-                          className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-green-600 text-white hover:bg-green-700">
-                          ✓ Close Deal
-                        </button>
-                      )}
-                      {project?.state === "ARCHIVED" && (
-                        <span className="text-[10px] font-bold text-gray-400">Deal closed — property archived.</span>
-                      )}
-                      {n.status === "COLLAPSED" && project?.state !== "ARCHIVED" && (
-                        <span className="text-[10px] text-gray-400">Negotiation collapsed.</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )) : (
-                <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
-                  <Handshake className="w-8 h-8 text-gray-200 mx-auto mb-2" />
-                  <p className="text-sm text-gray-400">No negotiations for this property yet.</p>
-                  <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
-                    Once a proposal is accepted, a negotiation is created here. Track offer rounds until a deal is closed.
-                  </p>
-                  <p className="text-xs text-blue-600 font-medium mt-2">
-                    Go to Proposals → accept a proposal to start a negotiation.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* ── DEVELOPERS & PROPOSALS ── */}
           {activeTab === "Developers & Proposals" && (() => {
@@ -1691,9 +1646,13 @@ export default function ProjectDetailPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="col-span-2">
                         <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Developer *</label>
-                        <select value={devForm.developerId} onChange={e => setDevForm(p => ({ ...p, developerId: e.target.value }))}
+                        <select value={devForm.developerId} onChange={e => {
+                          if (e.target.value === "__new__") { setShowNewDevModal(true); return; }
+                          setDevForm(p => ({ ...p, developerId: e.target.value }));
+                        }}
                           className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500 bg-white">
                           <option value="">Select developer…</option>
+                          <option value="__new__">+ New Developer…</option>
                           {availableDevs.map((d: any) => (
                             <option key={d.id} value={d.id}>{d.contact.name}{d.reraNumber ? ` (${d.reraNumber})` : ""}</option>
                           ))}
@@ -1711,27 +1670,27 @@ export default function ProjectDetailPage() {
                       </div>
                       <div>
                         <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Additional Area (sqft)</label>
-                        <input type="number" value={devForm.additionalArea} onChange={e => setDevForm(p => ({ ...p, additionalArea: e.target.value }))} className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
+                        <input type="number" value={devForm.additionalArea} onChange={e => setDevForm(p => ({ ...p, additionalArea: e.target.value }))} onWheel={blurOnWheel} className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
                       </div>
                       <div>
                         <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Corpus Fund (₹)</label>
-                        <input type="number" value={devForm.corpusFund} onChange={e => setDevForm(p => ({ ...p, corpusFund: e.target.value }))} className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
+                        <input type="number" value={devForm.corpusFund} onChange={e => setDevForm(p => ({ ...p, corpusFund: e.target.value }))} onWheel={blurOnWheel} className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
                       </div>
                       <div>
                         <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Monthly Rent (₹)</label>
-                        <input type="number" value={devForm.monthlyRent} onChange={e => setDevForm(p => ({ ...p, monthlyRent: e.target.value }))} className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
+                        <input type="number" value={devForm.monthlyRent} onChange={e => setDevForm(p => ({ ...p, monthlyRent: e.target.value }))} onWheel={blurOnWheel} className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
                       </div>
                       <div>
                         <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Deposit (₹)</label>
-                        <input type="number" value={devForm.deposit} onChange={e => setDevForm(p => ({ ...p, deposit: e.target.value }))} className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
+                        <input type="number" value={devForm.deposit} onChange={e => setDevForm(p => ({ ...p, deposit: e.target.value }))} onWheel={blurOnWheel} className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
                       </div>
                       <div>
                         <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Construction Timeline (months)</label>
-                        <input type="number" value={devForm.constructionTimeline} onChange={e => setDevForm(p => ({ ...p, constructionTimeline: e.target.value }))} className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
+                        <input type="number" value={devForm.constructionTimeline} onChange={e => setDevForm(p => ({ ...p, constructionTimeline: e.target.value }))} onWheel={blurOnWheel} className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
                       </div>
                       <div>
                         <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Grace Period (months)</label>
-                        <input type="number" value={devForm.gracePeriod} onChange={e => setDevForm(p => ({ ...p, gracePeriod: e.target.value }))} className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
+                        <input type="number" value={devForm.gracePeriod} onChange={e => setDevForm(p => ({ ...p, gracePeriod: e.target.value }))} onWheel={blurOnWheel} className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
                       </div>
                       <div>
                         <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Bank Guarantee</label>
@@ -1739,7 +1698,7 @@ export default function ProjectDetailPage() {
                       </div>
                       <div>
                         <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Parking Slots</label>
-                        <input type="number" value={devForm.parking} onChange={e => setDevForm(p => ({ ...p, parking: e.target.value }))} className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
+                        <input type="number" value={devForm.parking} onChange={e => setDevForm(p => ({ ...p, parking: e.target.value }))} onWheel={blurOnWheel} className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
                       </div>
                       <div className="col-span-2">
                         <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Amenities Offered</label>
@@ -1807,10 +1766,10 @@ export default function ProjectDetailPage() {
                               ✓ Select Developer
                             </button>
                           )}
-                          {["PROPOSAL_RECEIVED","SHORTLISTED","FINAL_NEGOTIATION","SELECTED"].includes(dp.status) && (
-                            <button onClick={() => startNegotiationWithDev(dp.developer.contactId)}
+                          {["SHORTLISTED","FINAL_NEGOTIATION","SELECTED"].includes(dp.status) && project?.state !== "ARCHIVED" && (
+                            <button onClick={() => { setAwardPreselectDevProposalId(dp.id); setActiveTab("Award"); }}
                               className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100">
-                              Negotiate
+                              Award
                             </button>
                           )}
                           <button onClick={() => startEditDev(dp)}
@@ -1832,6 +1791,17 @@ export default function ProjectDetailPage() {
                     <p className="text-xs text-gray-400 mt-1">Click "Add Developer" to begin outreach tracking.</p>
                   </div>
                 )}
+
+                {showNewDevModal && (
+                  <NewDeveloperModal
+                    onClose={() => setShowNewDevModal(false)}
+                    onCreated={async (developerId) => {
+                      setShowNewDevModal(false);
+                      await reloadExtra();
+                      setDevForm(p => ({ ...p, developerId }));
+                    }}
+                  />
+                )}
               </div>
             );
           })()}
@@ -1839,11 +1809,6 @@ export default function ProjectDetailPage() {
           {/* ── MEETINGS ── */}
           {activeTab === "Meetings" && (
             <MeetingsTab projectId={id} />
-          )}
-
-          {/* ── TIMELINE ── */}
-          {activeTab === "Timeline" && (
-            <TimelineTab projectId={id} />
           )}
 
           {/* ── FILES ── */}
@@ -1881,12 +1846,57 @@ export default function ProjectDetailPage() {
             </div>
           )}
 
-          {/* ── CLOSURE ── */}
-          {activeTab === "Closure" && (
-            <ClosureTab projectId={id} readOnly={readOnly} />
+          {/* ── AWARD ── */}
+          {activeTab === "Award" && project && (
+            <AwardTab
+              projectId={id}
+              isRedevelopment={isRedevelopmentProject}
+              isDemandSide={isDemandSideProject}
+              deal={project.deal}
+              readOnly={readOnly}
+              matchOptions={awardMatchOptions}
+              devProposalOptions={awardDevProposalOptions}
+              preselectMatchId={awardPreselectMatchId}
+              preselectDevProposalId={awardPreselectDevProposalId}
+              onAwarded={() => { setAwardPreselectMatchId(null); setAwardPreselectDevProposalId(null); load(); }}
+            />
           )}
         </div>
       </div>
+
+      {/* ── Award-to-Complete gate popup ─────────────────────────────────── */}
+      {pendingCompletedStatusId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl">
+              <p className="font-bold text-gray-900 text-sm">Award before marking Completed</p>
+              <button onClick={() => setPendingCompletedStatusId(null)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 px-4 pt-3">
+              This project's status can't be set to Completed until it's awarded — pick who it's awarded to below.
+            </p>
+            <AwardTab
+              projectId={id}
+              isRedevelopment={isRedevelopmentProject}
+              isDemandSide={isDemandSideProject}
+              deal={project.deal}
+              readOnly={false}
+              matchOptions={awardMatchOptions}
+              devProposalOptions={awardDevProposalOptions}
+              preselectMatchId={awardPreselectMatchId}
+              preselectDevProposalId={awardPreselectDevProposalId}
+              onAwarded={async () => {
+                setAwardPreselectMatchId(null);
+                setAwardPreselectDevProposalId(null);
+                setPendingCompletedStatusId(null);
+                await load();
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* ── Bottom action bar ─────────────────────────────────────────────── */}
       <div className="bg-white border-t border-gray-200 px-4 py-2.5 flex items-center justify-between flex-wrap gap-2 flex-shrink-0">
@@ -1921,7 +1931,11 @@ export default function ProjectDetailPage() {
         <CreatePptModal
           projectId={id}
           apiBase={`/api/projects/${id}/files`}
+          customFieldsApiBase={`/api/projects/${id}/custom-fields`}
           images={exportPptImages}
+          templateGroups={project.template.groups}
+          responseMap={localValues}
+          initialConfig={pptExportConfig}
           onClose={() => setShowExportPpt(false)}
         />
       )}

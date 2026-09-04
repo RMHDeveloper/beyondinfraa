@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Home, Briefcase, Factory, RefreshCw,
   Users, BarChart2, Settings, ClipboardList, LogOut,
-  ChevronRight, MapPin, Building2, Link2, UserCog, FileText,
+  ChevronRight, MapPin, Building2, UserCog, FileText,
   PanelLeftClose, PanelLeftOpen, X, CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -27,7 +27,6 @@ const mgmtNav = [
   { href: "/requirements/buyer",    label: "Buyer Reqs",        icon: Users,         roles: ["SUPER_ADMIN", "OWNER"] as const },
   { href: "/requirements/tenant",   label: "Tenant Reqs",       icon: Building2,     roles: ["SUPER_ADMIN", "OWNER"] as const },
   { href: "/proposals",             label: "Proposals",         icon: FileText,      roles: ["SUPER_ADMIN", "OWNER"] as const },
-  { href: "/intake",                label: "Intake Links",      icon: Link2,         roles: ["SUPER_ADMIN", "OWNER"] as const },
   { href: "/tasks",                 label: "Tasks & Follow-ups", icon: ClipboardList, roles: ["SUPER_ADMIN", "OWNER"] as const },
   { href: "/site-visits",           label: "Site Visits",       icon: MapPin,        roles: ["SUPER_ADMIN", "OWNER"] as const },
   { href: "/calendar",              label: "Calendar",          icon: CalendarDays,  roles: ["SUPER_ADMIN", "OWNER"] as const },
@@ -91,9 +90,8 @@ export default function Sidebar({ user, mobileOpen = false, onClose }: Props) {
         <div className={cn("border-b border-gray-100 flex items-center", isCollapsed ? "px-2 py-4 justify-center" : "px-3 py-4 gap-2")}>
           {!isCollapsed && (
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div className="w-7 h-7 rounded-md bg-[#1a2b3c] flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-xs font-bold">BI</span>
-              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="https://beyondinfra.com/public/assets/img/beyondInfra-logo.png" alt="BeyondInfra" className="h-7 w-auto flex-shrink-0" />
               <div className="min-w-0">
                 <p className="text-sm font-bold text-gray-900 leading-tight">BeyondInfra</p>
                 <p className="text-[10px] text-gray-400 leading-tight">Consultancy ERP</p>
@@ -101,9 +99,8 @@ export default function Sidebar({ user, mobileOpen = false, onClose }: Props) {
             </div>
           )}
           {isCollapsed && (
-            <div className="w-7 h-7 rounded-md bg-[#1a2b3c] flex items-center justify-center">
-              <span className="text-white text-xs font-bold">BI</span>
-            </div>
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src="https://beyondinfra.com/public/assets/img/beyondInfra-logo.png" alt="BeyondInfra" className="w-7 h-7 object-contain" />
           )}
           {/* Desktop collapse toggle */}
           <button

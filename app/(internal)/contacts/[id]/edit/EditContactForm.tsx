@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, User, Building2 } from "lucide-react";
+import { blurOnWheel } from "@/lib/utils";
 
 const CONTACT_TYPES = [
   { value: "OWNER",                  label: "Owner" },
@@ -130,12 +131,12 @@ export default function EditContactForm({
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Completed Projects</label>
-                  <input name="completedProjects" type="number" min="0" defaultValue={developerProfile?.completedProjects ?? 0}
+                  <input name="completedProjects" type="number" min="0" defaultValue={developerProfile?.completedProjects ?? 0} onWheel={blurOnWheel}
                     className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Ongoing Projects</label>
-                  <input name="ongoingProjects" type="number" min="0" defaultValue={developerProfile?.ongoingProjects ?? 0}
+                  <input name="ongoingProjects" type="number" min="0" defaultValue={developerProfile?.ongoingProjects ?? 0} onWheel={blurOnWheel}
                     className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                 </div>
                 <div>
@@ -145,7 +146,7 @@ export default function EditContactForm({
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Internal Rating (1–5)</label>
-                  <input name="internalRating" type="number" min="1" max="5" defaultValue={developerProfile?.internalRating ?? ""}
+                  <input name="internalRating" type="number" min="1" max="5" defaultValue={developerProfile?.internalRating ?? ""} onWheel={blurOnWheel}
                     className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                 </div>
               </div>

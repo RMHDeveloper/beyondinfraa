@@ -1,35 +1,68 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
-import { apiError } from "@/lib/utils";
+import { apiError, withErrorHandling } from "@/lib/utils";
 import { getObject } from "@/lib/storage";
-import { templateSlotDataUri, propertySlideBackground } from "@/lib/pptTemplate";
+import { templateSlotDataUri, photoOnBackground, addFieldSlides, type PptExportConfig } from "@/lib/pptTemplate";
 import PptxGenJS from "pptxgenjs";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withErrorHandling(async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await requireSession();
   const { id } = await params;
-  const { imageIds } = await req.json() as { imageIds: string[] };
+  const { imageIds, pptExportConfig } = await req.json() as { imageIds: string[]; pptExportConfig?: PptExportConfig };
 
-  if (!Array.isArray(imageIds) || imageIds.length === 0) return apiError("imageIds required");
+  if (!Array.isArray(imageIds)) return apiError("imageIds required");
 
-  const project = await db.project.findUnique({ where: { id }, select: { title: true } });
+  const project = await db.project.findUnique({
+    where: { id },
+    select: {
+      title: true,
+      template: {
+        select: {
+          groups: {
+            orderBy: { sortOrder: "asc" },
+            select: {
+              id: true, sortOrder: true,
+              group: {
+                select: {
+                  id: true, name: true,
+                  questions: {
+                    orderBy: { sortOrder: "asc" },
+                    select: { id: true, label: true, fieldType: true, isInternal: true, isRequired: true, showInPptExport: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      responses: { select: { questionId: true, value: true } },
+      customFields: {
+        orderBy: { sortOrder: "asc" },
+        select: { id: true, label: true, value: true, type: true, file: { select: { id: true, storagePath: true } } },
+      },
+    },
+  });
   if (!project) return apiError("Not found", 404);
+
+  const responseMap = Object.fromEntries(project.responses.map((r) => [r.questionId, r.value ?? ""]));
 
   const files = await db.projectFile.findMany({ where: { id: { in: imageIds }, projectId: id } });
   const byId = new Map(files.map((f) => [f.id, f]));
   const orderedFiles = imageIds.map((imgId) => byId.get(imgId)).filter((f): f is NonNullable<typeof f> => !!f);
-  if (orderedFiles.length === 0) return apiError("No matching images found");
 
-  const [coverDataUri, thankYouDataUri, logoDataUri, propertySlides] = await Promise.all([
+  const [coverDataUri, thankYouDataUri, middleDataUri] = await Promise.all([
     templateSlotDataUri("cover"),
     templateSlotDataUri("thankyou"),
-    templateSlotDataUri("logo"),
-    Promise.all(orderedFiles.map(async (f) => propertySlideBackground(await getObject(f.storagePath)))),
+    templateSlotDataUri("middle"),
   ]);
+
+  const propertySlides = await Promise.all(
+    orderedFiles.map(async (f) => photoOnBackground(await getObject(f.storagePath), middleDataUri))
+  );
 
   const pptx = new PptxGenJS();
   pptx.layout = "LAYOUT_WIDE";
@@ -43,17 +76,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     slide.background = { data: coverDataUri };
   }
 
-  // ── One slide per selected image, in the approved property template ─────────
+  // ── Field slides: one per question group, plus Additional Fields at their chosen position ──
+  await addFieldSlides(pptx, project.template.groups, responseMap, pptExportConfig, middleDataUri, project.title, project.customFields);
+
+  // ── One slide per selected gallery image, in the approved property template ──
   for (const bgDataUri of propertySlides) {
     const slide = pptx.addSlide();
     slide.background = { data: bgDataUri };
-
-    // Fixed chrome: logo (bottom-left), accent line, and site URL (top-right)
-    slide.addImage({ data: logoDataUri, x: 0.35, y: 6.36, w: 1.16, h: 1.0 });
-    slide.addShape(pptx.ShapeType.rect, { x: 1.22, y: 6.98, w: 11.32, h: 0.03, fill: { color: "4B5563" } });
-    slide.addText("www.beyondinfra.com", {
-      x: 9.0, y: 0.42, w: 3.9, h: 0.35, fontSize: 11, color: "374151", align: "right", charSpacing: 2,
-    });
   }
 
   // ── Last slide: Thank You (fixed branding, pixel-exact from the approved template) ──
@@ -71,4 +100,4 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       "Content-Disposition": `attachment; filename="${filename}"`,
     },
   });
-}
+});

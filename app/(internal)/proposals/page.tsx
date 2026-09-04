@@ -17,8 +17,7 @@ type Proposal = {
   sentAt: string | null;
   contact: { id: string; name: string };
   items: ProposalItem[];
-  buyerRequirement: { reqNumber: string } | null;
-  tenantRequirement: { reqNumber: string } | null;
+  demandProject: { projectNumber: string } | null;
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -121,7 +120,7 @@ export default function ProposalsPage() {
         ) : (
           <div className="space-y-2">
             {filtered.map(p => {
-              const reqNumber = p.buyerRequirement?.reqNumber ?? p.tenantRequirement?.reqNumber ?? null;
+              const reqNumber = p.demandProject?.projectNumber ?? null;
               return (
                 <Link key={p.id} href={`/proposals/${p.id}`}
                   className="block bg-white rounded-xl border border-gray-200 p-4 hover:border-pink-200 hover:bg-pink-50/20 transition-all">

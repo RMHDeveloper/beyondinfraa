@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Copy } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Plus, Trash2, Copy, Check } from "lucide-react";
+import { cn, blurOnWheel } from "@/lib/utils";
 
 type Question = {
   id: string;
@@ -28,6 +28,7 @@ type Props = {
 
 export default function FieldRenderer({ question, value, jsonValue, onChange, disabled, allValues }: Props) {
   const [localValue, setLocalValue] = useState(value ?? "");
+  const [otherMode, setOtherMode] = useState(false);
 
   useEffect(() => { setLocalValue(value ?? ""); }, [value]);
 
@@ -55,7 +56,7 @@ export default function FieldRenderer({ question, value, jsonValue, onChange, di
   const isAutoCalc = !!question.autoCalcJson && question.autoCalcJson.formula !== "scoring";
   const effectiveDisabled = disabled || isAutoCalc;
 
-  const baseInput = "w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 disabled:bg-gray-50 disabled:text-gray-500";
+  const baseInput = "w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900 disabled:bg-gray-50 disabled:text-gray-500 transition-colors";
 
   switch (question.fieldType) {
     case "TEXT":
@@ -92,6 +93,7 @@ export default function FieldRenderer({ question, value, jsonValue, onChange, di
             value={localValue}
             disabled={effectiveDisabled}
             onChange={(e) => { setLocalValue(e.target.value); onChange(e.target.value); }}
+            onWheel={blurOnWheel}
             className={cn(baseInput, "flex-1")}
           />
           {question.unit && <span className="text-sm text-gray-400 whitespace-nowrap">{question.unit}</span>}
@@ -110,28 +112,76 @@ export default function FieldRenderer({ question, value, jsonValue, onChange, di
         />
       );
 
-    case "RADIO":
+    case "RADIO": {
+      const hasOther = question.options.includes("Other");
+      const fixedOptions = hasOther ? question.options.filter((o) => o !== "Other") : question.options;
+      const isOtherSelected = hasOther && (otherMode || (value !== "" && !fixedOptions.includes(value)));
       return (
-        <div className="flex flex-wrap gap-2">
-          {question.options.map((opt) => (
-            <button
-              key={opt}
-              type="button"
+        <div>
+          <div className="grid grid-cols-1 @sm:grid-cols-2 gap-2">
+            {fixedOptions.map((opt) => {
+              const active = value === opt;
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  disabled={effectiveDisabled}
+                  onClick={() => { if (!effectiveDisabled) { setOtherMode(false); onChange(opt); } }}
+                  className={cn(
+                    "flex items-center gap-2.5 px-4 py-3 rounded-xl border-2 text-sm font-medium text-left transition-colors",
+                    active
+                      ? "border-gray-900 bg-gray-900/5 text-gray-900"
+                      : "border-gray-200 text-gray-700 hover:border-gray-300",
+                    effectiveDisabled && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  <span className={cn(
+                    "shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                    active ? "border-gray-900" : "border-gray-300"
+                  )}>
+                    {active && <span className="w-2 h-2 rounded-full bg-gray-900" />}
+                  </span>
+                  <span className="truncate">{opt}</span>
+                </button>
+              );
+            })}
+            {hasOther && (
+              <button
+                type="button"
+                disabled={effectiveDisabled}
+                onClick={() => { if (!effectiveDisabled) { setOtherMode(true); setLocalValue(""); onChange(""); } }}
+                className={cn(
+                  "flex items-center gap-2.5 px-4 py-3 rounded-xl border-2 text-sm font-medium text-left transition-colors",
+                  isOtherSelected
+                    ? "border-gray-900 bg-gray-900/5 text-gray-900"
+                    : "border-gray-200 text-gray-700 hover:border-gray-300",
+                  effectiveDisabled && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                <span className={cn(
+                  "shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                  isOtherSelected ? "border-gray-900" : "border-gray-300"
+                )}>
+                  {isOtherSelected && <span className="w-2 h-2 rounded-full bg-gray-900" />}
+                </span>
+                <span className="truncate">Other</span>
+              </button>
+            )}
+          </div>
+          {hasOther && isOtherSelected && (
+            <input
+              type="text"
+              autoFocus
+              value={localValue}
               disabled={effectiveDisabled}
-              onClick={() => { if (!effectiveDisabled) onChange(opt); }}
-              className={cn(
-                "px-3.5 py-2 rounded-lg border text-sm font-medium transition-colors",
-                value === opt
-                  ? "border-gray-900 bg-gray-900 text-white"
-                  : "border-gray-200 text-gray-700 hover:border-gray-400",
-                effectiveDisabled && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              {opt}
-            </button>
-          ))}
+              onChange={(e) => { setLocalValue(e.target.value); onChange(e.target.value); }}
+              placeholder="Enter value…"
+              className={cn(baseInput, "mt-2")}
+            />
+          )}
         </div>
       );
+    }
 
     case "DROPDOWN":
       return (
@@ -151,7 +201,7 @@ export default function FieldRenderer({ question, value, jsonValue, onChange, di
     case "MULTISELECT": {
       const selected: string[] = Array.isArray(jsonValue) ? (jsonValue as string[]) : [];
       return (
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-1 @sm:grid-cols-2 gap-2">
           {question.options.map((opt) => {
             const active = selected.includes(opt);
             return (
@@ -165,12 +215,20 @@ export default function FieldRenderer({ question, value, jsonValue, onChange, di
                   onChange(next.join(", "), next);
                 }}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg border text-sm transition-colors",
-                  active ? "border-gray-900 bg-gray-900 text-white" : "border-gray-200 text-gray-700 hover:border-gray-400",
+                  "flex items-center gap-2.5 px-4 py-3 rounded-xl border-2 text-sm font-medium text-left transition-colors",
+                  active
+                    ? "border-gray-900 bg-gray-900/5 text-gray-900"
+                    : "border-gray-200 text-gray-700 hover:border-gray-300",
                   effectiveDisabled && "opacity-50 cursor-not-allowed"
                 )}
               >
-                {opt}
+                <span className={cn(
+                  "shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center",
+                  active ? "border-gray-900 bg-gray-900" : "border-gray-300"
+                )}>
+                  {active && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                </span>
+                <span className="truncate">{opt}</span>
               </button>
             );
           })}
@@ -250,9 +308,9 @@ export default function FieldRenderer({ question, value, jsonValue, onChange, di
             type="button"
             disabled={effectiveDisabled}
             onClick={() => fileRef.current?.click()}
-            className="flex items-center gap-2 text-sm border border-gray-300 text-gray-700 px-3.5 py-2.5 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 max-w-full text-sm border border-gray-300 text-gray-700 px-3.5 py-2.5 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
           >
-            {value ? `📎 ${value}` : "Choose file…"}
+            <span className="truncate">{value ? `📎 ${value}` : "Choose file…"}</span>
           </button>
           {value && <p className="text-xs text-gray-400 mt-1">Use Files tab to manage uploads.</p>}
         </div>

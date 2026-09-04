@@ -1,9 +1,10 @@
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
+import { withErrorHandling } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: Request) {
+export const GET = withErrorHandling(async function GET(req: Request) {
   await requireSession();
   const employeeId = new URL(req.url).searchParams.get("employeeId") || undefined;
   const projectWhere = employeeId ? { assigneeId: employeeId } : {};
@@ -41,13 +42,19 @@ export async function GET(req: Request) {
     }),
     db.followUp.count({ where: { isDone: false, dueAt: { lt: new Date() } } }),
     db.contact.count(),
-    db.buyerRequirement.count({ where: { status: { in: ["NEW", "ACTIVE"] } } }),
-    db.tenantRequirement.count({ where: { status: { in: ["NEW", "ACTIVE"] } } }),
+    db.project.count({ where: { subcategory: { name: "Buy" }, state: { not: "ARCHIVED" } } }),
+    db.project.count({ where: { subcategory: { name: "Tenant" }, state: { not: "ARCHIVED" } } }),
     db.match.count(),
     db.proposal.count(),
     db.siteVisit.count(),
     db.deal.count(),
-    db.buyerRequirement.aggregate({ _sum: { budgetMax: true }, where: { status: { in: ["NEW", "ACTIVE"] } } }),
+    db.response.findMany({
+      where: {
+        question: { label: "Budget — Max" },
+        project: { subcategory: { name: "Buy" }, state: { not: "ARCHIVED" } },
+      },
+      select: { value: true },
+    }),
   ]);
 
   const categories = await db.category.findMany({ select: { id: true, name: true } });
@@ -61,8 +68,8 @@ export async function GET(req: Request) {
   );
 
   const [buyerByCat, tenantByCat, matchByCatRaw] = await Promise.all([
-    db.buyerRequirement.groupBy({ by: ["categoryId"], _count: { id: true } }),
-    db.tenantRequirement.groupBy({ by: ["categoryId"], _count: { id: true } }),
+    db.project.groupBy({ by: ["categoryId"], _count: { id: true }, where: { subcategory: { name: "Buy" } } }),
+    db.project.groupBy({ by: ["categoryId"], _count: { id: true }, where: { subcategory: { name: "Tenant" } } }),
     db.$queryRaw<{ categoryId: string; cnt: bigint }[]>`
       SELECT p."categoryId", COUNT(*)::bigint AS cnt
       FROM matches m JOIN projects p ON p.id = m."projectId"
@@ -99,10 +106,10 @@ export async function GET(req: Request) {
     totalProposals,
     totalSiteVisits,
     totalDeals,
-    pipelineValue: pipelineValue._sum.budgetMax ?? 0,
+    pipelineValue: pipelineValue.reduce((sum, r) => sum + (parseFloat(r.value ?? "0") || 0), 0),
     catCounts,
     buyerByCatMap,
     tenantByCatMap,
     matchByCatMap,
   });
-}
+});

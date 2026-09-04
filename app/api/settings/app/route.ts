@@ -1,14 +1,14 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
-import { apiError } from "@/lib/utils";
+import { apiError, withErrorHandling } from "@/lib/utils";
 
-export async function GET() {
+export const GET = withErrorHandling(async function GET() {
   const settings = await db.appSetting.findMany({ orderBy: { key: "asc" } });
   return Response.json(Object.fromEntries(settings.map((s) => [s.key, s.value])));
-}
+});
 
-export async function PATCH(req: NextRequest) {
+export const PATCH = withErrorHandling(async function PATCH(req: NextRequest) {
   const session = await requireSession();
   if (session.role !== "SUPER_ADMIN") return apiError("Forbidden", 403);
 
@@ -21,4 +21,4 @@ export async function PATCH(req: NextRequest) {
     });
   }
   return Response.json({ ok: true });
-}
+});

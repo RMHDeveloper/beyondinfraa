@@ -1,9 +1,10 @@
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
+import { withErrorHandling } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withErrorHandling(async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireSession();
   const { id } = await params;
 
@@ -74,4 +75,4 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   });
 
   return Response.json(project, { status: 201 });
-}
+});

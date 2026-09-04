@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
   // Also allow token param for initial check before cookie set
   const urlToken = req.nextUrl.searchParams.get("token");
   if (urlToken) {
-    const link = await db.clientLink.findUnique({ where: { token: urlToken } });
+    const link = await db.clientLink.findFirst({ where: { OR: [{ token: urlToken }, { slug: urlToken }] } });
     if (!link || !link.isActive) return apiError("Invalid link", 404);
     // After OTP, the session projectId will match
   }
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
               id: true, sortOrder: true,
               group: {
                 select: {
-                  id: true, name: true,
+                  id: true, name: true, slug: true,
                   questions: {
                     orderBy: { sortOrder: "asc" },
                     select: {
@@ -59,6 +59,14 @@ export async function GET(req: NextRequest) {
         },
       },
       responses: { select: { questionId: true, value: true, jsonValue: true } },
+      customFields: {
+        where: { showToClient: true },
+        orderBy: { sortOrder: "asc" },
+        select: {
+          id: true, label: true, value: true, type: true,
+          file: { select: { id: true, fileName: true, mimeType: true, originalName: true } },
+        },
+      },
     },
   });
 

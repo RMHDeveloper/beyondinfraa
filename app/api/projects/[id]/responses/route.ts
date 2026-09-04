@@ -1,12 +1,12 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
-import { apiError } from "@/lib/utils";
+import { apiError, formatResponseValue, withErrorHandling } from "@/lib/utils";
 import { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withErrorHandling(async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireSession();
   const { id: projectId } = await params;
 
@@ -18,9 +18,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { questionId, value, jsonValue } = await req.json();
   if (!questionId) return apiError("questionId required");
 
+  const question = await db.question.findUnique({ where: { id: questionId }, select: { label: true, fieldType: true } });
+  if (!question) return apiError("Question not found", 404);
+
   const existing = await db.response.findUnique({ where: { projectId_questionId: { projectId, questionId } } });
 
-  const before = existing ? { value: existing.value, jsonValue: existing.jsonValue } : null;
+  const beforeText = existing ? formatResponseValue(existing.value, existing.jsonValue, question.fieldType) : null;
+  const afterText = formatResponseValue(value ?? null, jsonValue, question.fieldType);
 
   const response = await db.response.upsert({
     where: { projectId_questionId: { projectId, questionId } },
@@ -40,23 +44,24 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     },
   });
 
-  await db.auditLog.create({
-    data: {
-      projectId,
-      userId: session.id,
-      action: "UPDATE",
-      entityType: "response",
-      entityId: questionId,
-      before: before as Prisma.InputJsonValue ?? Prisma.JsonNull,
-      after: { value, jsonValue } as Prisma.InputJsonValue,
-    },
-  });
+  if (beforeText !== afterText) {
+    await db.auditLog.create({
+      data: {
+        projectId,
+        userId: session.id,
+        action: "UPDATE",
+        entityType: "response",
+        entityId: questionId,
+        meta: { label: question.label, before: beforeText, after: afterText } as Prisma.InputJsonValue,
+      },
+    });
+  }
 
   // Recalculate potential score after every response save
   await recalcScore(projectId);
 
   return Response.json(response);
-}
+});
 
 async function recalcScore(projectId: string) {
   const project = await db.project.findUnique({

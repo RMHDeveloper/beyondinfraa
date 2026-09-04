@@ -1,13 +1,14 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { sendFollowUpReminder } from "@/lib/mailer";
+import { withErrorHandling } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 // Called by Vercel Cron (vercel.json) or external scheduler
-export async function GET(req: NextRequest) {
+export const GET = withErrorHandling(async function GET(req: NextRequest) {
   const secret = req.headers.get("x-cron-secret");
-  if (secret !== process.env.CRON_SECRET && process.env.NODE_ENV === "production") {
+  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
     return new Response("Forbidden", { status: 403 });
   }
 
@@ -49,4 +50,4 @@ export async function GET(req: NextRequest) {
   }
 
   return Response.json({ ok: true, sent });
-}
+});

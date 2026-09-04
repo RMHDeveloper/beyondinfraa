@@ -1,6 +1,6 @@
 const STORAGE_URL = process.env.HOSTINGER_STORAGE_URL!; // e.g. https://yourdomain.com/property-management-app/storage.php
 const STORAGE_KEY = process.env.HOSTINGER_STORAGE_KEY!;
-const APP_ORIGIN = process.env.VERCEL ? "https://beyondinfraa-k9zk.vercel.app" : "http://localhost:3000";
+const APP_ORIGIN = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 function authHeaders(extra?: Record<string, string>) {
   return { "X-Api-Key": STORAGE_KEY, "X-App-Origin": APP_ORIGIN, ...extra };

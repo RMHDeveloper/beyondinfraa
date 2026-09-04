@@ -1,144 +1,46 @@
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
+import { scoreDemandAgainstListing, isDemandSide, type ProjectForScoring } from "@/lib/matching";
+import { withErrorHandling } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-type ReqForScoring = {
-  categoryId: string;
-  budgetMin?: number | null; budgetMax?: number | null;
-  rentMin?: number | null; rentMax?: number | null;
-  areaMin?: number | null; areaMax?: number | null;
-  bhk?: string | null; furnishing?: string | null;
-  preferredLocations?: unknown;
-};
-
-type ProjectForScoring = {
-  id: string;
-  categoryId: string;
-  subcategory: { name: string };
-  responses: { question: { label: string }; value: string | null }[];
-};
-
-function rMap(project: ProjectForScoring): Record<string, string> {
-  return Object.fromEntries(project.responses.map(r => [r.question.label.toLowerCase(), r.value ?? ""]));
-}
-
-// A buyer requirement should only match inventory listed for sale (Land uses "Sale", others use "Sell");
-// a tenant requirement should only match inventory listed for rent. Without this, matching pulled in
-// unrelated inventory — e.g. a tenant looking to rent could match against a "Buy" mandate project.
-function isSellSide(subcategoryName: string) {
-  return subcategoryName === "Sell" || subcategoryName === "Sale";
-}
-
-function scoreReq(req: ReqForScoring, project: ProjectForScoring, mode: "buyer" | "tenant") {
-  if (project.categoryId !== req.categoryId) return null;
-  if (mode === "buyer" && !isSellSide(project.subcategory.name)) return null;
-  if (mode === "tenant" && project.subcategory.name !== "Rent") return null;
-
-  const map = rMap(project);
-  const matched: string[] = [];
-  const missed: string[] = [];
-
-  if (mode === "buyer") {
-    const price = parseFloat(
-      map["price expected — min"] ?? map["asking price"] ?? map["sale price"] ?? map["price"] ?? "0"
-    );
-    if (price > 0) {
-      const ok = (!req.budgetMin || price >= req.budgetMin * 0.9) &&
-                 (!req.budgetMax || price <= req.budgetMax * 1.1);
-      ok ? matched.push("Budget") : missed.push("Budget");
-    } else {
-      missed.push("Budget");
-    }
-  } else {
-    const rent = parseFloat(map["monthly rent"] ?? map["rent"] ?? map["expected rent"] ?? "0");
-    if (rent > 0) {
-      const ok = (!req.rentMin || rent >= req.rentMin) && (!req.rentMax || rent <= req.rentMax);
-      ok ? matched.push("Rent") : missed.push("Rent");
-    } else {
-      missed.push("Rent");
-    }
-  }
-
-  const area = parseFloat(
-    map["land area as per sale deed"] ?? map["built-up area"] ?? map["area"] ?? map["plot area"] ?? map["carpet area"] ?? "0"
-  );
-  if (area > 0 && (req.areaMin || req.areaMax)) {
-    const ok = (!req.areaMin || area >= req.areaMin * 0.9) && (!req.areaMax || area <= req.areaMax * 1.1);
-    ok ? matched.push("Area") : missed.push("Area");
-  }
-
-  if (mode === "buyer" && req.bhk) {
-    const propBhk = map["bhk"] ?? map["bedrooms"] ?? "";
-    propBhk.toLowerCase().includes(req.bhk.toLowerCase())
-      ? matched.push("BHK") : missed.push("BHK");
-  }
-
-  if (req.furnishing && req.furnishing !== "Any") {
-    const propFurn = map["furnishing"] ?? map["furnishing status"] ?? "";
-    propFurn.toLowerCase().includes(req.furnishing.toLowerCase())
-      ? matched.push("Furnishing") : missed.push("Furnishing");
-  }
-
-  const locs = Array.isArray(req.preferredLocations) ? req.preferredLocations as string[] : [];
-  if (locs.length > 0) {
-    const locality = (map["area / locality"] ?? map["locality"] ?? map["location"] ?? "").toLowerCase();
-    const hit = locs.some(l => locality.includes(l.toLowerCase()));
-    hit ? matched.push("Location") : missed.push("Location");
-  }
-
-  const total = matched.length + missed.length;
-  const pct = total > 0 ? Math.round((matched.length / total) * 100) : 50;
-  return { pct, matched, missed };
-}
-
-export async function POST() {
+export const POST = withErrorHandling(async function POST() {
   await requireSession();
 
-  const [projects, buyerReqs, tenantReqs] = await Promise.all([
-    db.project.findMany({
-      where: { state: "OPEN" },
-      select: {
-        id: true, categoryId: true,
-        subcategory: { select: { name: true } },
-        responses: { select: { value: true, question: { select: { label: true } } } },
-      },
-    }),
-    db.buyerRequirement.findMany({ where: { status: { in: ["NEW", "ACTIVE"] } } }),
-    db.tenantRequirement.findMany({ where: { status: { in: ["NEW", "ACTIVE"] } } }),
-  ]);
+  const projects = await db.project.findMany({
+    where: { state: "OPEN" },
+    select: {
+      id: true, categoryId: true,
+      subcategory: { select: { name: true } },
+      responses: { select: { value: true, question: { select: { label: true } } } },
+    },
+  });
 
-  const projectIds = projects.map(p => p.id);
+  const demandProjects = (projects as ProjectForScoring[]).filter(p => isDemandSide(p.subcategory.name));
+  const listingProjects = (projects as ProjectForScoring[]).filter(p => !isDemandSide(p.subcategory.name));
+
+  const listingIds = listingProjects.map(p => p.id);
 
   // Load all existing matches in one query — avoid N×M findFirst calls
   const existingMatches = await db.match.findMany({
-    where: { projectId: { in: projectIds } },
-    select: { projectId: true, buyerRequirementId: true, tenantRequirementId: true },
+    where: { projectId: { in: listingIds } },
+    select: { projectId: true, demandProjectId: true },
   });
   const existingSet = new Set(
-    existingMatches.map(m => `${m.projectId}:${m.buyerRequirementId ?? ""}:${m.tenantRequirementId ?? ""}`)
+    existingMatches.map(m => `${m.projectId}:${m.demandProjectId ?? ""}`)
   );
 
-  type MatchInput = { projectId: string; buyerRequirementId?: string; tenantRequirementId?: string; matchPct: number; criteriaMatched: string[]; criteriaMissed: string[] };
+  type MatchInput = { projectId: string; demandProjectId: string; matchPct: number; criteriaMatched: string[]; criteriaMissed: string[] };
   const toCreate: MatchInput[] = [];
 
-  for (const req of buyerReqs) {
-    for (const project of projects) {
-      const key = `${project.id}:${req.id}:`;
+  for (const demand of demandProjects) {
+    for (const listing of listingProjects) {
+      const key = `${listing.id}:${demand.id}`;
       if (existingSet.has(key)) continue;
-      const result = scoreReq(req, project, "buyer");
+      const result = scoreDemandAgainstListing(demand, listing);
       if (!result) continue;
-      toCreate.push({ projectId: project.id, buyerRequirementId: req.id, matchPct: result.pct, criteriaMatched: result.matched, criteriaMissed: result.missed });
-    }
-  }
-
-  for (const req of tenantReqs) {
-    for (const project of projects) {
-      const key = `${project.id}::${req.id}`;
-      if (existingSet.has(key)) continue;
-      const result = scoreReq(req, project, "tenant");
-      if (!result) continue;
-      toCreate.push({ projectId: project.id, tenantRequirementId: req.id, matchPct: result.pct, criteriaMatched: result.matched, criteriaMissed: result.missed });
+      toCreate.push({ projectId: listing.id, demandProjectId: demand.id, matchPct: result.pct, criteriaMatched: result.matched, criteriaMissed: result.missed });
     }
   }
 
@@ -147,4 +49,4 @@ export async function POST() {
   }
 
   return Response.json({ ok: true, created: toCreate.length });
-}
+});

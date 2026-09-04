@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, Lock, Eye, EyeOff } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { ChevronDown, ChevronRight, Lock, Eye, EyeOff, Printer, Presentation, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Question = {
@@ -9,6 +9,7 @@ type Question = {
   isInternal: boolean; options: string[]; unit: string | null;
   conditionalJson: { parentLabel: string; matchValue: string } | null;
   autoCalcJson: { formula: string } | null;
+  showInPrint: boolean; showInPptExport: boolean;
 };
 type Group = { id: string; name: string; isShared: boolean; questions: Question[] };
 type TemplateGroup = { id: string; sortOrder: number; group: Group };
@@ -37,6 +38,8 @@ export default function TemplatesPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [showInternal, setShowInternal] = useState(true);
+  const dragIndex = useRef<number | null>(null);
+  const dragGroupId = useRef<string | null>(null);
 
   useEffect(() => {
     fetch("/api/settings/templates").then((r) => r.json()).then((data) => {
@@ -49,6 +52,57 @@ export default function TemplatesPage() {
 
   function toggleGroup(id: string) {
     setExpandedGroups((p) => ({ ...p, [id]: !p[id] }));
+  }
+
+  async function toggleQuestionFlag(questionId: string, field: "showInPrint" | "showInPptExport") {
+    const template = templates.find((t) => t.groups.some((tg) => tg.group.questions.some((q) => q.id === questionId)));
+    const question = template?.groups.flatMap((tg) => tg.group.questions).find((q) => q.id === questionId);
+    if (!question) return;
+    const next = !question[field];
+
+    setTemplates((prev) => prev.map((t) => ({
+      ...t,
+      groups: t.groups.map((tg) => ({
+        ...tg,
+        group: {
+          ...tg.group,
+          questions: tg.group.questions.map((q) => (q.id === questionId ? { ...q, [field]: next } : q)),
+        },
+      })),
+    })));
+
+    await fetch(`/api/settings/templates/questions/${questionId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [field]: next }),
+    });
+  }
+
+  async function handleReorder(groupId: string, targetIndex: number) {
+    const fromIndex = dragIndex.current;
+    dragIndex.current = null;
+    dragGroupId.current = null;
+    if (fromIndex === null || fromIndex === targetIndex) return;
+
+    let orderedIds: string[] = [];
+    setTemplates((prev) => prev.map((t) => ({
+      ...t,
+      groups: t.groups.map((tg) => {
+        if (tg.group.id !== groupId) return tg;
+        const questions = [...tg.group.questions];
+        const [moved] = questions.splice(fromIndex, 1);
+        questions.splice(targetIndex, 0, moved);
+        orderedIds = questions.map((q) => q.id);
+        return { ...tg, group: { ...tg.group, questions } };
+      }),
+    })));
+
+    if (orderedIds.length === 0) return;
+    await fetch("/api/settings/templates/questions/reorder", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ groupId, orderedIds }),
+    });
   }
 
   return (
@@ -120,6 +174,7 @@ export default function TemplatesPage() {
                       <table className="w-full text-xs">
                         <thead>
                           <tr className="bg-gray-50 text-gray-400 uppercase tracking-wide sticky top-0 z-10">
+                            <th className="text-left px-4 py-2 font-medium w-6"></th>
                             <th className="text-left px-4 py-2 font-medium">#</th>
                             <th className="text-left px-4 py-2 font-medium">Field</th>
                             <th className="text-left px-4 py-2 font-medium">Type</th>
@@ -129,7 +184,17 @@ export default function TemplatesPage() {
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                           {visibleQs.map((q, i) => (
-                            <tr key={q.id} className="hover:bg-gray-50">
+                            <tr
+                              key={q.id}
+                              draggable={showInternal}
+                              onDragStart={() => { dragIndex.current = i; dragGroupId.current = tg.group.id; }}
+                              onDragOver={(e) => { if (dragGroupId.current === tg.group.id) e.preventDefault(); }}
+                              onDrop={() => handleReorder(tg.group.id, i)}
+                              className={cn("hover:bg-gray-50", showInternal && "cursor-move")}
+                            >
+                              <td className="px-2 py-2.5 text-gray-300">
+                                {showInternal && <GripVertical className="w-3.5 h-3.5" />}
+                              </td>
                               <td className="px-4 py-2.5 text-gray-400">{i + 1}</td>
                               <td className="px-4 py-2.5">
                                 <span className="font-medium text-gray-800">{q.label}</span>
@@ -151,9 +216,23 @@ export default function TemplatesPage() {
                                 {q.autoCalcJson && <span className="text-purple-600">auto-calc</span>}
                               </td>
                               <td className="px-4 py-2.5">
-                                <div className="flex gap-1">
+                                <div className="flex items-center gap-1">
                                   {q.isRequired && <span className="text-amber-600 font-bold" title="Required">✳</span>}
                                   {q.isInternal && <span title="Internal only"><Lock className="w-3 h-3 text-gray-400" /></span>}
+                                  <button
+                                    onClick={() => toggleQuestionFlag(q.id, "showInPrint")}
+                                    title={q.showInPrint ? "Shown in print — click to hide" : "Hidden from print — click to show"}
+                                    className={cn("p-1 rounded", q.showInPrint ? "text-blue-600" : "text-gray-300 hover:text-gray-500")}
+                                  >
+                                    <Printer className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => toggleQuestionFlag(q.id, "showInPptExport")}
+                                    title={q.showInPptExport ? "Shown in PPT — click to hide" : "Hidden from PPT — click to show"}
+                                    className={cn("p-1 rounded", q.showInPptExport ? "text-blue-600" : "text-gray-300 hover:text-gray-500")}
+                                  >
+                                    <Presentation className="w-3.5 h-3.5" />
+                                  </button>
                                 </div>
                               </td>
                             </tr>

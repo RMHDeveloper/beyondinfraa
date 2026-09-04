@@ -6,13 +6,13 @@ import { getObject } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
-const SLOTS = ["cover", "logo", "thankyou"] as const;
+const SLOTS = ["cover", "thankyou", "middle"] as const;
 type Slot = (typeof SLOTS)[number];
 
 const DEFAULT_FILES: Record<Slot, string> = {
   cover: "cover.png",
-  logo: "logo-icon.png",
   thankyou: "thankyou.png",
+  middle: "middle-bg.png",
 };
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ slot: string }> }) {

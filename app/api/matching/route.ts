@@ -1,9 +1,10 @@
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
+import { withErrorHandling } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export const GET = withErrorHandling(async function GET() {
   await requireSession();
   const matches = await db.match.findMany({
     orderBy: [{ matchPct: "desc" }, { createdAt: "desc" }],
@@ -12,13 +13,15 @@ export async function GET() {
       project: {
         select: { id: true, title: true, projectNumber: true, category: { select: { name: true } } },
       },
-      buyerRequirement: {
-        select: { id: true, reqNumber: true, contact: { select: { name: true } } },
+      demandProject: {
+        select: {
+          id: true, title: true, projectNumber: true,
+          clientContact: { select: { name: true } },
+          subcategory: { select: { name: true } },
+        },
       },
-      tenantRequirement: {
-        select: { id: true, reqNumber: true, contact: { select: { name: true } } },
-      },
+      deal: { select: { id: true } },
     },
   });
   return Response.json(matches);
-}
+});

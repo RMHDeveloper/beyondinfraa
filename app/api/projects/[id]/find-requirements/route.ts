@@ -1,56 +1,44 @@
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
+import { withErrorHandling } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-// GET — return all active requirements in same category as the project, with existing match status
-export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
+// GET — return all OPEN Buy/Tenant demand projects in the same category as this listing, with existing match status
+export const GET = withErrorHandling(async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   await requireSession();
   const { id } = await params;
 
   const project = await db.project.findUnique({ where: { id }, select: { categoryId: true } });
   if (!project) return Response.json({ error: "Not found" }, { status: 404 });
 
-  const [buyerReqs, tenantReqs, existingMatches] = await Promise.all([
-    db.buyerRequirement.findMany({
-      where: { categoryId: project.categoryId, status: { in: ["NEW", "ACTIVE"] } },
-      orderBy: { createdAt: "desc" },
-      take: 500,
-      select: {
-        id: true, reqNumber: true, status: true, createdAt: true,
-        budgetMin: true, budgetMax: true, areaMin: true, areaMax: true,
-        bhk: true, furnishing: true, preferredLocations: true, notes: true,
-        contact: { select: { id: true, name: true } },
+  const [demandProjects, existingMatches] = await Promise.all([
+    db.project.findMany({
+      where: {
+        categoryId: project.categoryId,
+        state: "OPEN",
+        subcategory: { name: { in: ["Buy", "Tenant"] } },
       },
-    }),
-    db.tenantRequirement.findMany({
-      where: { categoryId: project.categoryId, status: { in: ["NEW", "ACTIVE"] } },
-      orderBy: { createdAt: "desc" },
-      take: 500,
       select: {
-        id: true, reqNumber: true, status: true, createdAt: true,
-        rentMin: true, rentMax: true, areaMin: true, areaMax: true,
-        furnishing: true, leaseDuration: true, preferredLocations: true, notes: true,
-        contact: { select: { id: true, name: true } },
+        id: true, projectNumber: true, title: true,
+        subcategory: { select: { name: true } },
+        clientContact: { select: { name: true } },
+        status: { select: { name: true, color: true } },
       },
+      orderBy: { createdAt: "desc" },
     }),
     db.match.findMany({
       where: { projectId: id },
-      select: { id: true, buyerRequirementId: true, tenantRequirementId: true, confirmedAt: true, matchPct: true },
+      select: { id: true, demandProjectId: true, confirmedAt: true, matchPct: true },
     }),
   ]);
 
-  const matchedBuyerIds = new Map(existingMatches.filter(m => m.buyerRequirementId).map(m => [m.buyerRequirementId!, m]));
-  const matchedTenantIds = new Map(existingMatches.filter(m => m.tenantRequirementId).map(m => [m.tenantRequirementId!, m]));
+  const matchMap = new Map(existingMatches.map(m => [m.demandProjectId, m]));
 
-  return Response.json({
-    buyerReqs: buyerReqs.map(r => ({
-      ...r,
-      existingMatch: matchedBuyerIds.get(r.id) ?? null,
-    })),
-    tenantReqs: tenantReqs.map(r => ({
-      ...r,
-      existingMatch: matchedTenantIds.get(r.id) ?? null,
-    })),
-  });
-}
+  return Response.json(
+    demandProjects.map(p => ({
+      ...p,
+      existingMatch: matchMap.get(p.id) ?? null,
+    }))
+  );
+});

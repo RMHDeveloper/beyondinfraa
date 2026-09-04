@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Pencil, Check, X, ChevronDown, ChevronRight, TrendingUp } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, blurOnWheel } from "@/lib/utils";
 
 type Rule = {
   id: string;
@@ -64,7 +64,7 @@ function RuleForm({
         {/* Max Score */}
         <div>
           <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Max Score (weightage) *</label>
-          <input type="number" value={value.maxScore} onChange={f("maxScore")} placeholder="e.g. 30"
+          <input type="number" value={value.maxScore} onChange={f("maxScore")} placeholder="e.g. 30" onWheel={blurOnWheel}
             className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500" />
           <p className="text-[10px] text-gray-400 mt-0.5">The maximum points this criterion can contribute to the total possible score.</p>
         </div>
@@ -95,14 +95,14 @@ function RuleForm({
         {/* Score */}
         <div>
           <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Score (points earned)</label>
-          <input type="number" value={value.score} onChange={f("score")} placeholder="e.g. 30"
+          <input type="number" value={value.score} onChange={f("score")} placeholder="e.g. 30" onWheel={blurOnWheel}
             className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500" />
         </div>
 
         {/* Sort Order */}
         <div>
           <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Sort Order</label>
-          <input type="number" value={value.sortOrder} onChange={f("sortOrder")} placeholder="e.g. 10"
+          <input type="number" value={value.sortOrder} onChange={f("sortOrder")} placeholder="e.g. 10" onWheel={blurOnWheel}
             className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500" />
         </div>
       </div>

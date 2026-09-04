@@ -23,13 +23,12 @@ type DashboardData = {
   totalContacts: number;
   totalBuyerReqs: number; totalTenantReqs: number;
   totalMatches: number; totalProposals: number;
-  totalSiteVisits: number; totalDeals: number; activeNegotiations: number;
+  totalSiteVisits: number; totalDeals: number;
   pipelineValue: number;
   catCounts: Record<string, number>;
   buyerByCatMap: Record<string, number>;
   tenantByCatMap: Record<string, number>;
   matchByCatMap: Record<string, number>;
-  negByCatMap: Record<string, number>;
 };
 
 // "Redevelopment" is a sidebar/dashboard sector label, but the underlying Category
@@ -126,7 +125,6 @@ export default function DashboardPage() {
             const buyerReqs = data.buyerByCatMap[catKey] ?? 0;
             const tenantReqs = data.tenantByCatMap[catKey] ?? 0;
             const matches    = data.matchByCatMap[catKey] ?? 0;
-            const negs       = data.negByCatMap?.[catKey] ?? 0;
             return (
               <div key={key} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                 <div className="px-4 pt-4 pb-3 flex items-start justify-between">
@@ -141,12 +139,11 @@ export default function DashboardPage() {
                   </div>
                   <span className="text-lg font-bold" style={{ color }}>{propCount}</span>
                 </div>
-                <div className="px-4 pb-3 grid grid-cols-2 gap-x-3 gap-y-2">
+                <div className="px-4 pb-3 grid grid-cols-3 gap-x-3 gap-y-2">
                   {[
                     { label: "BUYER REQS",   val: buyerReqs },
                     { label: "TENANT REQS",  val: tenantReqs },
                     { label: "MATCHES",      val: matches },
-                    { label: "NEGOTIATIONS", val: negs },
                   ].map(({ label, val }) => (
                     <div key={label}>
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{label}</p>

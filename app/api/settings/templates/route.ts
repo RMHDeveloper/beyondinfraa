@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
+import { withErrorHandling } from "@/lib/utils";
 
-export async function GET() {
+export const GET = withErrorHandling(async function GET() {
   const templates = await db.template.findMany({
     orderBy: { name: "asc" },
     select: {
@@ -19,6 +20,7 @@ export async function GET() {
                   id: true, label: true, fieldType: true, isRequired: true,
                   isInternal: true, options: true, unit: true, helpText: true,
                   conditionalJson: true, autoCalcJson: true, sortOrder: true,
+                  showInPrint: true, showInPptExport: true,
                 },
               },
             },
@@ -28,4 +30,4 @@ export async function GET() {
     },
   });
   return Response.json(templates);
-}
+});

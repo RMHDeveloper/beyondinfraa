@@ -1,4 +1,6 @@
-type Question = { id: string; label: string; sortOrder: number };
+import { isBlankResponseValue } from "@/lib/utils";
+
+type Question = { id: string; label: string; sortOrder: number; fieldType: string; isInternal: boolean; showInPrint: boolean };
 type Group = { id: string; name: string; questions: Question[] };
 type TemplateGroup = { id: string; sortOrder: number; group: Group };
 type Project = {
@@ -7,16 +9,10 @@ type Project = {
   template: { groups: TemplateGroup[] };
 };
 
-function findGroup(project: Project, ...names: string[]): Group | null {
-  const lower = names.map((n) => n.toLowerCase());
-  const tg = project.template.groups.find((tg) => lower.includes(tg.group.name.toLowerCase()));
-  return tg?.group ?? null;
-}
-
-function FieldTable({ title, group, values }: { title: string; group: Group | null; values: Record<string, string> }) {
-  const rows = (group?.questions ?? [])
+function FieldTable({ title, questions, values }: { title: string; questions: Question[]; values: Record<string, string> }) {
+  const rows = questions
     .slice().sort((a, b) => a.sortOrder - b.sortOrder)
-    .map((q) => ({ label: q.label, value: values[q.id]?.trim() || "—" }));
+    .map((q) => ({ label: q.label, value: !isBlankResponseValue(values[q.id], q.fieldType) ? values[q.id].trim() : "—" }));
 
   return (
     <div className="border border-gray-400">
@@ -40,10 +36,16 @@ function FieldTable({ title, group, values }: { title: string; group: Group | nu
 export default function ProjectPrintView({
   project, localValues, photoUrl,
 }: { project: Project; localValues: Record<string, string>; photoUrl: string | null }) {
-  const developmentDetails = findGroup(project, "Development Details");
-  const areaAvailability = findGroup(project, "Area / Availability", "Area/Availability");
-  const commercialDetails = findGroup(project, "Commercial Details", "Rental Details");
-  const tenantProfile = findGroup(project, "Tenant Profile");
+  const printableGroups = project.template.groups
+    .slice().sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((tg) => ({
+      ...tg.group,
+      questions: tg.group.questions.filter((q) => !q.isInternal && q.showInPrint),
+    }))
+    .filter((g) => g.questions.length > 0);
+
+  const firstGroup = printableGroups[0];
+  const restGroups = printableGroups.slice(1);
 
   return (
     <div className="print-area hidden p-8 text-gray-900" style={{ fontFamily: "Arial, sans-serif" }}>
@@ -55,18 +57,19 @@ export default function ProjectPrintView({
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-3">
-        <FieldTable title="Development Details / Offered Building Details" group={developmentDetails} values={localValues} />
+        {firstGroup && <FieldTable title={firstGroup.name} questions={firstGroup.questions} values={localValues} />}
         {photoUrl ? (
           <img src={photoUrl} alt={project.title} className="w-full h-full object-cover border border-gray-400" />
         ) : (
           <div className="border border-gray-400 flex items-center justify-center text-xs text-gray-400">No photo</div>
         )}
-        <FieldTable title="Tenant Profile" group={tenantProfile} values={localValues} />
+        {restGroups[0] && <FieldTable title={restGroups[0].name} questions={restGroups[0].questions} values={localValues} />}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <FieldTable title="Area / Availability" group={areaAvailability} values={localValues} />
-        <FieldTable title="Commercial Details" group={commercialDetails} values={localValues} />
+        {restGroups.slice(1).map((g) => (
+          <FieldTable key={g.id} title={g.name} questions={g.questions} values={localValues} />
+        ))}
       </div>
     </div>
   );

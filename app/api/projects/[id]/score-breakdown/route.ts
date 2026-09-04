@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
+import { withErrorHandling } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -56,7 +57,7 @@ function ruleMatches(responseVal: string, matchValue: string): boolean {
   return responseVal === matchValue || responseVal.startsWith(matchValue);
 }
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withErrorHandling(async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   await requireSession();
   const { id: projectId } = await params;
 
@@ -157,4 +158,4 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     totalPossible,
     potentialScore,
   });
-}
+});

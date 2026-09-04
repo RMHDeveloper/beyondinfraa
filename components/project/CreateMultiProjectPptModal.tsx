@@ -88,22 +88,11 @@ export default function CreateMultiProjectPptModal({
     const pick = selected[clampedIndex - 1];
     const src = pick ? `${apiBaseFor(pick.projectId)}/${pick.imageId}` : "";
     return (
-      <div className="relative w-full h-full bg-white overflow-hidden">
+      <div className="relative w-full h-full overflow-hidden">
+        <img src="/ppt-template/middle-bg.png" alt="" className="absolute inset-0 w-full h-full object-cover" />
         {pick && (
-          <img src={src} alt="" aria-hidden
-            className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl brightness-75" />
-        )}
-        {pick && <img src={src} alt="" className="absolute inset-0 w-full h-full object-contain" />}
-        <div className="absolute inset-0 bg-white/10" />
-        <div className="absolute inset-x-0 bottom-0 h-[22%]" style={{ background: "linear-gradient(to bottom, transparent, rgba(255,255,255,0.75))" }} />
-        <div className="absolute right-0 top-0 w-[45%] h-[18%]" style={{ background: "linear-gradient(to left, rgba(255,255,255,0.8), transparent)" }} />
-        <img src="/ppt-template/logo-icon.png" alt="" className="absolute left-[2.5%] bottom-[12%] w-[9%]" />
-        <div className="absolute right-[3%] top-[6%] text-[9px] tracking-widest text-gray-600">www.beyondinfra.com</div>
-        <div className="absolute left-[9%] right-[6%] bottom-[6%] h-px bg-gray-600" />
-        {pick && (
-          <div className="absolute left-[2.5%] top-[6%] text-[10px] font-semibold bg-black/40 text-white px-2 py-1 rounded">
-            {titleById.get(pick.projectId)}
-          </div>
+          <img src={src} alt=""
+            className="absolute left-[8%] top-[16%] w-[84%] h-[62%] object-cover" />
         )}
       </div>
     );

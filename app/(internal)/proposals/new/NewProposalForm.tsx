@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import CreateMultiProjectPptModal, { type ProjectImageGroup } from "@/components/project/CreateMultiProjectPptModal";
 
 type Contact  = { id: string; name: string; type: string };
-type ReqItem  = { id: string; reqNumber: string; contact: Contact; category: { name: string } };
+type ReqItem  = { id: string; projectNumber: string; state: string; clientContact: Contact | null; category: { name: string } };
 type Project  = { id: string; title: string; projectNumber: string; category: { name: string } };
 
 const SECTOR_COLORS: Record<string, { color: string; bg: string }> = {
@@ -95,17 +95,10 @@ export default function NewProposalForm({
                   Tenant Req
                 </button>
               </div>
-              {reqType === "buyer" ? (
-                <select name="buyerRequirementId" className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
-                  <option value="">None</option>
-                  {reqs.map((r) => <option key={r.id} value={r.id}>{r.reqNumber} — {r.contact.name} ({r.category.name})</option>)}
-                </select>
-              ) : (
-                <select name="tenantRequirementId" className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
-                  <option value="">None</option>
-                  {reqs.map((r) => <option key={r.id} value={r.id}>{r.reqNumber} — {r.contact.name} ({r.category.name})</option>)}
-                </select>
-              )}
+              <select name="demandProjectId" className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
+                <option value="">None</option>
+                {reqs.map((r) => <option key={r.id} value={r.id}>{r.projectNumber} — {r.clientContact?.name ?? "Unknown"} ({r.category.name})</option>)}
+              </select>
             </div>
 
             <div>

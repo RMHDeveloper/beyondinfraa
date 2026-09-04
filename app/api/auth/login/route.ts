@@ -2,9 +2,9 @@ import { NextRequest } from "next/server";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { signToken } from "@/lib/auth";
-import { apiError } from "@/lib/utils";
+import { apiError, withErrorHandling } from "@/lib/utils";
 
-export async function POST(req: NextRequest) {
+export const POST = withErrorHandling(async function POST(req: NextRequest) {
   const { email, password } = await req.json();
 
   if (!email || !password) return apiError("Email and password required");
@@ -24,4 +24,4 @@ export async function POST(req: NextRequest) {
     `bi_token=${token}; HttpOnly; Path=/; Max-Age=${7 * 24 * 3600}; SameSite=Lax`
   );
   return new Response(res.body, { status: 200, headers });
-}
+});

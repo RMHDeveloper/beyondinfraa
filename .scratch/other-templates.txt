@@ -1,0 +1,815 @@
+Category: Commercial cmsd8hzhd000i3kn8fhizm6ic
+
+=== Subcategory: Buy cmsd8hzmy000j3kn8kco7axob ===
+  Template: Commercial Buy (cmsd8jf9a00e93kn8ffhz0pcv)
+    Group: Client Profile — Buyer [client-profile-buyer]
+      - Primary Contact Name (TEXT) *
+      - Primary Contact Phone (PHONE) *
+      - Primary Contact Email (EMAIL)
+      - Additional Contacts (REPEATER)
+      - Ownership Type (RADIO) opts=Individual/Trust/Company
+    Group: Property Requirements [comm-buy-requirements]
+      - Property Type (RADIO) * opts=Retail Outlet/Office Space/Coworking
+      - Area Required (NUMBER) *
+      - Number of Seats (NUMBER)
+      - Car Parks Required (NUMBER)
+      - Floor Preference (TEXT)
+      - Property Sharing (RADIO) opts=Stand Alone/Sharing
+      - Extent of Furnishing (RADIO) opts=Bare Shell/Warm Shell/Semi Furnished/Fully Furnished
+      - Amenities Expected (TEXT)
+      - Age of Property (NUMBER)
+      - Direction Facing (expected) (RADIO) opts=N/S/E/W
+      - Preferred Areas (in order of preference) (REPEATER) *
+    Group: Commercial Details [comm-buy-commercial]
+      - Budget — Min (NUMBER) *
+      - Budget — Max (NUMBER) *
+      - Financial Expectation Breakup (RADIO) [internal] opts=Cheque Only/Cash Only/Cheque + Cash/Bank Loan
+      - Brokerage Agreed (%) (NUMBER) [internal]
+      - Any Other Comments (TEXTAREA)
+    Group: Potential Scoring [potential-comm-buy]
+      - Mandate Given to BeyondInfra? (RADIO) [internal] opts=Yes/No
+      - Commission Finalized (%) (RADIO) [internal] opts=0/1/2/3/Other
+      - Timeline Rating (RADIO) [internal] opts=High (Immediate – 2 months)/Low (3+ months)
+      - Overall Potential Score (TEXT) [internal]
+      - Internal Notes on Potential (TEXTAREA) [internal]
+
+=== Subcategory: Sell cmsd8hzsg000k3kn8cy2eusg9 ===
+  Template: Commercial Sell (cmsd8jfin00ef3kn8q8nritpj)
+    Group: Client Profile — Seller / Owner [client-profile-seller]
+      - Primary Owner Name (TEXT) *
+      - Primary Contact Name (TEXT) *
+      - Primary Contact Phone (PHONE) *
+      - Primary Contact Email (EMAIL)
+      - Additional Contacts (REPEATER)
+      - Decision Maker (TEXT)
+      - Ownership Pattern (RADIO) opts=Single Owner/POA Holder/Trust Owned/Family Owned/Company
+    Group: Property Type [comm-sell-type]
+      - Property Type (RADIO) * opts=Retail Outlet/Office Space/Coworking
+    Group: Property Details [comm-sell-details]
+      - Door Number / Flat Number (TEXT)
+      - Floor (TEXT)
+      - Number of Floors in Building (NUMBER)
+      - Saleable Area (NUMBER) *
+      - Plinth Area (NUMBER)
+      - Carpet Area (NUMBER)
+      - Size of Land / UDS (NUMBER)
+      - Number of Rooms (NUMBER)
+      - Number of Bathrooms (NUMBER)
+      - Other Rooms / Features (MULTISELECT) opts=Cafeteria/Kitchen/Service Area/Balcony
+      - Amenities (TEXT)
+      - Extent of Furnishing (RADIO) opts=Bare Shell/Warm Shell/Semi Furnished/Fully Furnished
+      - Car Parks Available (NUMBER)
+      - Direction Facing (RADIO) opts=N/S/E/W
+    Group: Location [location-property]
+      - Street Name (TEXT) *
+      - Area / Locality (TEXT) *
+      - Google Maps Pin / Link (TEXT)
+      - Within 500m of Metro Line? (RADIO) opts=Yes/No
+      - Nearest Metro Line (TEXT)
+    Group: Documents — Built Property [documents-built]
+      - FMB Sketch (FILE)
+      - Local Body Approval (FILE)
+      - Patta (FILE)
+      - Encumbrance Certificate (EC) (FILE)
+      - Sale Deed (FILE)
+      - Parent Documents (FILE)
+      - 1st Owner Sale Deed (FILE)
+      - Settlement Deeds (FILE)
+      - Partition Deeds (FILE)
+      - Gift Deeds (FILE)
+      - Death Certificate / Legal Heir Certificate (FILE)
+      - Property Tax / Aadhar / CMWSSB / PAN Card (FILE)
+      - Tax Arrears / Fines Documents (FILE)
+      - Any Known Missing Documents (TEXTAREA)
+    Group: Photos [photos]
+      - Front Elevation Photos (FILE)
+      - All Rooms Photos (FILE)
+      - Parking Area Photos (FILE)
+      - Terrace Photos (FILE)
+      - Common Areas Photos (FILE)
+      - Structural Cracks / Damages Photos (FILE)
+      - Road Photos (FILE)
+    Group: Commercial Details [comm-sell-commercial]
+      - Price Expected — Min (NUMBER) *
+      - Price Expected — Max (NUMBER) *
+      - Maintenance (NUMBER)
+      - Reason for Sale (TEXTAREA)
+      - Sale Timeline (TEXT)
+      - Payment Preference (RADIO) opts=Immediate/Deferred
+      - If Deferred — How Many Months? (NUMBER)
+      - Financial Demand Breakup (RADIO) [internal] opts=Cheque Only/Cash Only/Cheque + Cash
+      - Number of Owners / Signing Authorities (NUMBER)
+      - Brokerage Agreed (%) (NUMBER) [internal]
+      - Any Other Comments (TEXTAREA)
+      - Car-parking Ratio (TEXT)
+      - Car-parking Charges (INR/slot) (NUMBER)
+      - Bike-parking Ratio (TEXT)
+      - Bike-parking Charges (INR/slot) (NUMBER)
+      - Maintenance Charges (INR/sq.ft/month) (NUMBER)
+    Group: Potential Scoring [potential-comm-sell]
+      - Mandate Given to BeyondInfra? (RADIO) [internal] opts=Yes/No
+      - Commission Finalized (%) (RADIO) [internal] opts=0/1/2/3/Other
+      - Timeline Rating (RADIO) [internal] opts=High (Immediate – 2 months)/Low (3+ months)
+      - Overall Potential Score (TEXT) [internal]
+      - Internal Notes on Potential (TEXTAREA) [internal]
+    Group: Development Details [development-details]
+      - Google Coordinates (TEXT)
+      - Developer / Landlord (TEXT)
+      - Asset Class (DROPDOWN) opts=Grade A/Grade B/IT/ITES/Warehouse/Retail/Mixed Use
+      - Efficiency (Developer Estimate) (NUMBER)
+      - Power Backup (DROPDOWN) opts=Available/Not Available/Partial
+      - Air Conditioning (DROPDOWN) opts=Available/Not Available/Central/Split
+      - Amenities in the Development (TEXTAREA)
+      - Key Occupants in the Development (TEXTAREA)
+    Group: Area / Availability [area-availability]
+      - Total Development Size (sq.ft) (NUMBER)
+      - Typical Floor Plate (sq.ft) (NUMBER)
+      - Building Configuration (TEXT)
+      - Total Available Area (sq.ft) (NUMBER)
+      - Proposed Floor | Offered Area (sq.ft) (TEXT)
+      - Timeline (DROPDOWN) opts=Immediate/1-3 months/3-6 months/6-12 months
+      - Floor Condition (DROPDOWN) opts=Bare Shell/Warm Shell/Semi Furnished/Fully Furnished
+    Group: Tenant Profile [tenant-profile]
+      - Key Occupant / Tenant Name (TEXT)
+      - Additional Comments / Fitout Details (TEXTAREA)
+
+=== Subcategory: Rent cmsd8hzyd000l3kn8l4nckdja ===
+  Template: Commercial Rent (cmsd8jg0b00ep3kn8mqzz8hug)
+    Group: Client Profile — Seller / Owner [client-profile-seller]
+      - Primary Owner Name (TEXT) *
+      - Primary Contact Name (TEXT) *
+      - Primary Contact Phone (PHONE) *
+      - Primary Contact Email (EMAIL)
+      - Additional Contacts (REPEATER)
+      - Decision Maker (TEXT)
+      - Ownership Pattern (RADIO) opts=Single Owner/POA Holder/Trust Owned/Family Owned/Company
+    Group: Property Type [comm-sell-type]
+      - Property Type (RADIO) * opts=Retail Outlet/Office Space/Coworking
+    Group: Property Details [comm-sell-details]
+      - Door Number / Flat Number (TEXT)
+      - Floor (TEXT)
+      - Number of Floors in Building (NUMBER)
+      - Saleable Area (NUMBER) *
+      - Plinth Area (NUMBER)
+      - Carpet Area (NUMBER)
+      - Size of Land / UDS (NUMBER)
+      - Number of Rooms (NUMBER)
+      - Number of Bathrooms (NUMBER)
+      - Other Rooms / Features (MULTISELECT) opts=Cafeteria/Kitchen/Service Area/Balcony
+      - Amenities (TEXT)
+      - Extent of Furnishing (RADIO) opts=Bare Shell/Warm Shell/Semi Furnished/Fully Furnished
+      - Car Parks Available (NUMBER)
+      - Direction Facing (RADIO) opts=N/S/E/W
+    Group: Location [location-property]
+      - Street Name (TEXT) *
+      - Area / Locality (TEXT) *
+      - Google Maps Pin / Link (TEXT)
+      - Within 500m of Metro Line? (RADIO) opts=Yes/No
+      - Nearest Metro Line (TEXT)
+    Group: Documents — Built Property [documents-built]
+      - FMB Sketch (FILE)
+      - Local Body Approval (FILE)
+      - Patta (FILE)
+      - Encumbrance Certificate (EC) (FILE)
+      - Sale Deed (FILE)
+      - Parent Documents (FILE)
+      - 1st Owner Sale Deed (FILE)
+      - Settlement Deeds (FILE)
+      - Partition Deeds (FILE)
+      - Gift Deeds (FILE)
+      - Death Certificate / Legal Heir Certificate (FILE)
+      - Property Tax / Aadhar / CMWSSB / PAN Card (FILE)
+      - Tax Arrears / Fines Documents (FILE)
+      - Any Known Missing Documents (TEXTAREA)
+    Group: Photos [photos]
+      - Front Elevation Photos (FILE)
+      - All Rooms Photos (FILE)
+      - Parking Area Photos (FILE)
+      - Terrace Photos (FILE)
+      - Common Areas Photos (FILE)
+      - Structural Cracks / Damages Photos (FILE)
+      - Road Photos (FILE)
+    Group: Rental Details [comm-rent-details]
+      - Nature of Deal (RADIO) * opts=Giving Property for Rent/Looking for Rental Space
+      - Rental — Min (NUMBER) *
+      - Rental — Max (NUMBER) *
+      - Security Deposit (NUMBER)
+      - Period of Tenancy (NUMBER)
+      - Lock-in Period (NUMBER)
+      - Tenancy Type (RADIO) opts=Family/Bachelors/Company Lease/Other
+      - Reason for Rent (TEXTAREA)
+      - Rental Timeline (TEXT)
+      - Financial Demand Breakup (RADIO) [internal] opts=Cheque Only/Cash Only/Cheque + Cash
+      - Number of Owners / Signing Authorities (NUMBER)
+      - Brokerage Agreed (%) (NUMBER) [internal]
+      - Any Other Comments (TEXTAREA)
+      - Quoted Rent (INR/sq.ft/month) (NUMBER)
+      - Rent Escalation (TEXT)
+      - Car-parking Ratio (TEXT)
+      - Car-parking Charges (INR/slot) (NUMBER)
+      - Bike-parking Ratio (TEXT)
+      - Bike-parking Charges (INR/slot) (NUMBER)
+      - Other Deposits (TEXT)
+      - Maintenance Charges (INR/sq.ft/month) (NUMBER)
+    Group: Potential Scoring [potential-comm-rent]
+      - Mandate Given to BeyondInfra? (RADIO) [internal] opts=Yes/No
+      - Commission Finalized (RADIO) [internal] opts=High (≥1 month rent)/Low (<1 month rent)
+      - Timeline Rating (RADIO) [internal] opts=High (Immediate – 2 months)/Low (3+ months)
+      - Overall Potential Score (TEXT) [internal]
+      - Internal Notes on Potential (TEXTAREA) [internal]
+    Group: Development Details [development-details]
+      - Google Coordinates (TEXT)
+      - Developer / Landlord (TEXT)
+      - Asset Class (DROPDOWN) opts=Grade A/Grade B/IT/ITES/Warehouse/Retail/Mixed Use
+      - Efficiency (Developer Estimate) (NUMBER)
+      - Power Backup (DROPDOWN) opts=Available/Not Available/Partial
+      - Air Conditioning (DROPDOWN) opts=Available/Not Available/Central/Split
+      - Amenities in the Development (TEXTAREA)
+      - Key Occupants in the Development (TEXTAREA)
+    Group: Area / Availability [area-availability]
+      - Total Development Size (sq.ft) (NUMBER)
+      - Typical Floor Plate (sq.ft) (NUMBER)
+      - Building Configuration (TEXT)
+      - Total Available Area (sq.ft) (NUMBER)
+      - Proposed Floor | Offered Area (sq.ft) (TEXT)
+      - Timeline (DROPDOWN) opts=Immediate/1-3 months/3-6 months/6-12 months
+      - Floor Condition (DROPDOWN) opts=Bare Shell/Warm Shell/Semi Furnished/Fully Furnished
+    Group: Tenant Profile [tenant-profile]
+      - Key Occupant / Tenant Name (TEXT)
+      - Additional Comments / Fitout Details (TEXTAREA)
+
+=== Subcategory: Tenant cmtj4riij000xi0n85qrdehxu ===
+  Template: Commercial Tenant (cmtj4rk0u001pi0n8bdllwju2)
+    Group: Client Profile — Buyer [client-profile-buyer]
+      - Primary Contact Name (TEXT) *
+      - Primary Contact Phone (PHONE) *
+      - Primary Contact Email (EMAIL)
+      - Additional Contacts (REPEATER)
+      - Ownership Type (RADIO) opts=Individual/Trust/Company
+    Group: Tenant Requirements [tenant-requirements-commercial]
+      - Property Subtype (RADIO) * opts=Office Space/Retail/Showroom/Co-working
+      - Area Required — Min (NUMBER)
+      - Area Required — Max (NUMBER)
+      - Lease Duration (NUMBER)
+      - Lock-in Period (NUMBER)
+      - Move-in Date (DATE)
+      - Extent of Furnishing (RADIO) opts=Bare Shell/Warm Shell/Semi Furnished/Fully Furnished
+      - Car Parks Required (NUMBER)
+      - Floor Preference (TEXT)
+      - Facility Grade (RADIO) opts=Grade A/Regular
+      - Direction Facing (expected) (RADIO) opts=N/S/E/W
+      - Operational Requirements (TEXTAREA)
+      - Preferred Areas (in order of preference) (REPEATER) *
+    Group: Commercial Details [commercial-details-tenant-commercial]
+      - Rent Budget — Min (NUMBER) *
+      - Rent Budget — Max (NUMBER) *
+      - Deposit Budget (NUMBER)
+      - Financial Expectation Breakup (RADIO) [internal] opts=Cheque Only/Cash Only/Cheque + Cash/Bank Loan
+      - Brokerage Agreed (%) (NUMBER) [internal]
+      - Any Other Comments (TEXTAREA)
+    Group: Potential Scoring [potential-scoring-tenant-commercial]
+      - Mandate Given to BeyondInfra? (RADIO) [internal] opts=Yes/No
+      - Commission Finalized (%) (RADIO) [internal] opts=0/1/2/3/Other
+      - Timeline Rating (RADIO) [internal] opts=High (Immediate – 2 months)/Low (3+ months)
+      - Overall Potential Score (TEXT) [internal]
+      - Internal Notes on Potential (TEXTAREA) [internal]
+
+Category: Industrial cmsd8i040000m3kn8ifhohi0k
+
+=== Subcategory: Buy cmsd8i09x000n3kn82ma9ddw1 ===
+  Template: Industrial Buy (cmsd8jh9v00ez3kn87eb9dybw)
+    Group: Client Profile — Buyer [client-profile-buyer]
+      - Primary Contact Name (TEXT) *
+      - Primary Contact Phone (PHONE) *
+      - Primary Contact Email (EMAIL)
+      - Additional Contacts (REPEATER)
+      - Ownership Type (RADIO) opts=Individual/Trust/Company
+    Group: Property Requirements [ind-buy-requirements]
+      - Property Type (RADIO) * opts=Factory Shed/Warehouse/Business Space/Resort
+      - Area Required (NUMBER) *
+      - Car Parks Required (NUMBER)
+      - Floor Preference (TEXT)
+      - Property Sharing (RADIO) opts=Stand Alone/Sharing
+      - Extent of Furnishing (RADIO) opts=Bare Shell/Warm Shell/Semi Furnished/Fully Furnished
+      - Flooring Type (TEXT)
+      - Type of Facility (RADIO) opts=Grade A/Regular
+      - Amenities Expected (TEXT)
+      - Power Connection Level (RADIO) opts=Low Tension/High Tension/Basic Connection
+      - Age of Property (NUMBER)
+      - Direction Facing (expected) (RADIO) opts=N/S/E/W
+      - Preferred Areas (in order of preference) (REPEATER) *
+    Group: Commercial Details [ind-buy-commercial]
+      - Budget — Min (NUMBER) *
+      - Budget — Max (NUMBER) *
+      - Financial Expectation Breakup (RADIO) [internal] opts=Cheque Only/Cash Only/Cheque + Cash
+      - Brokerage Agreed (%) (NUMBER) [internal]
+      - Any Other Comments (TEXTAREA)
+    Group: Potential Scoring [potential-ind-buy]
+      - Mandate Given to BeyondInfra? (RADIO) [internal] opts=Yes/No
+      - Commission Finalized (%) (RADIO) [internal] opts=0/1/2/3/Other
+      - Timeline Rating (RADIO) [internal] opts=High (Immediate – 2 months)/Low (3+ months)
+      - Overall Potential Score (TEXT) [internal]
+      - Internal Notes on Potential (TEXTAREA) [internal]
+
+=== Subcategory: Sell cmsd8i0fd000o3kn8vihj6azq ===
+  Template: Industrial Sell (cmsd8jhnf00f53kn8quf3219u)
+    Group: Client Profile — Seller / Owner [client-profile-seller]
+      - Primary Owner Name (TEXT) *
+      - Primary Contact Name (TEXT) *
+      - Primary Contact Phone (PHONE) *
+      - Primary Contact Email (EMAIL)
+      - Additional Contacts (REPEATER)
+      - Decision Maker (TEXT)
+      - Ownership Pattern (RADIO) opts=Single Owner/POA Holder/Trust Owned/Family Owned/Company
+    Group: Property Type [ind-sell-type]
+      - Property Type (RADIO) * opts=Factory Shed/Warehouse/Business Space/Resort
+    Group: Property Details [ind-sell-details]
+      - Door Number (TEXT)
+      - Floor (TEXT)
+      - Saleable Area (NUMBER) *
+      - Plinth Area (NUMBER)
+      - Carpet Area (NUMBER)
+      - Size of Land / UDS (NUMBER)
+      - Number of Bathrooms (NUMBER)
+      - Type of Facility (RADIO) opts=Grade A/Regular
+      - Flooring Type (TEXT)
+      - Amenities (TEXT)
+      - Power Connection Level (RADIO) opts=Low Tension/High Tension/Basic Connection
+      - Other Rooms / Features (MULTISELECT) opts=Cafeteria/Kitchen/Service Area/Balcony
+      - Extent of Furnishing (RADIO) opts=Bare Shell/Warm Shell/Semi Furnished/Fully Furnished
+      - Car Parks Available (NUMBER)
+      - Number of Floors in Building (NUMBER)
+      - Direction Facing (RADIO) opts=N/S/E/W
+      - Passage Property? (RADIO) opts=Yes/No
+      - Passage Width (NUMBER)
+      - Passage Length (NUMBER)
+      - Area Minus Passage (NUMBER)
+      - Nature of Passage (RADIO) opts=Exclusive/Shared/Easement Based
+      - Corner Plot? (RADIO) opts=Yes/No
+    Group: Location [location-property]
+      - Street Name (TEXT) *
+      - Area / Locality (TEXT) *
+      - Google Maps Pin / Link (TEXT)
+      - Within 500m of Metro Line? (RADIO) opts=Yes/No
+      - Nearest Metro Line (TEXT)
+    Group: Documents — Built Property [documents-built]
+      - FMB Sketch (FILE)
+      - Local Body Approval (FILE)
+      - Patta (FILE)
+      - Encumbrance Certificate (EC) (FILE)
+      - Sale Deed (FILE)
+      - Parent Documents (FILE)
+      - 1st Owner Sale Deed (FILE)
+      - Settlement Deeds (FILE)
+      - Partition Deeds (FILE)
+      - Gift Deeds (FILE)
+      - Death Certificate / Legal Heir Certificate (FILE)
+      - Property Tax / Aadhar / CMWSSB / PAN Card (FILE)
+      - Tax Arrears / Fines Documents (FILE)
+      - Any Known Missing Documents (TEXTAREA)
+    Group: Photos [photos]
+      - Front Elevation Photos (FILE)
+      - All Rooms Photos (FILE)
+      - Parking Area Photos (FILE)
+      - Terrace Photos (FILE)
+      - Common Areas Photos (FILE)
+      - Structural Cracks / Damages Photos (FILE)
+      - Road Photos (FILE)
+    Group: Commercial Details [ind-sell-commercial]
+      - Price Expected — Min (NUMBER) *
+      - Price Expected — Max (NUMBER) *
+      - Maintenance (NUMBER)
+      - Reason for Sale (TEXTAREA)
+      - Sale Timeline (TEXT)
+      - Payment Preference (RADIO) opts=Immediate/Deferred
+      - If Deferred — How Many Months? (NUMBER)
+      - Financial Demand Breakup (RADIO) [internal] opts=Cheque Only/Cash Only/Cheque + Cash
+      - Number of Owners / Signing Authorities (NUMBER)
+      - Brokerage Agreed (%) (NUMBER) [internal]
+      - Any Other Comments (TEXTAREA)
+    Group: Potential Scoring [potential-ind-sell]
+      - Mandate Given to BeyondInfra? (RADIO) [internal] opts=Yes/No
+      - Commission Finalized (%) (RADIO) [internal] opts=0/1/2/3/Other
+      - Timeline Rating (RADIO) [internal] opts=High (Immediate – 2 months)/Low (3+ months)
+      - Overall Potential Score (TEXT) [internal]
+      - Internal Notes on Potential (TEXTAREA) [internal]
+
+=== Subcategory: Rent cmsd8i0l4000p3kn8fj8unjhg ===
+  Template: Industrial Rent (cmsd8ji1700ff3kn89v5qd0m4)
+    Group: Client Profile — Seller / Owner [client-profile-seller]
+      - Primary Owner Name (TEXT) *
+      - Primary Contact Name (TEXT) *
+      - Primary Contact Phone (PHONE) *
+      - Primary Contact Email (EMAIL)
+      - Additional Contacts (REPEATER)
+      - Decision Maker (TEXT)
+      - Ownership Pattern (RADIO) opts=Single Owner/POA Holder/Trust Owned/Family Owned/Company
+    Group: Property Type [ind-sell-type]
+      - Property Type (RADIO) * opts=Factory Shed/Warehouse/Business Space/Resort
+    Group: Property Details [ind-sell-details]
+      - Door Number (TEXT)
+      - Floor (TEXT)
+      - Saleable Area (NUMBER) *
+      - Plinth Area (NUMBER)
+      - Carpet Area (NUMBER)
+      - Size of Land / UDS (NUMBER)
+      - Number of Bathrooms (NUMBER)
+      - Type of Facility (RADIO) opts=Grade A/Regular
+      - Flooring Type (TEXT)
+      - Amenities (TEXT)
+      - Power Connection Level (RADIO) opts=Low Tension/High Tension/Basic Connection
+      - Other Rooms / Features (MULTISELECT) opts=Cafeteria/Kitchen/Service Area/Balcony
+      - Extent of Furnishing (RADIO) opts=Bare Shell/Warm Shell/Semi Furnished/Fully Furnished
+      - Car Parks Available (NUMBER)
+      - Number of Floors in Building (NUMBER)
+      - Direction Facing (RADIO) opts=N/S/E/W
+      - Passage Property? (RADIO) opts=Yes/No
+      - Passage Width (NUMBER)
+      - Passage Length (NUMBER)
+      - Area Minus Passage (NUMBER)
+      - Nature of Passage (RADIO) opts=Exclusive/Shared/Easement Based
+      - Corner Plot? (RADIO) opts=Yes/No
+    Group: Location [location-property]
+      - Street Name (TEXT) *
+      - Area / Locality (TEXT) *
+      - Google Maps Pin / Link (TEXT)
+      - Within 500m of Metro Line? (RADIO) opts=Yes/No
+      - Nearest Metro Line (TEXT)
+    Group: Documents — Built Property [documents-built]
+      - FMB Sketch (FILE)
+      - Local Body Approval (FILE)
+      - Patta (FILE)
+      - Encumbrance Certificate (EC) (FILE)
+      - Sale Deed (FILE)
+      - Parent Documents (FILE)
+      - 1st Owner Sale Deed (FILE)
+      - Settlement Deeds (FILE)
+      - Partition Deeds (FILE)
+      - Gift Deeds (FILE)
+      - Death Certificate / Legal Heir Certificate (FILE)
+      - Property Tax / Aadhar / CMWSSB / PAN Card (FILE)
+      - Tax Arrears / Fines Documents (FILE)
+      - Any Known Missing Documents (TEXTAREA)
+    Group: Photos [photos]
+      - Front Elevation Photos (FILE)
+      - All Rooms Photos (FILE)
+      - Parking Area Photos (FILE)
+      - Terrace Photos (FILE)
+      - Common Areas Photos (FILE)
+      - Structural Cracks / Damages Photos (FILE)
+      - Road Photos (FILE)
+    Group: Rental Details [ind-rent-details]
+      - Nature of Deal (RADIO) * opts=Giving Property for Rent/Looking for Rental Space
+      - Rental — Min (NUMBER) *
+      - Rental — Max (NUMBER) *
+      - Security Deposit (NUMBER)
+      - Period of Tenancy (NUMBER)
+      - Lock-in Period (NUMBER)
+      - Tenancy Type (RADIO) opts=Family/Bachelors/Company Lease/Other
+      - Reason for Rent (TEXTAREA)
+      - Rental Timeline (TEXT)
+      - Financial Demand Breakup (RADIO) [internal] opts=Cheque Only/Cash Only/Cheque + Cash
+      - Number of Owners / Signing Authorities (NUMBER)
+      - Brokerage Agreed (%) (NUMBER) [internal]
+      - Any Other Comments (TEXTAREA)
+    Group: Potential Scoring [potential-ind-rent]
+      - Mandate Given to BeyondInfra? (RADIO) [internal] opts=Yes/No
+      - Commission Finalized (RADIO) [internal] opts=High (≥1 month rent)/Low (<1 month rent)
+      - Timeline Rating (RADIO) [internal] opts=High (Immediate – 2 months)/Low (3+ months)
+      - Overall Potential Score (TEXT) [internal]
+      - Internal Notes on Potential (TEXTAREA) [internal]
+
+=== Subcategory: Tenant cmtj4rkn5001ui0n84lfybswi ===
+  Template: Industrial Tenant (cmtj4rm39002mi0n8z9hwe13a)
+    Group: Client Profile — Buyer [client-profile-buyer]
+      - Primary Contact Name (TEXT) *
+      - Primary Contact Phone (PHONE) *
+      - Primary Contact Email (EMAIL)
+      - Additional Contacts (REPEATER)
+      - Ownership Type (RADIO) opts=Individual/Trust/Company
+    Group: Tenant Requirements [tenant-requirements-industrial]
+      - Property Subtype (RADIO) * opts=Warehouse/Factory/Godown/Cold Storage
+      - Area Required — Min (NUMBER)
+      - Area Required — Max (NUMBER)
+      - Lease Duration (NUMBER)
+      - Lock-in Period (NUMBER)
+      - Move-in Date (DATE)
+      - Extent of Furnishing (RADIO) opts=Bare Shell/Warm Shell/Semi Furnished/Fully Furnished
+      - Car Parks Required (NUMBER)
+      - Floor Preference (TEXT)
+      - Facility Grade (RADIO) opts=Grade A/Regular
+      - Direction Facing (expected) (RADIO) opts=N/S/E/W
+      - Operational Requirements (TEXTAREA)
+      - Preferred Areas (in order of preference) (REPEATER) *
+    Group: Commercial Details [commercial-details-tenant-industrial]
+      - Rent Budget — Min (NUMBER) *
+      - Rent Budget — Max (NUMBER) *
+      - Deposit Budget (NUMBER)
+      - Financial Expectation Breakup (RADIO) [internal] opts=Cheque Only/Cash Only/Cheque + Cash/Bank Loan
+      - Brokerage Agreed (%) (NUMBER) [internal]
+      - Any Other Comments (TEXTAREA)
+    Group: Potential Scoring [potential-scoring-tenant-industrial]
+      - Mandate Given to BeyondInfra? (RADIO) [internal] opts=Yes/No
+      - Commission Finalized (%) (RADIO) [internal] opts=0/1/2/3/Other
+      - Timeline Rating (RADIO) [internal] opts=High (Immediate – 2 months)/Low (3+ months)
+      - Overall Potential Score (TEXT) [internal]
+      - Internal Notes on Potential (TEXTAREA) [internal]
+
+Category: Land cmsd8i0qt000q3kn8qlb4jyj5
+
+=== Subcategory: Buy cmsd8i14m000r3kn8p6gp02qs ===
+  Template: Land Buy (cmsd8jcg300d43kn8o0gbmowo)
+    Group: Client Profile — Buyer [client-profile-buyer]
+      - Primary Contact Name (TEXT) *
+      - Primary Contact Phone (PHONE) *
+      - Primary Contact Email (EMAIL)
+      - Additional Contacts (REPEATER)
+      - Ownership Type (RADIO) opts=Individual/Trust/Company
+    Group: Land Related Details [land-buy-details]
+      - Segment (RADIO) * opts=Residential/Commercial/Industrial
+      - Purpose of Buying Land (MULTISELECT) opts=House/Apartment Development/Plotting (Residential)/Office Building/Coworking/Retail Outlets/Plotting (Industrial)/Warehousing/Factory/Data Centre
+      - Land Size Required — Min (NUMBER) *
+      - Land Size Required — Max (NUMBER) *
+      - In Grounds (auto-calc) (NUMBER)
+      - In Acres (auto-calc) (NUMBER)
+      - In Cents (auto-calc) (NUMBER)
+      - Preferred Areas (in order of preference) (REPEATER) *
+      - Location Proximity Required (MULTISELECT) opts=Airport/Metro/Port/Main Road
+      - Frontage Expected (NUMBER)
+      - Road Width Expected (NUMBER) *
+      - Direction Facing (expected) (RADIO) opts=N/S/E/W
+      - Approved / Unapproved (RADIO) opts=Approved/Unapproved/Either
+      - Land Zoning Preference (MULTISELECT) opts=Residential/Mixed/Commercial/Industrial/Farm Land/Other
+    Group: Commercial Details [land-buy-commercial]
+      - Budget — Min (NUMBER) *
+      - Budget — Max (NUMBER) *
+      - Land Sale Price in Area (NUMBER) [internal]
+      - Payment Preference (RADIO) opts=Immediate/Deferred
+      - If Deferred — How Many Months? (NUMBER)
+      - Closure Timeframe Target (TEXT)
+      - Financial Expectation Breakup (RADIO) [internal] opts=Cheque Only/Cash Only/Cheque + Cash/Bank Loan
+      - Brokerage Agreed (%) (NUMBER) [internal]
+      - Any Other Comments (TEXTAREA)
+    Group: Potential Scoring [potential-land-buy]
+      - Mandate Given to BeyondInfra? (RADIO) [internal] opts=Yes/No
+      - Commission Finalized (%) (RADIO) [internal] opts=0/1/2/3/Other
+      - Land Price vs Budget (RADIO) [internal] opts=High (Price < Budget)/Low (Price > Budget)
+      - Overall Potential Score (TEXT) [internal]
+      - Internal Notes on Potential (TEXTAREA) [internal]
+
+=== Subcategory: Sale cmsd8i1q5000s3kn8ppsmh09n ===
+  Template: Land Sale (cmsd8jcpu00da3kn8kmuouof3)
+    Group: Client Profile — Seller / Owner [client-profile-seller]
+      - Primary Owner Name (TEXT) *
+      - Primary Contact Name (TEXT) *
+      - Primary Contact Phone (PHONE) *
+      - Primary Contact Email (EMAIL)
+      - Additional Contacts (REPEATER)
+      - Decision Maker (TEXT)
+      - Ownership Pattern (RADIO) opts=Single Owner/POA Holder/Trust Owned/Family Owned/Company
+    Group: Location [location-property]
+      - Street Name (TEXT) *
+      - Area / Locality (TEXT) *
+      - Google Maps Pin / Link (TEXT)
+      - Within 500m of Metro Line? (RADIO) opts=Yes/No
+      - Nearest Metro Line (TEXT)
+    Group: Land Details [land-details]
+      - Land Area as per Sale Deed (NUMBER)
+      - Land Area as per Patta (NUMBER)
+      - Land Area as per Survey Drawing (NUMBER)
+      - Land Area in Grounds (NUMBER)
+      - Land Area in Acres (NUMBER)
+      - Land Area in Cents (NUMBER)
+      - Dimensions — Length (NUMBER)
+      - Dimensions — Breadth (NUMBER)
+      - Frontage (NUMBER)
+      - Road Width (NUMBER) *
+      - Shape of Land (RADIO) opts=Rectangle/Square/Irregular/L-Shaped/Trapezoid
+      - Survey Number (TEXT)
+      - New Guideline Value (TNREGINET) (NUMBER)
+      - Current Land Classification (RADIO) opts=Residential/Commercial/Industrial/Agricultural/Mixed/Institutional/Unknown
+      - Approval Authority (RADIO) opts=CMDA/DTCP/Panchayat/Corporation/SIPCOT/SIDCO/Unapproved
+      - Current Land Status (RADIO) opts=Vacant Land/Existing Building/Tenant Occupied/Encroached
+      - Passage Property? (RADIO) opts=Yes/No
+      - Passage Width (NUMBER)
+      - Passage Length (NUMBER)
+      - Area Minus Passage (NUMBER)
+      - Nature of Passage (RADIO) opts=Exclusive/Shared/Easement Based
+      - Corner Plot? (RADIO) opts=Yes/No
+    Group: Documents — Land [documents-land]
+      - Topo Survey Drawing (FILE)
+      - Patta (FILE)
+      - Encumbrance Certificate (EC) (FILE)
+      - Sale Deed (FILE)
+      - Parent Documents (FILE)
+      - 1st Owner Sale Deed (FILE)
+      - Settlement Deeds (FILE)
+      - Partition Deeds (FILE)
+      - Gift Deeds (FILE)
+      - Death Certificate / Legal Heir Certificate (FILE)
+      - Property Tax / Aadhar / CMWSSB / PAN Card (FILE)
+      - Tax Arrears / Fines Documents (FILE)
+      - Any Known Missing Documents (TEXTAREA)
+    Group: Photos [photos]
+      - Front Elevation Photos (FILE)
+      - All Rooms Photos (FILE)
+      - Parking Area Photos (FILE)
+      - Terrace Photos (FILE)
+      - Common Areas Photos (FILE)
+      - Structural Cracks / Damages Photos (FILE)
+      - Road Photos (FILE)
+    Group: Commercial Details [land-sale-commercial]
+      - Segment (RADIO) * opts=Residential/Commercial/Industrial
+      - Price Expected — Min (NUMBER) *
+      - Price Expected — Max (NUMBER) *
+      - Land Sale Price in Area (NUMBER) [internal]
+      - Apartment Sale Price in Area (NUMBER) [internal]
+      - Reason for Sale (TEXTAREA)
+      - Sale Timeline (TEXT)
+      - Payment Preference (RADIO) opts=Immediate/Deferred
+      - If Deferred — How Many Months? (NUMBER)
+      - Financial Demand Breakup (RADIO) [internal] opts=Cheque Only/Cash Only/Cheque + Cash
+      - Number of Owners / Signing Authorities (NUMBER)
+      - Brokerage Agreed (%) (NUMBER) [internal]
+      - Any Other Comments (TEXTAREA)
+    Group: Potential Scoring [potential-land-sale]
+      - Mandate Given to BeyondInfra? (RADIO) [internal] opts=Yes/No
+      - Commission Finalized (%) (RADIO) [internal] opts=0/1/2/3/Other
+      - Road Width Rating (RADIO) [internal] opts=Low (<30ft)/Medium (30–39ft)/High (40–59ft)/Very High (60ft+)
+      - HRB Potential (RADIO) [internal] opts=High/Medium/Low
+      - Overall Potential Score (TEXT) [internal]
+      - Internal Notes on Potential (TEXTAREA) [internal]
+
+Category: Special Projects cmsd8i28h000t3kn8mj1f3cdn
+
+=== Subcategory: Joint Venture cmsd8i2il000u3kn83t4senx9 ===
+  Template: Joint Venture (cmsd8jier00fp3kn8xjta0q75)
+    Group: Client Profile — Seller / Owner [client-profile-seller]
+      - Primary Owner Name (TEXT) *
+      - Primary Contact Name (TEXT) *
+      - Primary Contact Phone (PHONE) *
+      - Primary Contact Email (EMAIL)
+      - Additional Contacts (REPEATER)
+      - Decision Maker (TEXT)
+      - Ownership Pattern (RADIO) opts=Single Owner/POA Holder/Trust Owned/Family Owned/Company
+    Group: Location [location-property]
+      - Street Name (TEXT) *
+      - Area / Locality (TEXT) *
+      - Google Maps Pin / Link (TEXT)
+      - Within 500m of Metro Line? (RADIO) opts=Yes/No
+      - Nearest Metro Line (TEXT)
+    Group: Land Details [land-details]
+      - Land Area as per Sale Deed (NUMBER)
+      - Land Area as per Patta (NUMBER)
+      - Land Area as per Survey Drawing (NUMBER)
+      - Land Area in Grounds (NUMBER)
+      - Land Area in Acres (NUMBER)
+      - Land Area in Cents (NUMBER)
+      - Dimensions — Length (NUMBER)
+      - Dimensions — Breadth (NUMBER)
+      - Frontage (NUMBER)
+      - Road Width (NUMBER) *
+      - Shape of Land (RADIO) opts=Rectangle/Square/Irregular/L-Shaped/Trapezoid
+      - Survey Number (TEXT)
+      - New Guideline Value (TNREGINET) (NUMBER)
+      - Current Land Classification (RADIO) opts=Residential/Commercial/Industrial/Agricultural/Mixed/Institutional/Unknown
+      - Approval Authority (RADIO) opts=CMDA/DTCP/Panchayat/Corporation/SIPCOT/SIDCO/Unapproved
+      - Current Land Status (RADIO) opts=Vacant Land/Existing Building/Tenant Occupied/Encroached
+      - Passage Property? (RADIO) opts=Yes/No
+      - Passage Width (NUMBER)
+      - Passage Length (NUMBER)
+      - Area Minus Passage (NUMBER)
+      - Nature of Passage (RADIO) opts=Exclusive/Shared/Easement Based
+      - Corner Plot? (RADIO) opts=Yes/No
+    Group: Joint Venture Details [jv-details]
+      - Residential or Commercial (RADIO) * opts=Residential/Commercial
+      - Association Name (TEXT)
+      - Is Association Registered? (RADIO) opts=Yes/No
+      - Accounts Filed Regularly? (RADIO) opts=Yes/No
+      - Reasons for JV (TEXTAREA)
+      - Financial Demands (Advance/Ratio) (TEXTAREA)
+      - Flat / Facility Demands (MULTISELECT) opts=Same Area/More Area/Car Park/Additional Car Park/Club House/Swimming Pool/Association Room/Other
+      - Other Facility Demands (TEXTAREA)
+      - Owner Exit Preference (RADIO) opts=Hold Share/Exit
+      - If Exit — How Many Months? (NUMBER)
+      - Number of Owners / Signing Authorities (NUMBER)
+      - Apartment Sale Price in Area (NUMBER) [internal]
+    Group: Documents — Land [documents-land]
+      - Topo Survey Drawing (FILE)
+      - Patta (FILE)
+      - Encumbrance Certificate (EC) (FILE)
+      - Sale Deed (FILE)
+      - Parent Documents (FILE)
+      - 1st Owner Sale Deed (FILE)
+      - Settlement Deeds (FILE)
+      - Partition Deeds (FILE)
+      - Gift Deeds (FILE)
+      - Death Certificate / Legal Heir Certificate (FILE)
+      - Property Tax / Aadhar / CMWSSB / PAN Card (FILE)
+      - Tax Arrears / Fines Documents (FILE)
+      - Any Known Missing Documents (TEXTAREA)
+    Group: Photos [photos]
+      - Front Elevation Photos (FILE)
+      - All Rooms Photos (FILE)
+      - Parking Area Photos (FILE)
+      - Terrace Photos (FILE)
+      - Common Areas Photos (FILE)
+      - Structural Cracks / Damages Photos (FILE)
+      - Road Photos (FILE)
+    Group: Potential Scoring [potential-jv]
+      - Mandate Given to BeyondInfra? (RADIO) [internal] opts=Yes/No
+      - Road Width Rating (RADIO) [internal] opts=Low (<30ft)/Medium (30–39ft)/High (40–59ft)/High (60ft+)
+      - HRB Potential (RADIO) [internal] opts=High/Medium/Low
+      - Overall Potential Score (TEXT) [internal]
+      - Internal Notes on Potential (TEXTAREA) [internal]
+
+=== Subcategory: Redevelopment cmsd8i2ok000v3kn8807eds14 ===
+  Template: Redevelopment (cmsd8jiqx00fy3kn89xv1fuxy)
+    Group: Client Profile — Seller / Owner [client-profile-seller]
+      - Primary Owner Name (TEXT) *
+      - Primary Contact Name (TEXT) *
+      - Primary Contact Phone (PHONE) *
+      - Primary Contact Email (EMAIL)
+      - Additional Contacts (REPEATER)
+      - Decision Maker (TEXT)
+      - Ownership Pattern (RADIO) opts=Single Owner/POA Holder/Trust Owned/Family Owned/Company
+    Group: Location [location-property]
+      - Street Name (TEXT) *
+      - Area / Locality (TEXT) *
+      - Google Maps Pin / Link (TEXT)
+      - Within 500m of Metro Line? (RADIO) opts=Yes/No
+      - Nearest Metro Line (TEXT)
+    Group: Land Details [land-details]
+      - Land Area as per Sale Deed (NUMBER)
+      - Land Area as per Patta (NUMBER)
+      - Land Area as per Survey Drawing (NUMBER)
+      - Land Area in Grounds (NUMBER)
+      - Land Area in Acres (NUMBER)
+      - Land Area in Cents (NUMBER)
+      - Dimensions — Length (NUMBER)
+      - Dimensions — Breadth (NUMBER)
+      - Frontage (NUMBER)
+      - Road Width (NUMBER) *
+      - Shape of Land (RADIO) opts=Rectangle/Square/Irregular/L-Shaped/Trapezoid
+      - Survey Number (TEXT)
+      - New Guideline Value (TNREGINET) (NUMBER)
+      - Current Land Classification (RADIO) opts=Residential/Commercial/Industrial/Agricultural/Mixed/Institutional/Unknown
+      - Approval Authority (RADIO) opts=CMDA/DTCP/Panchayat/Corporation/SIPCOT/SIDCO/Unapproved
+      - Current Land Status (RADIO) opts=Vacant Land/Existing Building/Tenant Occupied/Encroached
+      - Passage Property? (RADIO) opts=Yes/No
+      - Passage Width (NUMBER)
+      - Passage Length (NUMBER)
+      - Area Minus Passage (NUMBER)
+      - Nature of Passage (RADIO) opts=Exclusive/Shared/Easement Based
+      - Corner Plot? (RADIO) opts=Yes/No
+    Group: Redevelopment Details [redev-details]
+      - Apartment Name (TEXT) *
+      - Name of Association (TEXT)
+      - Is Association Registered? (RADIO) opts=Yes/No
+      - Accounts Filed Regularly? (RADIO) opts=Yes/No
+      - Reasons for Redevelopment (TEXTAREA)
+      - Number of Housing Units (Flats) (NUMBER)
+      - Number of Blocks (DROPDOWN) opts=0/1/2/3/4/5/6/7/8/9/10
+      - Number of Floors Currently (NUMBER)
+      - Building Arrangement (TEXT)
+      - Total Built-up Area (NUMBER)
+      - Apartment Sale Price in Area (NUMBER) [internal]
+      - Flat Details (per unit) (REPEATER)
+      - Number of Owners (NUMBER)
+      - Redevelopment Consent % (NUMBER)
+      - Current Amenities (MULTISELECT) opts=Parking/Lift/Club House/Generator/Other
+      - Financial Demands from Owners (TEXTAREA)
+      - Flat / Facility Demands from Owners (MULTISELECT) opts=Same Area/More Area/Car Park/Additional Car Park/Club House/Swimming Pool/Association Room/Other
+      - Other Facility Demands (TEXTAREA)
+      - Utilized FSI Notes (TEXTAREA) [internal]
+    Group: Documents — Land [documents-land]
+      - Topo Survey Drawing (FILE)
+      - Patta (FILE)
+      - Encumbrance Certificate (EC) (FILE)
+      - Sale Deed (FILE)
+      - Parent Documents (FILE)
+      - 1st Owner Sale Deed (FILE)
+      - Settlement Deeds (FILE)
+      - Partition Deeds (FILE)
+      - Gift Deeds (FILE)
+      - Death Certificate / Legal Heir Certificate (FILE)
+      - Property Tax / Aadhar / CMWSSB / PAN Card (FILE)
+      - Tax Arrears / Fines Documents (FILE)
+      - Any Known Missing Documents (TEXTAREA)
+    Group: Photos [photos]
+      - Front Elevation Photos (FILE)
+      - All Rooms Photos (FILE)
+      - Parking Area Photos (FILE)
+      - Terrace Photos (FILE)
+      - Common Areas Photos (FILE)
+      - Structural Cracks / Damages Photos (FILE)
+      - Road Photos (FILE)
+    Group: Potential Scoring [potential-redev]
+      - Mandate Given to BeyondInfra? (RADIO) [internal] opts=Yes/No
+      - Consent Rating (RADIO) [internal] opts=High (100%)/Medium (68–99%)/Low (<68%)
+      - Road Width Rating (RADIO) [internal] opts=Low (<30ft)/Medium (30–39ft)/High (40–59ft)/High (60ft+)
+      - Utilized FSI Rating (RADIO) [internal] opts=High/Low
+      - HRB Potential (RADIO) [internal] opts=High/Medium/Low
+      - Overall Potential Score (TEXT) [internal]
+      - Internal Notes on Potential (TEXTAREA) [internal]
+

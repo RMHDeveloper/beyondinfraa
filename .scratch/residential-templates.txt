@@ -1,0 +1,234 @@
+Category: Residential cmsd8hyul000e3kn8mb838um3
+
+=== Subcategory: Buy cmsd8hz0f000f3kn8mk6xx7rb ===
+  Template: Residential Buy (cmsd8jdzg00dj3kn8ujzkomzo)
+    Group: Client Profile — Buyer [client-profile-buyer]
+      - Primary Contact Name (TEXT) *
+      - Primary Contact Phone (PHONE) *
+      - Primary Contact Email (EMAIL)
+      - Additional Contacts (REPEATER)
+      - Ownership Type (RADIO) opts=Individual/Trust/Company
+    Group: Property Requirements [res-buy-requirements]
+      - Property Type (RADIO) * opts=Apartment/Individual House/Villa
+      - Saleable Area Required (NUMBER) *
+      - Number of Bedrooms (DROPDOWN) opts=1/2/3/4/5/6+
+      - Car Parks Required (NUMBER)
+      - Floor Preference (TEXT)
+      - Community Preference (RADIO) opts=Gated Community/Low Rise/Stand Alone
+      - Extent of Furnishing (RADIO) opts=Bare Shell/Warm Shell/Semi Furnished/Fully Furnished
+      - Age of Property (NUMBER)
+      - Direction Facing (expected) (RADIO) opts=N/S/E/W
+      - Preferred Areas (in order of preference) (REPEATER) *
+    Group: Commercial Details [res-buy-commercial]
+      - Budget — Min (NUMBER) *
+      - Budget — Max (NUMBER) *
+      - Financial Expectation Breakup (RADIO) [internal] opts=Cheque Only/Cash Only/Cheque + Cash/Bank Loan
+      - Brokerage Agreed (%) (NUMBER) [internal]
+      - Any Other Comments (TEXTAREA)
+    Group: Potential Scoring [potential-res-buy]
+      - Mandate Given to BeyondInfra? (RADIO) [internal] opts=Yes/No
+      - Commission Finalized (%) (RADIO) [internal] opts=0/1/2/3/Other
+      - Timeline Rating (RADIO) [internal] opts=High (Immediate – 2 months)/Low (3+ months)
+      - Overall Potential Score (TEXT) [internal]
+      - Internal Notes on Potential (TEXTAREA) [internal]
+
+=== Subcategory: Sell cmsd8hz60000g3kn8250mw7qh ===
+  Template: Residential Sell (cmsd8jehx00dp3kn8gqe01neb)
+    Group: Client Profile — Seller / Owner [client-profile-seller]
+      - Primary Owner Name (TEXT) *
+      - Primary Contact Name (TEXT) *
+      - Primary Contact Phone (PHONE) *
+      - Primary Contact Email (EMAIL)
+      - Additional Contacts (REPEATER)
+      - Decision Maker (TEXT)
+      - Ownership Pattern (RADIO) opts=Single Owner/POA Holder/Trust Owned/Family Owned/Company
+    Group: Property Type [res-sell-type]
+      - Property Type (RADIO) * opts=Apartment/Individual House/Villa
+    Group: Property Details [res-sell-details]
+      - Door Number / Flat Number (TEXT)
+      - Floor (TEXT)
+      - Number of Floors in Building (NUMBER)
+      - Saleable Area (NUMBER) *
+      - Plinth Area (NUMBER)
+      - Carpet Area (NUMBER)
+      - Size of Land / UDS (NUMBER)
+      - Number of Bedrooms (DROPDOWN) opts=1/2/3/4/5/6+
+      - Number of Bathrooms (DROPDOWN) opts=1/2/3/4/5+
+      - Other Rooms (MULTISELECT) opts=Living Room/Dining Room/Foyer/Puja Room/Kitchen/Service Area/Balcony
+      - Amenities (MULTISELECT) opts=Gym/Club House/Swimming Pool/Common Home Theatre/Association Room
+      - Extent of Furnishing (RADIO) opts=Bare Shell/Warm Shell/Semi Furnished/Fully Furnished
+      - Car Parks Available (NUMBER)
+      - Direction Facing (RADIO) opts=N/S/E/W
+      - Passage Property? (RADIO) opts=Yes/No
+      - Passage Width (NUMBER)
+      - Passage Length (NUMBER)
+      - Area Minus Passage (NUMBER)
+      - Nature of Passage (RADIO) opts=Exclusive/Shared/Easement Based
+      - Corner Plot? (RADIO) opts=Yes/No
+    Group: Location [location-property]
+      - Street Name (TEXT) *
+      - Area / Locality (TEXT) *
+      - Google Maps Pin / Link (TEXT)
+      - Within 500m of Metro Line? (RADIO) opts=Yes/No
+      - Nearest Metro Line (TEXT)
+    Group: Documents — Built Property [documents-built]
+      - FMB Sketch (FILE)
+      - Local Body Approval (FILE)
+      - Patta (FILE)
+      - Encumbrance Certificate (EC) (FILE)
+      - Sale Deed (FILE)
+      - Parent Documents (FILE)
+      - 1st Owner Sale Deed (FILE)
+      - Settlement Deeds (FILE)
+      - Partition Deeds (FILE)
+      - Gift Deeds (FILE)
+      - Death Certificate / Legal Heir Certificate (FILE)
+      - Property Tax / Aadhar / CMWSSB / PAN Card (FILE)
+      - Tax Arrears / Fines Documents (FILE)
+      - Any Known Missing Documents (TEXTAREA)
+    Group: Photos [photos]
+      - Front Elevation Photos (FILE)
+      - All Rooms Photos (FILE)
+      - Parking Area Photos (FILE)
+      - Terrace Photos (FILE)
+      - Common Areas Photos (FILE)
+      - Structural Cracks / Damages Photos (FILE)
+      - Road Photos (FILE)
+    Group: Commercial Details [res-sell-commercial]
+      - Price Expected — Min (NUMBER) *
+      - Price Expected — Max (NUMBER) *
+      - Apartment Sale Price in Area (NUMBER) [internal]
+      - Maintenance (NUMBER)
+      - Reason for Sale (TEXTAREA)
+      - Sale Timeline (TEXT)
+      - Payment Preference (RADIO) opts=Immediate/Deferred
+      - If Deferred — How Many Months? (NUMBER)
+      - Financial Demand Breakup (RADIO) [internal] opts=Cheque Only/Cash Only/Cheque + Cash
+      - Number of Owners / Signing Authorities (NUMBER)
+      - Brokerage Agreed (%) (NUMBER) [internal]
+      - Any Other Comments (TEXTAREA)
+    Group: Potential Scoring [potential-res-sell]
+      - Mandate Given to BeyondInfra? (RADIO) [internal] opts=Yes/No
+      - Commission Finalized (%) (RADIO) [internal] opts=0/1/2/3/Other
+      - Timeline Rating (RADIO) [internal] opts=High (Immediate – 2 months)/Low (3+ months)
+      - Overall Potential Score (TEXT) [internal]
+      - Internal Notes on Potential (TEXTAREA) [internal]
+
+=== Subcategory: Rent cmsd8hzbm000h3kn8ejmpogf3 ===
+  Template: Residential Rent (cmsd8jevl00dz3kn89hkqdcmv)
+    Group: Client Profile — Seller / Owner [client-profile-seller]
+      - Primary Owner Name (TEXT) *
+      - Primary Contact Name (TEXT) *
+      - Primary Contact Phone (PHONE) *
+      - Primary Contact Email (EMAIL)
+      - Additional Contacts (REPEATER)
+      - Decision Maker (TEXT)
+      - Ownership Pattern (RADIO) opts=Single Owner/POA Holder/Trust Owned/Family Owned/Company
+    Group: Property Type [res-sell-type]
+      - Property Type (RADIO) * opts=Apartment/Individual House/Villa
+    Group: Property Details [res-sell-details]
+      - Door Number / Flat Number (TEXT)
+      - Floor (TEXT)
+      - Number of Floors in Building (NUMBER)
+      - Saleable Area (NUMBER) *
+      - Plinth Area (NUMBER)
+      - Carpet Area (NUMBER)
+      - Size of Land / UDS (NUMBER)
+      - Number of Bedrooms (DROPDOWN) opts=1/2/3/4/5/6+
+      - Number of Bathrooms (DROPDOWN) opts=1/2/3/4/5+
+      - Other Rooms (MULTISELECT) opts=Living Room/Dining Room/Foyer/Puja Room/Kitchen/Service Area/Balcony
+      - Amenities (MULTISELECT) opts=Gym/Club House/Swimming Pool/Common Home Theatre/Association Room
+      - Extent of Furnishing (RADIO) opts=Bare Shell/Warm Shell/Semi Furnished/Fully Furnished
+      - Car Parks Available (NUMBER)
+      - Direction Facing (RADIO) opts=N/S/E/W
+      - Passage Property? (RADIO) opts=Yes/No
+      - Passage Width (NUMBER)
+      - Passage Length (NUMBER)
+      - Area Minus Passage (NUMBER)
+      - Nature of Passage (RADIO) opts=Exclusive/Shared/Easement Based
+      - Corner Plot? (RADIO) opts=Yes/No
+    Group: Location [location-property]
+      - Street Name (TEXT) *
+      - Area / Locality (TEXT) *
+      - Google Maps Pin / Link (TEXT)
+      - Within 500m of Metro Line? (RADIO) opts=Yes/No
+      - Nearest Metro Line (TEXT)
+    Group: Documents — Built Property [documents-built]
+      - FMB Sketch (FILE)
+      - Local Body Approval (FILE)
+      - Patta (FILE)
+      - Encumbrance Certificate (EC) (FILE)
+      - Sale Deed (FILE)
+      - Parent Documents (FILE)
+      - 1st Owner Sale Deed (FILE)
+      - Settlement Deeds (FILE)
+      - Partition Deeds (FILE)
+      - Gift Deeds (FILE)
+      - Death Certificate / Legal Heir Certificate (FILE)
+      - Property Tax / Aadhar / CMWSSB / PAN Card (FILE)
+      - Tax Arrears / Fines Documents (FILE)
+      - Any Known Missing Documents (TEXTAREA)
+    Group: Photos [photos]
+      - Front Elevation Photos (FILE)
+      - All Rooms Photos (FILE)
+      - Parking Area Photos (FILE)
+      - Terrace Photos (FILE)
+      - Common Areas Photos (FILE)
+      - Structural Cracks / Damages Photos (FILE)
+      - Road Photos (FILE)
+    Group: Rental Details [res-rent-details]
+      - Nature of Deal (RADIO) * opts=Giving Property for Rent/Looking for Rental Space
+      - Rental — Min (NUMBER) *
+      - Rental — Max (NUMBER) *
+      - Security Deposit (NUMBER)
+      - Period of Tenancy (NUMBER)
+      - Lock-in Period (NUMBER)
+      - Tenancy Type (RADIO) opts=Family/Bachelors/Company Lease/Other
+      - Reason for Rent (TEXTAREA)
+      - Rental Timeline (TEXT)
+      - Financial Demand Breakup (RADIO) [internal] opts=Cheque Only/Cash Only/Cheque + Cash
+      - Number of Owners / Signing Authorities (NUMBER)
+      - Brokerage Agreed (%) (NUMBER) [internal]
+      - Any Other Comments (TEXTAREA)
+    Group: Potential Scoring [potential-res-rent]
+      - Mandate Given to BeyondInfra? (RADIO) [internal] opts=Yes/No
+      - Commission Finalized (RADIO) [internal] opts=High (≥1 month rent)/Low (<1 month rent)
+      - Timeline Rating (RADIO) [internal] opts=High (Immediate – 2 months)/Low (3+ months)
+      - Overall Potential Score (TEXT) [internal]
+      - Internal Notes on Potential (TEXTAREA) [internal]
+
+=== Subcategory: Tenant cmtj4rg580000i0n8gsu6ppmm ===
+  Template: Residential Tenant (cmtj4rhru000si0n8ktcd4a86)
+    Group: Client Profile — Buyer [client-profile-buyer]
+      - Primary Contact Name (TEXT) *
+      - Primary Contact Phone (PHONE) *
+      - Primary Contact Email (EMAIL)
+      - Additional Contacts (REPEATER)
+      - Ownership Type (RADIO) opts=Individual/Trust/Company
+    Group: Tenant Requirements [tenant-requirements-residential]
+      - Property Subtype (RADIO) * opts=Apartment/Individual House/Villa
+      - Area Required — Min (NUMBER)
+      - Area Required — Max (NUMBER)
+      - Lease Duration (NUMBER)
+      - Lock-in Period (NUMBER)
+      - Move-in Date (DATE)
+      - Extent of Furnishing (RADIO) opts=Bare Shell/Warm Shell/Semi Furnished/Fully Furnished
+      - Car Parks Required (NUMBER)
+      - Floor Preference (TEXT)
+      - Facility Grade (RADIO) opts=Grade A/Regular
+      - Direction Facing (expected) (RADIO) opts=N/S/E/W
+      - Operational Requirements (TEXTAREA)
+      - Preferred Areas (in order of preference) (REPEATER) *
+    Group: Commercial Details [commercial-details-tenant-residential]
+      - Rent Budget — Min (NUMBER) *
+      - Rent Budget — Max (NUMBER) *
+      - Deposit Budget (NUMBER)
+      - Financial Expectation Breakup (RADIO) [internal] opts=Cheque Only/Cash Only/Cheque + Cash/Bank Loan
+      - Brokerage Agreed (%) (NUMBER) [internal]
+      - Any Other Comments (TEXTAREA)
+    Group: Potential Scoring [potential-scoring-tenant-residential]
+      - Mandate Given to BeyondInfra? (RADIO) [internal] opts=Yes/No
+      - Commission Finalized (%) (RADIO) [internal] opts=0/1/2/3/Other
+      - Timeline Rating (RADIO) [internal] opts=High (Immediate – 2 months)/Low (3+ months)
+      - Overall Potential Score (TEXT) [internal]
+      - Internal Notes on Potential (TEXTAREA) [internal]

@@ -49,6 +49,9 @@ enum AuditAction {
   FILE_DELETE
   OTP_SENT
   OTP_VERIFIED
+  AWARD
+  EXPORT
+  EMAIL_SENT
 }
 
 enum ContactType {
@@ -276,6 +279,7 @@ model Template {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
+  @@index([subcategoryId])
   @@map("templates")
 }
 
@@ -300,6 +304,7 @@ model TemplateGroup {
   group      QuestionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@unique([templateId, groupId])
+  @@index([groupId])
   @@map("template_groups")
 }
 
@@ -316,9 +321,12 @@ model Question {
   helpText        String?
   unit            String?       // e.g. "sqft", "Rs", "ft"
   autoCalcJson    Json?         // { formula, sourceFields }
+  showInPrint     Boolean       @default(true)
+  showInPptExport Boolean       @default(true)
   group           QuestionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
   responses       Response[]
 
+  @@index([groupId])
   @@map("questions")
 }
 
@@ -354,11 +362,13 @@ model Project {
   leadSource      String?
   leadDate        DateTime?
   referredById    String?
+  clientContactId String?
   potentialScore  Int?
   clientName      String?
   clientPhone     String?
   clientEmail     String?
   notes           String?
+  pptExportConfig Json?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -370,6 +380,7 @@ model Project {
   status        Status?       @relation(fields: [statusId], references: [id])
   assignee      User?         @relation("ProjectAssignee", fields: [assigneeId], references: [id])
   referredBy    Contact?      @relation("ProjectReferrer", fields: [referredById], references: [id])
+  clientContact Contact?      @relation("ProjectClient", fields: [clientContactId], references: [id])
   tags          ProjectTag[]
   responses     Response[]
   files         ProjectFile[]
@@ -378,7 +389,9 @@ model Project {
   lockEntries   LockEntry[]
   projectNotes  ProjectNote[]
   followUps     FollowUp[]
-  matches            Match[]
+  matches            Match[]              @relation("ListingMatches")
+  demandMatches      Match[]              @relation("MatchDemandProject")
+  demandProposals    Proposal[]           @relation("ProposalDemandProject")
   customFields       ProjectCustomField[]
   proposalProperties ProposalProperty[]
   siteVisits         SiteVisit[]
@@ -386,6 +399,13 @@ model Project {
   developerProposals DeveloperProposal[]
   ownerUnits         OwnerUnit[]
 
+  @@index([categoryId])
+  @@index([subcategoryId])
+  @@index([templateId])
+  @@index([statusId])
+  @@index([assigneeId])
+  @@index([referredById])
+  @@index([clientContactId])
   @@map("projects")
 }
 
@@ -403,6 +423,7 @@ model Response {
   question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, questionId])
+  @@index([questionId])
   @@map("responses")
 }
 
@@ -430,8 +451,10 @@ model ProjectFile {
   uploadedBy   String?
   uploadedAt   DateTime @default(now())
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project     Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  customField ProjectCustomField?
 
+  @@index([projectId])
   @@map("project_files")
 }
 
@@ -442,14 +465,17 @@ model ClientLink {
   projectId   String
   phone       String?
   token       String    @unique @default(cuid())
+  slug        String?   @unique
   otp         String?
   otpExpiresAt DateTime?
+  otpAttempts Int       @default(0)
   verifiedAt  DateTime?
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@index([projectId])
   @@map("client_links")
 }
 
@@ -466,6 +492,7 @@ model LockEntry {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@index([projectId])
   @@map("lock_entries")
 }
 
@@ -482,6 +509,7 @@ model ProjectNote {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@index([projectId])
   @@map("project_notes")
 }
 
@@ -499,6 +527,8 @@ model FollowUp {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@index([projectId])
+  @@index([assigneeId])
   @@map("follow_ups")
 }
 
@@ -520,6 +550,8 @@ model AuditLog {
   project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
+  @@index([projectId])
+  @@index([userId])
   @@map("audit_logs")
 }
 
@@ -544,6 +576,7 @@ model Contact {
   deals              Deal[]
   developerProfile   Developer?
   referredProjects   Project[] @relation("ProjectReferrer")
+  clientProjects     Project[] @relation("ProjectClient")
 
   @@map("contacts")
 }
@@ -576,6 +609,15 @@ model BuyerRequirement {
   status           RequirementStatus @default(NEW)
   managedById      String?
   followUpDate     DateTime?
+  carParksRequired Int?
+  floorPreference  String?
+  communityPreference String?        // "Gated" | "Low Rise" | "Standalone"
+  propertyAgePreference String?
+  directionFacing  String?
+  entityType       String?           // "Individual" | "Trust" | "Company"
+  paymentBreakup   String?
+  brokeragePct     Float?
+  additionalContacts Json?           // { name, phone, email }[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
@@ -585,6 +627,8 @@ model BuyerRequirement {
   proposals  Proposal[]
   customFields RequirementCustomField[]
 
+  @@index([contactId])
+  @@index([categoryId])
   @@map("buyer_requirements")
 }
 
@@ -635,6 +679,8 @@ model TenantRequirement {
   proposals Proposal[]
   customFields RequirementCustomField[]
 
+  @@index([contactId])
+  @@index([categoryId])
   @@map("tenant_requirements")
 }
 
@@ -643,6 +689,7 @@ model TenantRequirement {
 model Match {
   id                  String    @id @default(cuid())
   projectId           String
+  demandProjectId     String?
   buyerRequirementId  String?
   tenantRequirementId String?
   matchPct            Int       @default(0)
@@ -653,25 +700,40 @@ model Match {
   confirmedAt         DateTime?
   createdAt           DateTime  @default(now())
 
-  project           Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project           Project            @relation("ListingMatches", fields: [projectId], references: [id], onDelete: Cascade)
+  demandProject     Project?           @relation("MatchDemandProject", fields: [demandProjectId], references: [id], onDelete: Cascade)
   buyerRequirement  BuyerRequirement?  @relation(fields: [buyerRequirementId], references: [id], onDelete: Cascade)
   tenantRequirement TenantRequirement? @relation(fields: [tenantRequirementId], references: [id], onDelete: Cascade)
+  deal              Deal?
 
+  @@unique([projectId, demandProjectId])
+  @@index([buyerRequirementId])
+  @@index([tenantRequirementId])
   @@map("matches")
 }
 
 // ─── Custom Fields ────────────────────────────────────────────────────────────
 
+enum CustomFieldType {
+  TEXT
+  IMAGE
+}
+
 model ProjectCustomField {
-  id        String   @id @default(cuid())
-  projectId String
-  label     String
-  value     String?
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
+  id            String          @id @default(cuid())
+  projectId     String
+  label         String
+  value         String?
+  type          CustomFieldType @default(TEXT)
+  fileId        String?         @unique
+  sortOrder     Int             @default(0)
+  showToClient  Boolean         @default(false)
+  createdAt     DateTime        @default(now())
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  file    ProjectFile? @relation(fields: [fileId], references: [id], onDelete: SetNull)
 
+  @@index([projectId])
   @@map("project_custom_fields")
 }
 
@@ -687,6 +749,8 @@ model RequirementCustomField {
   buyerRequirement  BuyerRequirement?  @relation(fields: [buyerRequirementId], references: [id], onDelete: Cascade)
   tenantRequirement TenantRequirement? @relation(fields: [tenantRequirementId], references: [id], onDelete: Cascade)
 
+  @@index([buyerRequirementId])
+  @@index([tenantRequirementId])
   @@map("requirement_custom_fields")
 }
 
@@ -698,6 +762,7 @@ model Proposal {
   contactId           String
   buyerRequirementId  String?
   tenantRequirementId String?
+  demandProjectId     String?
   status              ProposalStatus @default(DRAFT)
   introduction        String?
   remarks             String?
@@ -709,10 +774,15 @@ model Proposal {
   contact           Contact            @relation(fields: [contactId], references: [id])
   buyerRequirement  BuyerRequirement?  @relation(fields: [buyerRequirementId], references: [id])
   tenantRequirement TenantRequirement? @relation(fields: [tenantRequirementId], references: [id])
+  demandProject     Project?           @relation("ProposalDemandProject", fields: [demandProjectId], references: [id])
   items             ProposalProperty[]
   siteVisits        SiteVisit[]
   files             ProposalFile[]
 
+  @@index([contactId])
+  @@index([buyerRequirementId])
+  @@index([tenantRequirementId])
+  @@index([demandProjectId])
   @@map("proposals")
 }
 
@@ -729,6 +799,7 @@ model ProposalFile {
 
   proposal Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
 
+  @@index([proposalId])
   @@map("proposal_files")
 }
 
@@ -745,6 +816,7 @@ model ProposalProperty {
   project  Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([proposalId, projectId])
+  @@index([projectId])
   @@map("proposal_properties")
 }
 
@@ -777,16 +849,23 @@ model SiteVisit {
   proposal Proposal? @relation(fields: [proposalId], references: [id])
   category Category? @relation(fields: [categoryId], references: [id])
 
+  @@index([projectId])
+  @@index([contactId])
+  @@index([proposalId])
+  @@index([categoryId])
+  @@index([managedById])
   @@map("site_visits")
 }
 
 // ─── Deals ────────────────────────────────────────────────────────────────────
 
 model Deal {
-  id            String   @id @default(cuid())
-  dealNumber    String   @unique
-  projectId     String   @unique
-  contactId     String
+  id                   String   @id @default(cuid())
+  dealNumber           String   @unique
+  projectId            String   @unique
+  contactId            String
+  matchId              String?  @unique
+  developerProposalId  String?  @unique
   type          DealType
   finalPrice    Float?
   finalRent     Float?
@@ -798,9 +877,13 @@ model Deal {
   reason        String?
   createdAt     DateTime @default(now())
 
-  project Project @relation(fields: [projectId], references: [id])
-  contact Contact @relation(fields: [contactId], references: [id])
+  project           Project            @relation(fields: [projectId], references: [id])
+  contact           Contact            @relation(fields: [contactId], references: [id])
+  match             Match?             @relation(fields: [matchId], references: [id])
+  developerProposal DeveloperProposal? @relation(fields: [developerProposalId], references: [id])
 
+  @@index([contactId])
+  @@index([closedById])
   @@map("deals")
 }
 
@@ -856,7 +939,10 @@ model DeveloperProposal {
   developer Developer @relation(fields: [developerId], references: [id])
   project   Project   @relation(fields: [projectId], references: [id])
   files     DeveloperProposalFile[]
+  deal      Deal?
 
+  @@index([developerId])
+  @@index([projectId])
   @@map("developer_proposals")
 }
 
@@ -873,6 +959,7 @@ model DeveloperProposalFile {
 
   developerProposal DeveloperProposal @relation(fields: [developerProposalId], references: [id], onDelete: Cascade)
 
+  @@index([developerProposalId])
   @@map("developer_proposal_files")
 }
 
@@ -897,6 +984,7 @@ model OwnerUnit {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  @@index([projectId])
   @@map("owner_units")
 }
 
@@ -914,6 +1002,7 @@ model BuyerIntakeToken {
   category    Category  @relation(fields: [categoryId], references: [id])
   submissions BuyerIntakeSubmission[]
 
+  @@index([categoryId])
   @@map("buyer_intake_tokens")
 }
 
@@ -928,6 +1017,7 @@ model BuyerIntakeSubmission {
 
   token     BuyerIntakeToken @relation(fields: [tokenId], references: [id])
 
+  @@index([tokenId])
   @@map("buyer_intake_submissions")
 }
 
@@ -945,6 +1035,7 @@ model TenantIntakeToken {
   category    Category  @relation(fields: [categoryId], references: [id])
   submissions TenantIntakeSubmission[]
 
+  @@index([categoryId])
   @@map("tenant_intake_tokens")
 }
 
@@ -959,5 +1050,6 @@ model TenantIntakeSubmission {
 
   token     TenantIntakeToken @relation(fields: [tokenId], references: [id])
 
+  @@index([tokenId])
   @@map("tenant_intake_submissions")
 }

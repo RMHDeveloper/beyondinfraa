@@ -1,11 +1,15 @@
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
+import { withErrorHandling } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withErrorHandling(async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   await requireSession();
   const { id } = await params;
+
+  const project = await db.project.findUnique({ where: { id }, select: { subcategory: { select: { name: true } } } });
+  const isDemand = project?.subcategory.name === "Buy" || project?.subcategory.name === "Tenant";
 
   const [ownerUnits, developerProposals, matches, proposals, developers] = await Promise.all([
     db.ownerUnit.findMany({
@@ -29,12 +33,15 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       },
     }),
     db.match.findMany({
-      where: { projectId: id },
+      where: isDemand ? { demandProjectId: id } : { projectId: id },
       orderBy: { matchPct: "desc" },
       take: 20,
       select: {
         id: true, matchPct: true, confirmedAt: true, criteriaMatched: true, criteriaMissed: true,
-        alreadySent: true, isManual: true, buyerRequirementId: true, tenantRequirementId: true,
+        alreadySent: true, isManual: true, demandProjectId: true,
+        deal: { select: { id: true } },
+        demandProject: { select: { title: true, clientContact: { select: { id: true, name: true } } } },
+        project: { select: { title: true, projectNumber: true, subcategory: { select: { name: true } } } },
       },
     }),
     db.proposal.findMany({
@@ -58,9 +65,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   ]);
 
   return Response.json({ ownerUnits, developerProposals, matches, proposals, developers });
-}
+});
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withErrorHandling(async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   await requireSession();
   const { id } = await params;
   const body = await req.json();
@@ -83,29 +90,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       },
     });
     return Response.json(unit);
-  }
-
-  if (body.type === "deal") {
-    const existing = await db.deal.findUnique({ where: { projectId: id } });
-    if (existing) {
-      return Response.json({ error: "This property already has a closed deal." }, { status: 409 });
-    }
-    const count = await db.deal.count();
-    const dealNumber = `DEAL-${String(count + 1).padStart(4, "0")}`;
-    const deal = await db.deal.create({
-      data: {
-        dealNumber,
-        projectId: id,
-        contactId: body.contactId,
-        type: body.dealType,
-        finalPrice: body.finalPrice ? parseFloat(body.finalPrice) : null,
-        finalRent: body.finalRent ? parseFloat(body.finalRent) : null,
-        closureDate: body.closureDate ? new Date(body.closureDate) : new Date(),
-        notes: body.notes || null,
-      },
-    });
-    await db.project.update({ where: { id }, data: { state: "ARCHIVED" } });
-    return Response.json(deal);
   }
 
   if (body.type === "developerProposal") {
@@ -140,9 +124,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   return Response.json({ error: "unknown type" }, { status: 400 });
-}
+});
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withErrorHandling(async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   await requireSession();
   const { id } = await params;
   const body = await req.json();
@@ -198,9 +182,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   return Response.json({ error: "unknown type" }, { status: 400 });
-}
+});
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withErrorHandling(async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   await requireSession();
   await params; // consume params (projectId not needed for delete by record id)
   const body = await req.json();
@@ -216,4 +200,4 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   }
 
   return Response.json({ error: "unknown type" }, { status: 400 });
-}
+});

@@ -32,8 +32,7 @@ type Proposal = {
   createdAt: string;
   sentAt: string | null;
   contact: { id: string; name: string; phone: string | null; email: string | null };
-  buyerRequirement: { reqNumber: string } | null;
-  tenantRequirement: { reqNumber: string } | null;
+  demandProject: { projectNumber: string } | null;
   items: ProposalItem[];
   siteVisits: { id: string; visitNumber: string; scheduledAt: string; status: string; contact: { name: string } | null }[];
   negotiations: { id: string; status: string; contact: { name: string }; rounds: { id: string; offerAmount: number | null; offerBy: string }[] }[];
@@ -128,7 +127,7 @@ export default function ProposalDetailPage() {
   );
   if (!proposal) return <div className="p-8 text-red-500 text-sm">Proposal not found.</div>;
 
-  const reqNumber = proposal.buyerRequirement?.reqNumber ?? proposal.tenantRequirement?.reqNumber ?? null;
+  const reqNumber = proposal.demandProject?.projectNumber ?? null;
 
   return (
     <div className="flex flex-col h-full bg-gray-50 overflow-hidden">

@@ -4,26 +4,26 @@ import { Users, Plus, ArrowRight } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-const STATUS_COLORS: Record<string, string> = {
-  NEW:     "bg-blue-50 text-blue-700",
-  ACTIVE:  "bg-green-50 text-green-700",
-  CLOSED:  "bg-gray-100 text-gray-500",
-  ON_HOLD: "bg-amber-50 text-amber-700",
+const STATE_COLORS: Record<string, string> = {
+  OPEN:     "bg-blue-50 text-blue-700",
+  LOCKED:   "bg-amber-50 text-amber-700",
+  ARCHIVED: "bg-gray-100 text-gray-500",
 };
 
 export default async function BuyerRequirementsPage() {
-  const reqs = await db.buyerRequirement.findMany({
+  const projects = await db.project.findMany({
+    where: { subcategory: { name: "Buy" } },
     orderBy: { createdAt: "desc" },
     include: {
-      contact: { select: { id: true, name: true } },
+      clientContact: { select: { id: true, name: true } },
       category: { select: { name: true } },
       matches: { where: { confirmedAt: { not: null } }, select: { id: true } },
     },
     take: 200,
   });
 
-  const active   = reqs.filter(r => r.status === "ACTIVE" || r.status === "NEW");
-  const inactive = reqs.filter(r => r.status !== "ACTIVE" && r.status !== "NEW");
+  const active   = projects.filter(p => p.state !== "ARCHIVED");
+  const inactive = projects.filter(p => p.state === "ARCHIVED");
 
   return (
     <div className="flex flex-col h-full bg-gray-50 overflow-y-auto">
@@ -34,19 +34,19 @@ export default async function BuyerRequirementsPage() {
             <Users className="w-5 h-5 text-green-600" /> Buyer Requirements
           </h1>
         </div>
-        <Link href="/requirements/buyer/new"
+        <Link href="/projects/new"
           className="flex items-center gap-1.5 bg-green-600 text-white text-xs font-bold px-3 py-2 rounded-lg hover:bg-green-700">
           <Plus className="w-3.5 h-3.5" /> Add Requirement
         </Link>
       </div>
 
       <div className="px-6 py-5 space-y-6">
-        {reqs.length === 0 && (
+        {projects.length === 0 && (
           <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
             <Users className="w-10 h-10 text-gray-200 mx-auto mb-3" />
             <p className="text-sm text-gray-500 font-medium">No buyer requirements yet</p>
-            <p className="text-xs text-gray-400 mt-1 mb-4">Add a buyer's requirements to start matching them with properties.</p>
-            <Link href="/requirements/buyer/new"
+            <p className="text-xs text-gray-400 mt-1 mb-4">Create a Buy project to start matching a buyer with properties.</p>
+            <Link href="/projects/new"
               className="inline-flex items-center gap-1.5 bg-green-600 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-green-700">
               <Plus className="w-3.5 h-3.5" /> Add First Requirement
             </Link>
@@ -57,16 +57,16 @@ export default async function BuyerRequirementsPage() {
           <section>
             <p className="text-[10px] font-bold uppercase tracking-widest text-green-700 mb-3">Active ({active.length})</p>
             <div className="space-y-2">
-              {active.map(r => <ReqRow key={r.id} r={r} />)}
+              {active.map(p => <ReqRow key={p.id} p={p} />)}
             </div>
           </section>
         )}
 
         {inactive.length > 0 && (
           <section>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Closed / On Hold ({inactive.length})</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Archived ({inactive.length})</p>
             <div className="space-y-2">
-              {inactive.map(r => <ReqRow key={r.id} r={r} />)}
+              {inactive.map(p => <ReqRow key={p.id} p={p} />)}
             </div>
           </section>
         )}
@@ -75,46 +75,37 @@ export default async function BuyerRequirementsPage() {
   );
 }
 
-function ReqRow({ r }: {
-  r: {
-    id: string; reqNumber: string; status: string;
-    budgetMin: number | null; budgetMax: number | null;
-    areaMin: number | null; areaMax: number | null;
-    bhk: string | null;
-    contact: { id: string; name: string };
+function ReqRow({ p }: {
+  p: {
+    id: string; projectNumber: string; title: string; state: string;
+    clientContact: { id: string; name: string } | null;
     category: { name: string };
     matches: { id: string }[];
   }
 }) {
+  const contactName = p.clientContact?.name ?? p.title;
   return (
-    <Link href={`/requirements/buyer/${r.id}`}
+    <Link href={`/projects/${p.id}`}
       className="flex items-center gap-4 bg-white rounded-xl border border-gray-200 px-4 py-3 hover:border-green-300 hover:bg-green-50/30 transition-all group">
       <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 text-xs font-bold text-green-700">
-        {r.contact.name.charAt(0).toUpperCase()}
+        {contactName.charAt(0).toUpperCase()}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-bold text-gray-900 text-sm">{r.contact.name}</span>
-          <span className="font-mono text-[10px] text-gray-400">{r.reqNumber}</span>
-          <span className="text-[10px] font-bold bg-green-50 text-green-700 px-1.5 py-0.5 rounded">{r.category.name}</span>
+          <span className="font-bold text-gray-900 text-sm">{contactName}</span>
+          <span className="font-mono text-[10px] text-gray-400">{p.projectNumber}</span>
+          <span className="text-[10px] font-bold bg-green-50 text-green-700 px-1.5 py-0.5 rounded">{p.category.name}</span>
         </div>
         <div className="flex items-center gap-3 mt-1 flex-wrap">
-          {r.budgetMin && r.budgetMax && (
-            <span className="text-[10px] text-gray-500">₹{(r.budgetMin/1e7).toFixed(1)}–{(r.budgetMax/1e7).toFixed(1)}Cr</span>
-          )}
-          {r.areaMin && r.areaMax && (
-            <span className="text-[10px] text-gray-500">{r.areaMin}–{r.areaMax} sqft</span>
-          )}
-          {r.bhk && <span className="text-[10px] text-gray-500">{r.bhk}</span>}
-          {r.matches.length > 0 && (
+          {p.matches.length > 0 && (
             <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full">
-              {r.matches.length} matched
+              {p.matches.length} matched
             </span>
           )}
         </div>
       </div>
-      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${STATUS_COLORS[r.status] ?? "bg-gray-100 text-gray-500"}`}>
-        {r.status.replace(/_/g, " ")}
+      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${STATE_COLORS[p.state] ?? "bg-gray-100 text-gray-500"}`}>
+        {p.state}
       </span>
       <ArrowRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-green-500 flex-shrink-0 transition-colors" />
     </Link>

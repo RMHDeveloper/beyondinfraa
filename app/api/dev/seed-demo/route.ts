@@ -1,11 +1,12 @@
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
 import { ConsentStatus } from "@prisma/client";
+import { withErrorHandling } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 // Creates one rich demo project with all tabs populated + scoring rules
-export async function POST() {
+export const POST = withErrorHandling(async function POST() {
   const session = await requireSession();
   if (!["SUPER_ADMIN", "OWNER"].includes(session.role)) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
@@ -181,4 +182,4 @@ export async function POST() {
     projectNumber: project.projectNumber,
     message: `Demo project created: ${project.title}. ${rulesCreated} scoring rules added.`,
   });
-}
+});

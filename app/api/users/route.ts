@@ -1,8 +1,9 @@
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
 import bcrypt from "bcryptjs";
+import { withErrorHandling } from "@/lib/utils";
 
-export async function GET() {
+export const GET = withErrorHandling(async function GET() {
   await requireSession();
   const users = await db.user.findMany({
     where: { isActive: true },
@@ -10,9 +11,9 @@ export async function GET() {
     orderBy: { name: "asc" },
   });
   return Response.json(users);
-}
+});
 
-export async function POST(req: Request) {
+export const POST = withErrorHandling(async function POST(req: Request) {
   const session = await requireSession();
   if (session.role !== "SUPER_ADMIN") {
     return Response.json({ error: "Forbidden" }, { status: 403 });
@@ -32,4 +33,4 @@ export async function POST(req: Request) {
     select: { id: true, name: true, email: true, role: true },
   });
   return Response.json(user, { status: 201 });
-}
+});

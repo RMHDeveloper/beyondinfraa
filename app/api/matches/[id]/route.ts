@@ -1,10 +1,11 @@
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
+import { withErrorHandling } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 // PATCH — confirm a suggested match
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withErrorHandling(async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   await requireSession();
   const { id } = await params;
   const { confirmedAt } = await req.json();
@@ -13,12 +14,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     data: { confirmedAt: confirmedAt ? new Date(confirmedAt) : new Date() },
   });
   return Response.json(match);
-}
+});
 
 // DELETE — remove a match
-export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withErrorHandling(async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
   await requireSession();
   const { id } = await params;
   await db.match.delete({ where: { id } });
   return Response.json({ ok: true });
-}
+});

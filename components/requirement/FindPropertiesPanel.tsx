@@ -2,8 +2,19 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Building2, Check, RefreshCw, Loader2 } from "lucide-react";
+import { Building2, Check, RefreshCw, Loader2, Presentation, Mail, AlertCircle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import BulkPptModal from "./BulkPptModal";
+import SendEmailModal from "./SendEmailModal";
+
+type EmailStatus = { status: "sent" | "error"; to: string; subject: string; sentAt: string; error?: string };
+
+type ExportHistoryEntry = {
+  id: string;
+  createdAt: string;
+  user?: { name: string } | null;
+  meta: { properties: { id: string; title: string; projectNumber: string }[]; email?: EmailStatus } | null;
+};
 
 type ExistingMatch = { id: string; confirmedAt: string | null; matchPct: number } | null;
 
@@ -20,19 +31,31 @@ type PropertyItem = {
 };
 
 export default function FindPropertiesPanel({
-  reqId, reqType,
+  demandProjectId,
 }: {
-  reqId: string; reqType: "buyer" | "tenant";
+  demandProjectId: string;
 }) {
   const [properties, setProperties] = useState<PropertyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [saving, setSaving] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [history, setHistory] = useState<ExportHistoryEntry[]>([]);
+  const [clientEmail, setClientEmail] = useState("");
+  const [emailTarget, setEmailTarget] = useState<ExportHistoryEntry | null>(null);
+  const [errorPopup, setErrorPopup] = useState<string | null>(null);
+
+  async function loadProject() {
+    const res = await fetch(`/api/projects/${demandProjectId}`);
+    if (res.ok) {
+      const data = await res.json();
+      setClientEmail(data.clientEmail ?? "");
+    }
+  }
 
   async function load() {
     setLoading(true);
-    const res = await fetch(`/api/requirements/${reqType}/${reqId}/find-properties`);
+    const res = await fetch(`/api/projects/${demandProjectId}/find-properties`);
     const data: Array<PropertyItem & { existingMatch: ExistingMatch }> = res.ok ? await res.json() : [];
     setProperties(data);
 
@@ -44,16 +67,19 @@ export default function FindPropertiesPanel({
     setLoading(false);
   }
 
-  useEffect(() => { load(); }, [reqId]);
+  async function loadHistory() {
+    const res = await fetch(`/api/projects/${demandProjectId}/audit?action=EXPORT`);
+    setHistory(res.ok ? await res.json() : []);
+  }
+
+  useEffect(() => { load(); loadHistory(); loadProject(); }, [demandProjectId]);
 
   async function runScan() {
     setScanning(true);
     const res = await fetch("/api/matching/suggest", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...(reqType === "buyer" ? { buyerRequirementId: reqId } : { tenantRequirementId: reqId }),
-      }),
+      body: JSON.stringify({ demandProjectId }),
     });
     if (res.ok) {
       const suggestions: PropertySuggestion[] = await res.json();
@@ -72,27 +98,6 @@ export default function FindPropertiesPanel({
       });
     }
     setScanning(false);
-  }
-
-  async function saveMatches() {
-    setSaving(true);
-    for (const p of properties) {
-      const isSelected = selected.has(p.id);
-      if (isSelected && !p.existingMatch?.confirmedAt) {
-        await fetch("/api/matches", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            projectId: p.id,
-            ...(reqType === "buyer" ? { buyerRequirementId: reqId } : { tenantRequirementId: reqId }),
-          }),
-        });
-      } else if (!isSelected && p.existingMatch?.confirmedAt) {
-        await fetch(`/api/matches/${p.existingMatch.id}`, { method: "DELETE" });
-      }
-    }
-    await load();
-    setSaving(false);
   }
 
   const toggle = (id: string) => setSelected(prev => {
@@ -118,12 +123,25 @@ export default function FindPropertiesPanel({
           {scanning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
           {scanning ? "Scanning…" : "Auto-scan & suggest"}
         </button>
-        <button onClick={saveMatches} disabled={saving}
+        <button onClick={() => setShowExportModal(true)} disabled={selected.size === 0}
           className="flex items-center gap-1.5 text-xs font-bold bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 disabled:opacity-50">
-          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-          {saving ? "Saving…" : "Save Matches"}
+          <Presentation className="w-3.5 h-3.5" />
+          Export Bulk PPT
         </button>
       </div>
+
+      {showExportModal && (
+        <BulkPptModal
+          demandProjectId={demandProjectId}
+          properties={properties.filter(p => selected.has(p.id)).map(p => ({ id: p.id, projectNumber: p.projectNumber, title: p.title }))}
+          onClose={() => setShowExportModal(false)}
+          onDone={async () => {
+            setShowExportModal(false);
+            await load();
+            await loadHistory();
+          }}
+        />
+      )}
 
       {properties.length === 0 && (
         <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
@@ -180,8 +198,85 @@ export default function FindPropertiesPanel({
 
       {properties.length > 0 && (
         <p className="text-[10px] text-gray-400">
-          Tick properties that match this requirement → Save Matches. Use "Auto-scan" for score-based suggestions.
+          Tick properties that match this requirement → Export Bulk PPT to confirm matches and send details to the client. Use "Auto-scan" for score-based suggestions.
         </p>
+      )}
+
+      {history.length > 0 && (
+        <div className="pt-2 border-t border-gray-100">
+          <p className="text-xs font-semibold text-gray-500 mb-2">EXPORT HISTORY</p>
+          <div className="space-y-1.5">
+            {history.map(h => {
+              const email = h.meta?.email;
+              return (
+                <div key={h.id} className="flex items-start gap-2 p-2 bg-gray-50 rounded-lg border border-gray-100">
+                  <Presentation className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 mt-0.5" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] text-gray-700">
+                      {(h.meta?.properties ?? []).map(p => p.title).join(", ") || "—"}
+                    </p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">
+                      {new Date(h.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      {h.user?.name ? ` · by ${h.user.name}` : ""}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => email?.status === "error" && setErrorPopup(email.error ?? "Unknown error")}
+                    className={cn(
+                      "text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0",
+                      !email ? "bg-gray-100 text-gray-400" :
+                      email.status === "sent" ? "bg-green-100 text-green-700" :
+                      "bg-red-100 text-red-700 cursor-pointer hover:bg-red-200"
+                    )}
+                  >
+                    {!email ? "Not sent" : email.status === "sent" ? "Sent" : "Error"}
+                  </button>
+                  <button
+                    onClick={() => setEmailTarget(h)}
+                    className="flex items-center gap-1 text-[10px] font-bold text-blue-600 border border-blue-200 px-2 py-1 rounded-lg hover:bg-blue-50 flex-shrink-0"
+                  >
+                    <Mail className="w-3 h-3" />
+                    {email ? "Resend" : "Send Email"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {emailTarget && (
+        <SendEmailModal
+          demandProjectId={demandProjectId}
+          auditLogId={emailTarget.id}
+          defaultTo={emailTarget.meta?.email?.to || clientEmail}
+          defaultSubject={emailTarget.meta?.email?.subject || `Properties for your review — ${(emailTarget.meta?.properties ?? []).map(p => p.title).join(", ")}`}
+          defaultBody={"Hi,\n\nPlease find attached the property details for your review.\n\nRegards,\nBeyondInfra"}
+          attachmentName={`${(emailTarget.meta?.properties ?? []).length} ${(emailTarget.meta?.properties ?? []).length === 1 ? "property" : "properties"}.pptx`}
+          onClose={() => setEmailTarget(null)}
+          onDone={async () => {
+            setEmailTarget(null);
+            await loadHistory();
+          }}
+        />
+      )}
+
+      {errorPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setErrorPopup(null)} />
+          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-sm p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-600" />
+                <h2 className="text-sm font-bold text-gray-900">Email Failed</h2>
+              </div>
+              <button onClick={() => setErrorPopup(null)} className="text-gray-400 hover:text-gray-700">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-xs text-gray-600">{errorPopup}</p>
+          </div>
+        </div>
       )}
     </div>
   );
