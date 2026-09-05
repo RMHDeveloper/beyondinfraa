@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { blurOnWheel } from "@/lib/utils";
+import DeveloperProposalFiles from "./DeveloperProposalFiles";
 
 export default function NewDeveloperModal({
   onClose, onCreated,
@@ -23,6 +24,7 @@ export default function NewDeveloperModal({
   const [internalRating, setInternalRating] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [createdDeveloperId, setCreatedDeveloperId] = useState<string | null>(null);
 
   async function submit() {
     if (!name.trim()) { setError("Name is required"); return; }
@@ -40,7 +42,25 @@ export default function NewDeveloperModal({
     setSaving(false);
     if (!res.ok) { const e = await res.json(); setError(e.error ?? "Failed to create developer"); return; }
     const data = await res.json();
-    onCreated(data.developer.id);
+    setCreatedDeveloperId(data.developer.id);
+  }
+
+  if (createdDeveloperId) {
+    return (
+      <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl border border-gray-200 p-5 w-full max-w-lg space-y-4">
+          <p className="text-sm font-bold text-gray-900">Developer Created</p>
+          <p className="text-xs text-gray-500">Upload their portfolio documents (optional), then click Done.</p>
+          <DeveloperProposalFiles apiBase={`/api/developers/${createdDeveloperId}/files`} uploadLabel="Upload Portfolio File" />
+          <div className="flex gap-3 pt-2">
+            <button onClick={() => onCreated(createdDeveloperId)}
+              className="bg-purple-600 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-purple-700">
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

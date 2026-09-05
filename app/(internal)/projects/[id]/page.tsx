@@ -84,7 +84,10 @@ const BASE_TABS = [
   "Project Overview", "Find Buyers/Tenants", "Files", "Gallery", "Notes", "Tasks",
   "Meetings", "Award", "Audit",
 ];
-const REDEVELOPMENT_TABS = [...BASE_TABS.slice(0, -2), "Developers & Proposals", "Award", "Audit"];
+const REDEVELOPMENT_TABS = [
+  "Project Overview", "Files", "Gallery", "Notes", "Tasks", "Meetings",
+  "Developers & Proposals", "Award", "Audit",
+];
 
 function getDetailTabs(categoryName: string, subcategoryName: string) {
   const isRedevelopment = categoryName === "Special Projects" ||
@@ -317,15 +320,74 @@ const DEAL_TYPES_BY_SIDE: Record<"PRICE" | "RENT", string[]> = {
 type AwardMatchOption = { id: string; matchPct: number; label: string; dealSide: "PRICE" | "RENT" };
 type AwardDevProposalOption = { id: string; status: string; developerName: string };
 
+type FreeFlowCandidate = { id: string; projectNumber: string; title: string; existingMatch: { id: string; confirmedAt: string | null } | null };
+
 function AwardTab({
-  projectId, isRedevelopment, isDemandSide, deal, matchOptions, devProposalOptions,
-  preselectMatchId, preselectDevProposalId, readOnly, onAwarded,
+  projectId, isRedevelopment, isDemandSide, subcategoryName, deal, matchOptions, devProposalOptions,
+  preselectMatchId, preselectDevProposalId, readOnly, onAwarded, onLinked,
 }: {
-  projectId: string; isRedevelopment: boolean; isDemandSide: boolean; deal: Deal | null | undefined;
+  projectId: string; isRedevelopment: boolean; isDemandSide: boolean; subcategoryName: string; deal: Deal | null | undefined;
   matchOptions: AwardMatchOption[]; devProposalOptions: AwardDevProposalOption[];
   preselectMatchId: string | null; preselectDevProposalId: string | null;
-  readOnly: boolean; onAwarded: () => void;
+  readOnly: boolean; onAwarded: () => void; onLinked: (opts: { matchId?: string; developerProposalId?: string }) => void;
 }) {
+  const [showPicker, setShowPicker] = useState(false);
+  const [candidates, setCandidates] = useState<FreeFlowCandidate[] | null>(null);
+  const [devCandidates, setDevCandidates] = useState<{ id: string; contact: { name: string } }[] | null>(null);
+  const [linking, setLinking] = useState(false);
+  const [pickerError, setPickerError] = useState("");
+
+  async function openPicker() {
+    setPickerError("");
+    setShowPicker(true);
+    if (isRedevelopment) {
+      if (devCandidates) return;
+      const res = await fetch(`/api/projects/${projectId}/extra`);
+      const data = res.ok ? await res.json() : null;
+      setDevCandidates(data?.developers ?? []);
+    } else {
+      if (candidates) return;
+      const endpoint = isDemandSide ? "find-properties" : "find-requirements";
+      const res = await fetch(`/api/projects/${projectId}/${endpoint}`);
+      setCandidates(res.ok ? await res.json() : []);
+    }
+  }
+
+  async function linkToMatch(candidateId: string) {
+    setLinking(true);
+    setPickerError("");
+    const res = await fetch("/api/matches", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(isDemandSide
+        ? { projectId: candidateId, demandProjectId: projectId }
+        : { projectId, demandProjectId: candidateId }),
+    });
+    setLinking(false);
+    if (!res.ok) { setPickerError("Failed to save match."); return; }
+    const m = await res.json();
+    setShowPicker(false);
+    onLinked({ matchId: m.id });
+  }
+
+  async function linkToDeveloper(developerId: string) {
+    setLinking(true);
+    setPickerError("");
+    const res = await fetch(`/api/projects/${projectId}/extra`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "developerProposal", developerId, status: "SELECTED" }),
+    });
+    setLinking(false);
+    if (!res.ok) { const e = await res.json(); setPickerError(e.error ?? "Failed to add developer."); return; }
+    const dp = await res.json();
+    setShowPicker(false);
+    onLinked({ developerProposalId: dp.id });
+  }
+
+  const freeFlowLabel = isRedevelopment ? "Award to Developer"
+    : isDemandSide ? "Award Property"
+    : subcategoryName === "Rent" ? "Award to Tenant"
+    : "Award to Buyer";
+
   const [matchId, setMatchId] = useState(preselectMatchId ?? "");
   const [developerProposalId, setDeveloperProposalId] = useState(preselectDevProposalId ?? "");
   const [dealType, setDealType] = useState(isRedevelopment ? "REDEVELOPMENT_CONFIRMED" : "SOLD");
@@ -403,9 +465,57 @@ function AwardTab({
         </p>
       </div>
 
-      {winnerOptions.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 text-center text-sm text-gray-400">
-          {isRedevelopment ? "No shortlisted developers yet." : "No confirmed matches yet."}
+      {winnerOptions.length === 0 && !showPicker ? (
+        <div className="bg-white rounded-xl border border-gray-200 p-6 text-center space-y-3">
+          <p className="text-sm text-gray-400">
+            {isRedevelopment ? "No shortlisted developers yet." : "No confirmed matches yet."}
+          </p>
+          {!readOnly && (
+            <button onClick={openPicker}
+              className="text-xs font-bold bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700">
+              {freeFlowLabel}
+            </button>
+          )}
+        </div>
+      ) : winnerOptions.length === 0 && showPicker ? (
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold text-gray-900">{freeFlowLabel}</p>
+            <button onClick={() => setShowPicker(false)} className="text-gray-400 hover:text-gray-600">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          {pickerError && <p className="text-xs text-red-600 font-medium">{pickerError}</p>}
+          {isRedevelopment ? (
+            devCandidates === null ? (
+              <p className="text-xs text-gray-400 flex items-center gap-1.5"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading developers…</p>
+            ) : devCandidates.length === 0 ? (
+              <p className="text-xs text-gray-400">No developer profiles in the system yet.</p>
+            ) : (
+              <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                {devCandidates.map(d => (
+                  <button key={d.id} onClick={() => linkToDeveloper(d.id)} disabled={linking}
+                    className="w-full text-left text-sm px-3 py-2 rounded-lg border border-gray-200 hover:border-teal-400 hover:bg-teal-50 disabled:opacity-50">
+                    {d.contact.name}
+                  </button>
+                ))}
+              </div>
+            )
+          ) : candidates === null ? (
+            <p className="text-xs text-gray-400 flex items-center gap-1.5"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading…</p>
+          ) : candidates.length === 0 ? (
+            <p className="text-xs text-gray-400">{isDemandSide ? "No open properties found." : "No open buyer/tenant requirements found."}</p>
+          ) : (
+            <div className="space-y-1.5 max-h-64 overflow-y-auto">
+              {candidates.map(c => (
+                <button key={c.id} onClick={() => linkToMatch(c.id)} disabled={linking}
+                  className="w-full text-left text-sm px-3 py-2 rounded-lg border border-gray-200 hover:border-teal-400 hover:bg-teal-50 disabled:opacity-50">
+                  <span className="font-mono text-[10px] text-gray-400 mr-2">{c.projectNumber}</span>
+                  {c.title}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
@@ -565,7 +675,7 @@ export default function ProjectDetailPage() {
   const [editingOwnerId, setEditingOwnerId] = useState<string | null>(null);
 
   // Developer proposal form
-  const BLANK_DEV = { developerId: "", status: "NOT_CONTACTED", additionalArea: "", corpusFund: "", monthlyRent: "", deposit: "", constructionTimeline: "", gracePeriod: "", bankGuarantee: "", parking: "", amenities: "", internalRemarks: "" };
+  const BLANK_DEV = { developerId: "", status: "NOT_CONTACTED" };
   const [addDevForm, setAddDevForm] = useState(false);
   const [devForm, setDevForm] = useState<typeof BLANK_DEV>(BLANK_DEV);
   const [editingDevId, setEditingDevId] = useState<string | null>(null);
@@ -735,11 +845,6 @@ export default function ProjectDetailPage() {
   function startEditDev(dp: any) {
     setDevForm({
       developerId: dp.developerId, status: dp.status,
-      additionalArea: dp.additionalArea ?? "", corpusFund: dp.corpusFund ?? "",
-      monthlyRent: dp.monthlyRent ?? "", deposit: dp.deposit ?? "",
-      constructionTimeline: dp.constructionTimeline ?? "", gracePeriod: dp.gracePeriod ?? "",
-      bankGuarantee: dp.bankGuarantee ?? "", parking: dp.parking ?? "",
-      amenities: dp.amenities ?? "", internalRemarks: dp.internalRemarks ?? "",
     });
     setEditingDevId(dp.id);
     setAddDevForm(true);
@@ -1602,36 +1707,21 @@ export default function ProjectDetailPage() {
                       <table className="w-full text-xs min-w-[640px]">
                         <thead>
                           <tr className="bg-purple-50 border-b border-purple-100 sticky top-0 z-10">
-                            <th className="text-left px-3 py-2.5 font-semibold text-[10px] uppercase tracking-wider text-purple-500 w-28">Term</th>
-                            {devProposals.map((dp: any) => (
-                              <th key={dp.id} className="text-center px-3 py-2.5 font-semibold text-[10px] uppercase tracking-wider text-gray-600">
-                                <p className="font-bold text-gray-900 normal-case text-xs truncate max-w-[120px]">{dp.developer.contact.name}</p>
-                                <span className={cn("px-1.5 py-0.5 rounded text-[9px] font-bold", DEV_STATUS_COLORS[dp.status] ?? "bg-gray-100 text-gray-500")}>
-                                  {dp.status.replace(/_/g," ")}
-                                </span>
-                              </th>
-                            ))}
+                            <th className="text-left px-3 py-2.5 font-semibold text-[10px] uppercase tracking-wider text-purple-500 w-28">Developer</th>
+                            <th className="text-left px-3 py-2.5 font-semibold text-[10px] uppercase tracking-wider text-gray-600">Status</th>
+                            <th className="text-left px-3 py-2.5 font-semibold text-[10px] uppercase tracking-wider text-gray-600">Proposal Files</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                          {([
-                            ["Add. Area (sqft)", (dp: any) => dp.additionalArea ? `${dp.additionalArea}` : "—"],
-                            ["Corpus Fund", (dp: any) => dp.corpusFund ? `₹${(dp.corpusFund/1e5).toFixed(1)}L` : "—"],
-                            ["Monthly Rent", (dp: any) => dp.monthlyRent ? `₹${dp.monthlyRent.toLocaleString()}` : "—"],
-                            ["Deposit", (dp: any) => dp.deposit ? `₹${(dp.deposit/1e5).toFixed(1)}L` : "—"],
-                            ["Construction (mo)", (dp: any) => dp.constructionTimeline ? `${dp.constructionTimeline}` : "—"],
-                            ["Grace Period (mo)", (dp: any) => dp.gracePeriod ? `${dp.gracePeriod}` : "—"],
-                            ["Bank Guarantee", (dp: any) => dp.bankGuarantee || "—"],
-                            ["Parking Slots", (dp: any) => dp.parking ? `${dp.parking}` : "—"],
-                            ["Amenities", (dp: any) => dp.amenities || "—"],
-                          ] as [string, (dp: any) => string][]).map(([label, fn]) => (
-                            <tr key={label} className="hover:bg-gray-50">
-                              <td className="px-3 py-2 font-semibold text-gray-500 text-[10px] uppercase tracking-wider whitespace-nowrap">{label}</td>
-                              {devProposals.map((dp: any) => (
-                                <td key={dp.id} className={cn("px-3 py-2 text-center font-medium", dp.status === "SELECTED" ? "text-green-700 bg-green-50/50" : "text-gray-800")}>
-                                  {fn(dp)}
-                                </td>
-                              ))}
+                          {devProposals.map((dp: any) => (
+                            <tr key={dp.id} className="hover:bg-gray-50">
+                              <td className="px-3 py-2 font-bold text-gray-900">{dp.developer.contact.name}</td>
+                              <td className="px-3 py-2">
+                                <span className={cn("px-1.5 py-0.5 rounded text-[9px] font-bold", DEV_STATUS_COLORS[dp.status] ?? "bg-gray-100 text-gray-500")}>
+                                  {dp.status.replace(/_/g," ")}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-gray-500">{dp._count?.files ?? 0} file(s)</td>
                             </tr>
                           ))}
                         </tbody>
@@ -1661,52 +1751,12 @@ export default function ProjectDetailPage() {
                           <p className="text-[10px] text-amber-600 mt-1">No developers in system yet. Add a contact with type DEVELOPER first, then it will appear here.</p>
                         )}
                       </div>
-                      <div>
+                      <div className="col-span-2">
                         <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Status</label>
                         <select value={devForm.status} onChange={e => setDevForm(p => ({ ...p, status: e.target.value }))}
                           className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500 bg-white">
                           {Object.keys(DEV_STATUS_COLORS).map(s => <option key={s} value={s}>{s.replace(/_/g," ")}</option>)}
                         </select>
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Additional Area (sqft)</label>
-                        <input type="number" value={devForm.additionalArea} onChange={e => setDevForm(p => ({ ...p, additionalArea: e.target.value }))} onWheel={blurOnWheel} className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Corpus Fund (₹)</label>
-                        <input type="number" value={devForm.corpusFund} onChange={e => setDevForm(p => ({ ...p, corpusFund: e.target.value }))} onWheel={blurOnWheel} className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Monthly Rent (₹)</label>
-                        <input type="number" value={devForm.monthlyRent} onChange={e => setDevForm(p => ({ ...p, monthlyRent: e.target.value }))} onWheel={blurOnWheel} className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Deposit (₹)</label>
-                        <input type="number" value={devForm.deposit} onChange={e => setDevForm(p => ({ ...p, deposit: e.target.value }))} onWheel={blurOnWheel} className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Construction Timeline (months)</label>
-                        <input type="number" value={devForm.constructionTimeline} onChange={e => setDevForm(p => ({ ...p, constructionTimeline: e.target.value }))} onWheel={blurOnWheel} className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Grace Period (months)</label>
-                        <input type="number" value={devForm.gracePeriod} onChange={e => setDevForm(p => ({ ...p, gracePeriod: e.target.value }))} onWheel={blurOnWheel} className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Bank Guarantee</label>
-                        <input value={devForm.bankGuarantee} onChange={e => setDevForm(p => ({ ...p, bankGuarantee: e.target.value }))} placeholder="e.g. 6 months rent" className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Parking Slots</label>
-                        <input type="number" value={devForm.parking} onChange={e => setDevForm(p => ({ ...p, parking: e.target.value }))} onWheel={blurOnWheel} className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Amenities Offered</label>
-                        <input value={devForm.amenities} onChange={e => setDevForm(p => ({ ...p, amenities: e.target.value }))} placeholder="e.g. Club house, gym, swimming pool" className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500" />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Internal Remarks</label>
-                        <textarea rows={2} value={devForm.internalRemarks} onChange={e => setDevForm(p => ({ ...p, internalRemarks: e.target.value }))} className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500 resize-none" />
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -1729,16 +1779,6 @@ export default function ProjectDetailPage() {
                             {dp.status.replace(/_/g," ")}
                           </span>
                         </div>
-
-                        {/* Terms grid */}
-                        {(dp.additionalArea || dp.corpusFund || dp.monthlyRent || dp.constructionTimeline) && (
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center bg-gray-50 rounded-lg p-3">
-                            {dp.additionalArea && <div><p className="text-xs font-bold text-gray-900">{dp.additionalArea} sqft</p><p className="text-[9px] text-gray-400 uppercase tracking-wider">Add. Area</p></div>}
-                            {dp.corpusFund && <div><p className="text-xs font-bold text-gray-900">₹{(dp.corpusFund/1e5).toFixed(1)}L</p><p className="text-[9px] text-gray-400 uppercase tracking-wider">Corpus</p></div>}
-                            {dp.monthlyRent && <div><p className="text-xs font-bold text-gray-900">₹{dp.monthlyRent.toLocaleString()}</p><p className="text-[9px] text-gray-400 uppercase tracking-wider">Rent/mo</p></div>}
-                            {dp.constructionTimeline && <div><p className="text-xs font-bold text-gray-900">{dp.constructionTimeline} mo</p><p className="text-[9px] text-gray-400 uppercase tracking-wider">Timeline</p></div>}
-                          </div>
-                        )}
 
                         {/* Action buttons */}
                         <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-gray-100">
@@ -1777,9 +1817,6 @@ export default function ProjectDetailPage() {
                           <button onClick={() => deleteDevProposal(dp.id)}
                             className="text-[10px] text-red-500 font-bold hover:underline">Remove</button>
                         </div>
-                        {dp.internalRemarks && (
-                          <p className="text-[10px] text-gray-400 italic border-t border-gray-100 pt-2">{dp.internalRemarks}</p>
-                        )}
                         <DeveloperProposalFiles developerProposalId={dp.id} />
                       </div>
                     ))}
@@ -1852,6 +1889,7 @@ export default function ProjectDetailPage() {
               projectId={id}
               isRedevelopment={isRedevelopmentProject}
               isDemandSide={isDemandSideProject}
+              subcategoryName={project.subcategory.name}
               deal={project.deal}
               readOnly={readOnly}
               matchOptions={awardMatchOptions}
@@ -1859,6 +1897,11 @@ export default function ProjectDetailPage() {
               preselectMatchId={awardPreselectMatchId}
               preselectDevProposalId={awardPreselectDevProposalId}
               onAwarded={() => { setAwardPreselectMatchId(null); setAwardPreselectDevProposalId(null); load(); }}
+              onLinked={async ({ matchId, developerProposalId }) => {
+                await load();
+                if (matchId) setAwardPreselectMatchId(matchId);
+                if (developerProposalId) setAwardPreselectDevProposalId(developerProposalId);
+              }}
             />
           )}
         </div>
@@ -1881,6 +1924,7 @@ export default function ProjectDetailPage() {
               projectId={id}
               isRedevelopment={isRedevelopmentProject}
               isDemandSide={isDemandSideProject}
+              subcategoryName={project.subcategory.name}
               deal={project.deal}
               readOnly={false}
               matchOptions={awardMatchOptions}
@@ -1892,6 +1936,11 @@ export default function ProjectDetailPage() {
                 setAwardPreselectDevProposalId(null);
                 setPendingCompletedStatusId(null);
                 await load();
+              }}
+              onLinked={async ({ matchId, developerProposalId }) => {
+                await load();
+                if (matchId) setAwardPreselectMatchId(matchId);
+                if (developerProposalId) setAwardPreselectDevProposalId(developerProposalId);
               }}
             />
           </div>
@@ -1917,12 +1966,6 @@ export default function ProjectDetailPage() {
           <button onClick={() => router.back()}
             className="border border-gray-200 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
             Cancel
-          </button>
-          <button
-            onClick={() => router.back()}
-            disabled={readOnly || saveStatus === "saving"}
-            className="bg-blue-600 text-white text-xs font-bold px-4 py-1.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
-            Save &amp; Continue
           </button>
         </div>
       </div>

@@ -40,6 +40,7 @@ export default function FindPropertiesPanel({
   const [scanning, setScanning] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showExportModal, setShowExportModal] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [history, setHistory] = useState<ExportHistoryEntry[]>([]);
   const [clientEmail, setClientEmail] = useState("");
   const [emailTarget, setEmailTarget] = useState<ExportHistoryEntry | null>(null);
@@ -106,6 +107,24 @@ export default function FindPropertiesPanel({
     return next;
   });
 
+  async function saveMatches() {
+    setSaving(true);
+    for (const p of properties) {
+      const isSelected = selected.has(p.id);
+      if (isSelected && !p.existingMatch?.confirmedAt) {
+        await fetch("/api/matches", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectId: p.id, demandProjectId }),
+        });
+      } else if (!isSelected && p.existingMatch?.confirmedAt) {
+        await fetch(`/api/matches/${p.existingMatch.id}`, { method: "DELETE" });
+      }
+    }
+    await load();
+    setSaving(false);
+  }
+
   const confirmedCount = properties.filter(p => p.existingMatch?.confirmedAt).length;
 
   if (loading) return (
@@ -122,6 +141,11 @@ export default function FindPropertiesPanel({
           className="flex items-center gap-1.5 text-xs font-bold border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-50 disabled:opacity-50">
           {scanning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
           {scanning ? "Scanning…" : "Auto-scan & suggest"}
+        </button>
+        <button onClick={saveMatches} disabled={saving}
+          className="flex items-center gap-1.5 text-xs font-bold bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 disabled:opacity-50">
+          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+          {saving ? "Saving…" : "Save Matches"}
         </button>
         <button onClick={() => setShowExportModal(true)} disabled={selected.size === 0}
           className="flex items-center gap-1.5 text-xs font-bold bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 disabled:opacity-50">
@@ -198,7 +222,7 @@ export default function FindPropertiesPanel({
 
       {properties.length > 0 && (
         <p className="text-[10px] text-gray-400">
-          Tick properties that match this requirement → Export Bulk PPT to confirm matches and send details to the client. Use "Auto-scan" for score-based suggestions.
+          Tick properties that match this requirement → Save Matches to confirm, or Export Bulk PPT to confirm and send details to the client. Use "Auto-scan" for score-based suggestions.
         </p>
       )}
 

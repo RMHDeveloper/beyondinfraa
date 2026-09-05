@@ -13,18 +13,18 @@ function formatBytes(b: number) {
   return `${(b / 1048576).toFixed(1)} MB`;
 }
 
-export default function DeveloperProposalFiles({ developerProposalId }: { developerProposalId: string }) {
+export default function DeveloperProposalFiles({ developerProposalId, apiBase: apiBaseProp, uploadLabel = "Upload Document" }: { developerProposalId?: string; apiBase?: string; uploadLabel?: string }) {
   const [files, setFiles] = useState<DevFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const apiBase = `/api/developer-proposals/${developerProposalId}/files`;
+  const apiBase = apiBaseProp ?? `/api/developer-proposals/${developerProposalId}/files`;
 
   async function load() {
     const res = await fetch(apiBase);
     setFiles(await res.json());
   }
 
-  useEffect(() => { load(); }, [developerProposalId]);
+  useEffect(() => { load(); }, [apiBase]);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -64,7 +64,7 @@ export default function DeveloperProposalFiles({ developerProposalId }: { develo
         className="flex items-center gap-1 text-[10px] font-bold text-gray-500 border border-gray-200 px-2 py-1 rounded-full hover:bg-gray-50 disabled:opacity-50"
       >
         {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-        {uploading ? "Uploading…" : "Upload Document"}
+        {uploading ? "Uploading…" : uploadLabel}
       </button>
     </div>
   );

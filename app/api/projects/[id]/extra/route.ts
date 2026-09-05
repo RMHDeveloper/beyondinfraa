@@ -26,15 +26,13 @@ export const GET = withErrorHandling(async function GET(_req: Request, { params 
       orderBy: { createdAt: "desc" },
       select: {
         id: true, status: true, createdAt: true, developerId: true,
-        additionalArea: true, corpusFund: true, monthlyRent: true, deposit: true,
-        constructionTimeline: true, gracePeriod: true, bankGuarantee: true,
-        parking: true, amenities: true, internalRemarks: true,
         developer: { select: { id: true, contact: { select: { id: true, name: true } } } },
+        _count: { select: { files: true } },
       },
     }),
     db.match.findMany({
       where: isDemand ? { demandProjectId: id } : { projectId: id },
-      orderBy: { matchPct: "desc" },
+      orderBy: [{ confirmedAt: "desc" }, { matchPct: "desc" }],
       take: 20,
       select: {
         id: true, matchPct: true, confirmedAt: true, criteriaMatched: true, criteriaMissed: true,
@@ -104,19 +102,9 @@ export const POST = withErrorHandling(async function POST(req: Request, { params
     }
     const proposal = await db.developerProposal.create({
       data: {
-        projectId:            id,
-        developerId:          body.developerId,
-        status:               body.status || "NOT_CONTACTED",
-        additionalArea:       body.additionalArea ? parseFloat(body.additionalArea) : null,
-        corpusFund:           body.corpusFund ? parseFloat(body.corpusFund) : null,
-        monthlyRent:          body.monthlyRent ? parseFloat(body.monthlyRent) : null,
-        deposit:              body.deposit ? parseFloat(body.deposit) : null,
-        constructionTimeline: body.constructionTimeline ? parseInt(body.constructionTimeline) : null,
-        gracePeriod:          body.gracePeriod ? parseInt(body.gracePeriod) : null,
-        bankGuarantee:        body.bankGuarantee || null,
-        parking:              body.parking ? parseInt(body.parking) : null,
-        amenities:            body.amenities || null,
-        internalRemarks:      body.internalRemarks || null,
+        projectId:   id,
+        developerId: body.developerId,
+        status:      body.status || "NOT_CONTACTED",
       },
       include: { developer: { include: { contact: true } } },
     });
@@ -164,17 +152,7 @@ export const PATCH = withErrorHandling(async function PATCH(req: Request, { para
     const proposal = await db.developerProposal.update({
       where: { id: body.id },
       data: {
-        status:               body.status,
-        additionalArea:       body.additionalArea !== undefined ? (body.additionalArea ? parseFloat(body.additionalArea) : null) : undefined,
-        corpusFund:           body.corpusFund !== undefined ? (body.corpusFund ? parseFloat(body.corpusFund) : null) : undefined,
-        monthlyRent:          body.monthlyRent !== undefined ? (body.monthlyRent ? parseFloat(body.monthlyRent) : null) : undefined,
-        deposit:              body.deposit !== undefined ? (body.deposit ? parseFloat(body.deposit) : null) : undefined,
-        constructionTimeline: body.constructionTimeline !== undefined ? (body.constructionTimeline ? parseInt(body.constructionTimeline) : null) : undefined,
-        gracePeriod:          body.gracePeriod !== undefined ? (body.gracePeriod ? parseInt(body.gracePeriod) : null) : undefined,
-        bankGuarantee:        body.bankGuarantee !== undefined ? (body.bankGuarantee || null) : undefined,
-        parking:              body.parking !== undefined ? (body.parking ? parseInt(body.parking) : null) : undefined,
-        amenities:            body.amenities !== undefined ? (body.amenities || null) : undefined,
-        internalRemarks:      body.internalRemarks !== undefined ? (body.internalRemarks || null) : undefined,
+        status: body.status,
       },
       include: { developer: { include: { contact: true } } },
     });

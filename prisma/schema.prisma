@@ -905,8 +905,26 @@ model Developer {
 
   contact           Contact            @relation(fields: [contactId], references: [id])
   developerProposals DeveloperProposal[]
+  files             DeveloperFile[]
 
   @@map("developers")
+}
+
+model DeveloperFile {
+  id            String   @id @default(cuid())
+  developerId   String
+  fileName      String
+  originalName  String
+  mimeType      String
+  sizeBytes     Int
+  storagePath   String
+  uploadedBy    String?
+  uploadedAt    DateTime @default(now())
+
+  developer Developer @relation(fields: [developerId], references: [id], onDelete: Cascade)
+
+  @@index([developerId])
+  @@map("developer_files")
 }
 
 model DeveloperProposal {
