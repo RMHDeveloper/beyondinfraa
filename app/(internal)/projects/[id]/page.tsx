@@ -7,9 +7,9 @@ import {
   Lock, Unlock, Check, Loader2,
   AlertCircle, Printer, Presentation,
   TrendingUp, Plus, Users, Building2,
-  Pencil, Share2, ChevronDown, Copy, X,
+  Pencil, Share2, ChevronDown, Copy, X, Trash2,
 } from "lucide-react";
-import { cn, blurOnWheel, isBlankResponseValue } from "@/lib/utils";
+import { cn, blurOnWheel, isBlankResponseValue, subcategoryLabel } from "@/lib/utils";
 import FieldRenderer from "@/components/project/FieldRenderer";
 import { useAutosave } from "@/components/project/useAutosave";
 import FilesTab from "@/components/project/FilesTab";
@@ -316,6 +316,9 @@ const DEAL_TYPES_BY_SIDE: Record<"PRICE" | "RENT", string[]> = {
   PRICE: ["SOLD", "WITHDRAWN", "REQUIREMENT_CLOSED"],
   RENT: ["RENTED", "LEASED", "WITHDRAWN", "REQUIREMENT_CLOSED"],
 };
+function dealTypeLabel(t: string) {
+  return t === "REDEVELOPMENT_CONFIRMED" ? "JOINT DEVELOPMENT CONFIRMED" : t.replace(/_/g, " ");
+}
 
 type AwardMatchOption = { id: string; matchPct: number; label: string; dealSide: "PRICE" | "RENT" };
 type AwardDevProposalOption = { id: string; status: string; developerName: string };
@@ -546,7 +549,7 @@ function AwardTab({
               <select value={dealType} disabled={readOnly}
                 onChange={e => setDealType(e.target.value)}
                 className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-gray-50">
-                {availableDealTypes.map(t => <option key={t} value={t}>{t.replace(/_/g, " ")}</option>)}
+                {availableDealTypes.map(t => <option key={t} value={t}>{dealTypeLabel(t)}</option>)}
               </select>
             </div>
             <div>
@@ -622,6 +625,7 @@ export default function ProjectDetailPage() {
   const [localJsonValues, setLocalJsonValues] = useState<Record<string, unknown>>({});
   const [stateLoading, setStateLoading] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [activeTab, setActiveTab]       = useState(() => {
     if (typeof window === "undefined") return "Project Overview";
     return new URLSearchParams(window.location.search).get("tab") ?? "Project Overview";
@@ -910,6 +914,19 @@ export default function ProjectDetailPage() {
     router.push(`/projects/${created.projectNumber}`);
   }
 
+  async function deleteProject() {
+    if (!confirm(`Delete "${project?.title}"? This permanently removes the record and cannot be undone.`)) return;
+    setDeleting(true);
+    const res = await fetch(`/api/projects/${id}`, { method: "DELETE" });
+    setDeleting(false);
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      alert(body?.error ?? "Failed to delete");
+      return;
+    }
+    router.push("/projects");
+  }
+
   if (resolveFailed) return <div className="p-4 sm:p-8 text-red-500 text-sm">Project not found.</div>;
   if (loading) return <div className="flex items-center justify-center h-full text-sm text-gray-400">Loading…</div>;
   if (!project || !id) return <div className="p-4 sm:p-8 text-red-500 text-sm">Project not found.</div>;
@@ -967,7 +984,7 @@ export default function ProjectDetailPage() {
         {/* Category · Subcategory */}
         <span className="text-[10px] font-bold px-2 py-0.5 rounded flex-shrink-0"
           style={{ background: sectorColor + "18", color: sectorColor }}>
-          {project.category.name} · {project.subcategory.name}
+          {project.category.name} · {subcategoryLabel(project.subcategory.name)}
         </span>
 
         {/* Status — clickable dropdown */}
@@ -1050,6 +1067,12 @@ export default function ProjectDetailPage() {
             title="Create a copy of this property with all field values"
             className="flex items-center gap-1 text-[10px] font-bold border border-gray-200 text-gray-600 px-2 py-1 rounded hover:bg-gray-50 transition-colors disabled:opacity-50">
             <Copy className="w-3 h-3" /> {duplicating ? "Duplicating…" : "Duplicate"}
+          </button>
+
+          <button onClick={deleteProject} disabled={deleting}
+            title="Delete this record"
+            className="flex items-center gap-1 text-[10px] font-bold border border-gray-200 text-red-500 px-2 py-1 rounded hover:bg-red-50 transition-colors disabled:opacity-50">
+            <Trash2 className="w-3 h-3" /> {deleting ? "Deleting…" : "Delete"}
           </button>
 
           {/* Share to client */}
@@ -1658,11 +1681,7 @@ export default function ProjectDetailPage() {
                 {!addDevForm && (() => {
                   const proposedDevIds = new Set(devProposals.map((dp: any) => dp.developerId));
                   const potentialDevs = availableDevs.filter((d: any) => !proposedDevIds.has(d.id));
-                  if (availableDevs.length === 0) return (
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-700">
-                      No developer profiles in the system yet. <a href="/contacts/new" className="font-bold underline">Add a Contact</a> with type <strong>Developer</strong> — their RERA number, preferred locations, project size, and rating can be captured there and they'll show up here as a potential partner.
-                    </div>
-                  );
+                  if (availableDevs.length === 0) return null;
                   if (potentialDevs.length === 0) return null;
                   return (
                     <div className="space-y-2">
@@ -1858,7 +1877,7 @@ export default function ProjectDetailPage() {
           {/* ── GALLERY ── */}
           {activeTab === "Gallery" && (
             <div className="p-4">
-              <GalleryTab projectId={id} apiBase={`/api/projects/${id}/files`} readOnly={readOnly} />
+              <GalleryTab apiBase={`/api/projects/${id}/files`} readOnly={readOnly} />
             </div>
           )}
 

@@ -64,6 +64,25 @@ export const GET = withErrorHandling(async function GET(_: NextRequest, { params
   return Response.json(project);
 });
 
+export const DELETE = withErrorHandling(async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
+  const project = await db.project.findUnique({ where: { id }, select: { id: true } });
+  if (!project) return apiError("Not found", 404);
+
+  const deal = await db.deal.findUnique({ where: { projectId: id }, select: { id: true } });
+  if (deal) return apiError("Cannot delete a project with a closed deal", 400);
+
+  await db.$transaction([
+    db.developerProposal.deleteMany({ where: { projectId: id } }),
+    db.siteVisit.deleteMany({ where: { projectId: id } }),
+    db.proposal.updateMany({ where: { demandProjectId: id }, data: { demandProjectId: null } }),
+    db.project.delete({ where: { id } }),
+  ]);
+
+  return Response.json({ ok: true });
+});
+
 const FIELD_LABELS: Record<string, string> = {
   title: "Title", statusId: "Status", assigneeId: "Assignee",
   clientName: "Client Name", clientPhone: "Client Phone", clientEmail: "Client Email", notes: "Notes",

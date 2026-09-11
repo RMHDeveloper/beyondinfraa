@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   Plus, Printer,
   Building2, Users, FileText, MapPin, TrendingUp,
-  CheckCircle2, Target, Send, Eye, ThumbsUp, ThumbsDown, RefreshCw, Loader2, Copy,
+  CheckCircle2, Target, Send, Eye, ThumbsUp, ThumbsDown, RefreshCw, Loader2, Copy, ArrowRight, Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,14 +23,18 @@ type Contact = { id: string; name: string; type: string };
 type Category = { id: string; name: string };
 
 type BuyerReq = {
-  id: string; projectNumber: string; state: string;
-  clientContact: Contact | null; category: Category;
+  id: string; projectNumber: string; title: string; state: string;
+  clientContact: Contact | null; clientName: string | null; clientPhone: string | null;
+  category: Category;
   createdAt: Date | string;
+  demandMatches: { id: string }[];
 };
 type TenantReq = {
-  id: string; projectNumber: string; state: string;
-  clientContact: Contact | null; category: Category;
+  id: string; projectNumber: string; title: string; state: string;
+  clientContact: Contact | null; clientName: string | null; clientPhone: string | null;
+  category: Category;
   createdAt: Date | string;
+  demandMatches: { id: string }[];
 };
 type Match = {
   id: string; matchPct: number; alreadySent: boolean;
@@ -77,10 +81,13 @@ const SECTOR_COLORS: Record<string, { color: string; bg: string }> = {
 // The "Redevelopment" sector shown in nav/filters maps to the real Category name
 // "Special Projects" (which holds the Redevelopment + Joint Venture subcategories).
 const SECTOR_TO_CATEGORY: Record<string, string> = { Redevelopment: "Special Projects" };
+// Display label for a sector key, where it differs from the key itself (e.g. URL/lookup key stays "Redevelopment").
+const SECTOR_DISPLAY_LABEL: Record<string, string> = { Redevelopment: "Joint Development" };
 const TX_COLORS: Record<string, { color: string; bg: string }> = {
   Sale:          { color: "#2563eb", bg: "#eff6ff" },
   Rent:          { color: "#d97706", bg: "#fffbeb" },
   Buy:           { color: "#0d9488", bg: "#f0fdfa" },
+  Tenant:        { color: "#c2410c", bg: "#fff7ed" },
   "Joint Venture": { color: "#7c3aed", bg: "#f5f3ff" },
 };
 const AVAIL_COLORS: Record<string, { color: string; bg: string }> = {
@@ -99,16 +106,23 @@ const VISIT_STATUS_COLORS: Record<string, string> = {
   CANCELLED: "bg-red-50 text-red-700", RESCHEDULED: "bg-amber-50 text-amber-700",
 };
 const SEGMENT_LABELS: Record<string, string> = {
-  BUY: "Buy", SELL: "Sell", RENT: "Rent", REDEVELOPMENT: "Redevelopment", JV: "JV",
+  BUY: "Buy", SELL: "Sell", RENT: "Rent", REDEVELOPMENT: "Joint Development", JV: "JV",
 };
 const DEAL_TYPE_COLORS: Record<string, string> = {
   SOLD: "bg-blue-50 text-blue-700", RENTED: "bg-amber-50 text-amber-700",
   LEASED: "bg-purple-50 text-purple-700", REDEVELOPMENT_CONFIRMED: "bg-pink-50 text-pink-700",
   WITHDRAWN: "bg-red-50 text-red-700", REQUIREMENT_CLOSED: "bg-teal-50 text-teal-700",
 };
+function dealTypeLabel(t: string) {
+  return t === "REDEVELOPMENT_CONFIRMED" ? "JOINT DEVELOPMENT CONFIRMED" : t.replace(/_/g, " ");
+}
+function subtypeLabel(name: string) {
+  const first = name.split(" ")[0];
+  return first === "Redevelopment" ? "Joint Development" : first;
+}
 
 const SUB_TABS = [
-  "Overview", "Available Properties", "Buyer Requirements", "Tenant Requirements",
+  "Overview", "Inventory", "Buyer Requirements", "Tenant Requirements",
   "Matching", "Proposals", "Site Visits", "Closed Deals",
 ] as const;
 type SubTab = typeof SUB_TABS[number];
@@ -120,7 +134,7 @@ function fmtDate(d: Date | string | null | undefined) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function ProjectsClient({
-  projects, buyerReqs, tenantReqs, contacts, categories,
+  projects, buyerReqs, tenantReqs, contacts,
   matches, proposals, siteVisits, deals,
 }: Props) {
   const router = useRouter();
@@ -128,12 +142,12 @@ export default function ProjectsClient({
   const sp = useSearchParams();
 
   const catParam = sp.get("cat") ?? "All";
-  const tabParam = (sp.get("tab") as SubTab | null) ?? "Available Properties";
+  const tabParam = (sp.get("tab") as SubTab | null) ?? "Inventory";
 
-  const [activeTab, setActiveTab] = useState<SubTab>("Available Properties");
+  const [activeTab, setActiveTab] = useState<SubTab>("Inventory");
   const [txFilter, setTxFilter] = useState<"All" | "For Sale" | "For Rent">("All");
-  const [reqCatFilter, setReqCatFilter] = useState("All");
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Browser back/forward can restore this page from Next's router cache with whatever
   // project list was current when it was cached — e.g. before a project was just
@@ -159,6 +173,21 @@ export default function ProjectsClient({
     router.push(`/projects/${created.projectNumber}`);
   }
 
+  async function deleteProject(e: React.MouseEvent, projectId: string, label: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm(`Delete "${label}"? This permanently removes the record and cannot be undone.`)) return;
+    setDeletingId(projectId);
+    const res = await fetch(`/api/projects/${projectId}`, { method: "DELETE" });
+    setDeletingId(null);
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      alert(body?.error ?? "Failed to delete");
+      return;
+    }
+    router.refresh();
+  }
+
   useEffect(() => {
     const t = sp.get("tab") as SubTab | null;
     if (t && SUB_TABS.includes(t)) setActiveTab(t);
@@ -171,8 +200,10 @@ export default function ProjectsClient({
     router.replace(`/projects?${params.toString()}`, { scroll: false });
   }
 
-  const catFiltered = catParam === "All" ? projects : projects.filter((p) => p.category.name === (SECTOR_TO_CATEGORY[catParam] ?? catParam));
+  const effectiveCat = catParam === "All" ? "All" : (SECTOR_TO_CATEGORY[catParam] ?? catParam);
+  const catFiltered = effectiveCat === "All" ? projects : projects.filter((p) => p.category.name === effectiveCat);
   const filteredProjects = catFiltered.filter((p) => {
+    if (p.subcategory.name === "Buy" || p.subcategory.name === "Tenant") return false;
     if (txFilter === "For Sale") return p.subcategory.name.includes("Sale") || p.subcategory.name.includes("Buy");
     if (txFilter === "For Rent") return p.subcategory.name.includes("Rent");
     return true;
@@ -180,8 +211,12 @@ export default function ProjectsClient({
   const total = filteredProjects.length;
   const sectorColor = catParam !== "All" ? (SECTOR_COLORS[catParam]?.color ?? "#2563eb") : "#2563eb";
 
-  const filteredBuyerReqs = reqCatFilter === "All" ? buyerReqs : buyerReqs.filter((r) => r.category.name === reqCatFilter);
-  const filteredTenantReqs = reqCatFilter === "All" ? tenantReqs : tenantReqs.filter((r) => r.category.name === reqCatFilter);
+  const filteredBuyerReqs = effectiveCat === "All" ? buyerReqs : buyerReqs.filter((r) => r.category.name === effectiveCat);
+  const filteredTenantReqs = effectiveCat === "All" ? tenantReqs : tenantReqs.filter((r) => r.category.name === effectiveCat);
+  const filteredMatches = effectiveCat === "All" ? matches : matches.filter((m) => filteredBuyerReqs.some((r) => r.id === m.demandProjectId) || filteredTenantReqs.some((r) => r.id === m.demandProjectId));
+  const filteredProposals = effectiveCat === "All" ? proposals : proposals.filter((p) => p.items.some((it) => catFiltered.some((cp) => cp.id === it.project.id)));
+  const filteredSiteVisits = effectiveCat === "All" ? siteVisits : siteVisits.filter((v) => v.project && catFiltered.some((cp) => cp.id === v.project!.id));
+  const filteredDeals = effectiveCat === "All" ? deals : deals.filter((d) => d.project.category.name === effectiveCat);
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
@@ -189,7 +224,7 @@ export default function ProjectsClient({
       {catParam !== "All" && (
         <div className="bg-white border-b border-gray-100 px-3 sm:px-6 py-2 flex items-center gap-3 flex-wrap">
           <span className="text-xs font-bold px-2.5 py-1 rounded-md" style={{ background: SECTOR_COLORS[catParam]?.bg, color: SECTOR_COLORS[catParam]?.color }}>
-            {catParam}
+            {SECTOR_DISPLAY_LABEL[catParam] ?? catParam}
           </span>
           <span className="text-xs text-gray-400 hidden sm:inline">Showing {catFiltered.length} records in this category</span>
           <Link href="/projects" className="ml-auto text-xs text-gray-400 hover:text-gray-700 underline">View All</Link>
@@ -232,10 +267,10 @@ export default function ProjectsClient({
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: "Buyer Requirements", value: buyerReqs.length, icon: Users, color: "#2563eb" },
-                { label: "Tenant Requirements", value: tenantReqs.length, icon: Building2, color: "#d97706" },
-                { label: "Proposals", value: proposals.length, icon: FileText, color: "#7c3aed" },
-                { label: "Deals Closed", value: deals.length, icon: TrendingUp, color: "#059669" },
+                { label: "Buyer Requirements", value: filteredBuyerReqs.length, icon: Users, color: "#2563eb" },
+                { label: "Tenant Requirements", value: filteredTenantReqs.length, icon: Building2, color: "#d97706" },
+                { label: "Proposals", value: filteredProposals.length, icon: FileText, color: "#7c3aed" },
+                { label: "Deals Closed", value: filteredDeals.length, icon: TrendingUp, color: "#059669" },
               ].map(({ label, value, icon: Icon, color }) => (
                 <div key={label} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: color + "18" }}>
@@ -252,7 +287,7 @@ export default function ProjectsClient({
         )}
 
         {/* ── AVAILABLE PROPERTIES ─────────────────────────── */}
-        {activeTab === "Available Properties" && (
+        {activeTab === "Inventory" && (
           <>
             <div className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 flex items-center gap-2 mb-4 flex-wrap">
               <div className="flex items-center gap-1.5">
@@ -282,7 +317,7 @@ export default function ProjectsClient({
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {filteredProjects.map((p) => {
-                    const txKey = p.subcategory.name.includes("Sale") ? "Sale" : p.subcategory.name.includes("Rent") ? "Rent" : p.subcategory.name.includes("Buy") ? "Buy" : "Joint Venture";
+                    const txKey = p.subcategory.name.includes("Sale") || p.subcategory.name.includes("Sell") ? "Sale" : p.subcategory.name.includes("Tenant") ? "Tenant" : p.subcategory.name.includes("Rent") ? "Rent" : p.subcategory.name.includes("Buy") ? "Buy" : "Joint Venture";
                     const tx = TX_COLORS[txKey] ?? TX_COLORS["Sale"];
                     const avail = AVAIL_COLORS[p.state] ?? AVAIL_COLORS["OPEN"];
                     return (
@@ -299,11 +334,11 @@ export default function ProjectsClient({
                           <Link href={`/projects/${p.id}`} className="font-semibold text-gray-900 hover:text-blue-600 transition-colors block">{p.title}</Link>
                           <p className="text-[10px] text-gray-400 mt-0.5">{p.category.name}</p>
                         </td>
-                        <td className="px-4 py-3 text-gray-600">{p.subcategory.name.split(" ")[0]}</td>
+                        <td className="px-4 py-3 text-gray-600">{subtypeLabel(p.subcategory.name)}</td>
                         <td className="px-4 py-3">
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide"
                             style={{ background: tx.bg, color: tx.color }}>
-                            {txKey === "Sale" ? "FOR SALE" : txKey === "Rent" ? "FOR RENT" : txKey === "Buy" ? "TO BUY" : "JV"}
+                            {txKey === "Sale" ? "FOR SALE" : txKey === "Rent" ? "FOR RENT" : txKey === "Buy" ? "TO BUY" : txKey === "Tenant" ? "TO RENT" : "JV"}
                           </span>
                         </td>
                         <td className="px-4 py-3">
@@ -336,10 +371,16 @@ export default function ProjectsClient({
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          <button onClick={(e) => duplicateProject(e, p.id)} disabled={duplicatingId === p.id}
-                            title="Duplicate this property" className="text-gray-300 hover:text-blue-600 disabled:opacity-50">
-                            <Copy className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button onClick={(e) => duplicateProject(e, p.id)} disabled={duplicatingId === p.id}
+                              title="Duplicate this property" className="text-gray-300 hover:text-blue-600 disabled:opacity-50">
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={(e) => deleteProject(e, p.id, p.title)} disabled={deletingId === p.id}
+                              title="Delete this property" className="text-gray-300 hover:text-red-600 disabled:opacity-50">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -363,73 +404,33 @@ export default function ProjectsClient({
 
         {/* ── BUYER REQUIREMENTS ───────────────────────────── */}
         {activeTab === "Buyer Requirements" && (
-          <RequirementsTab
+          <RequirementCardList
             label="Buyer Requirements"
-            color="#059669"
             icon={<Users className="w-3.5 h-3.5 text-green-600" />}
             items={filteredBuyerReqs}
-            categories={categories}
-            catFilter={reqCatFilter}
-            onCatFilter={setReqCatFilter}
             newHref="/projects/new"
-            renderRow={(r: BuyerReq) => (
-              <>
-                <td className="px-4 py-3 font-mono text-[10px] text-gray-400">{r.projectNumber}</td>
-                <td className="px-4 py-3">
-                  <p className="font-semibold text-gray-900">{r.clientContact?.name ?? "—"}</p>
-                  <p className="text-[10px] text-gray-400">{r.clientContact?.type ?? ""}</p>
-                </td>
-                <td className="px-4 py-3">
-                  <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold" style={{ background: SECTOR_COLORS[r.category.name]?.bg ?? "#f1f5f9", color: SECTOR_COLORS[r.category.name]?.color ?? "#64748b" }}>
-                    {r.category.name}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-gray-400 text-xs">{fmtDate(r.createdAt)}</td>
-                <td className="px-4 py-3">
-                  <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase", REQ_STATUS_COLORS[r.state] ?? "bg-gray-100 text-gray-500")}>{r.state}</span>
-                </td>
-              </>
-            )}
-            headers={["Req #", "Contact", "Category", "Date", "Status"]}
+            accent="green"
+            onDelete={deleteProject}
+            deletingId={deletingId}
           />
         )}
 
         {/* ── TENANT REQUIREMENTS ──────────────────────────── */}
         {activeTab === "Tenant Requirements" && (
-          <RequirementsTab
+          <RequirementCardList
             label="Tenant Requirements"
-            color="#d97706"
             icon={<Building2 className="w-3.5 h-3.5 text-amber-600" />}
             items={filteredTenantReqs}
-            categories={categories}
-            catFilter={reqCatFilter}
-            onCatFilter={setReqCatFilter}
             newHref="/projects/new"
-            renderRow={(r: TenantReq) => (
-              <>
-                <td className="px-4 py-3 font-mono text-[10px] text-gray-400">{r.projectNumber}</td>
-                <td className="px-4 py-3">
-                  <p className="font-semibold text-gray-900">{r.clientContact?.name ?? "—"}</p>
-                  <p className="text-[10px] text-gray-400">{r.clientContact?.type ?? ""}</p>
-                </td>
-                <td className="px-4 py-3">
-                  <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold" style={{ background: SECTOR_COLORS[r.category.name]?.bg ?? "#f1f5f9", color: SECTOR_COLORS[r.category.name]?.color ?? "#64748b" }}>
-                    {r.category.name}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-gray-400 text-xs">{fmtDate(r.createdAt)}</td>
-                <td className="px-4 py-3">
-                  <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase", REQ_STATUS_COLORS[r.state] ?? "bg-gray-100 text-gray-500")}>{r.state}</span>
-                </td>
-              </>
-            )}
-            headers={["Req #", "Contact", "Category", "Date", "Status"]}
+            accent="amber"
+            onDelete={deleteProject}
+            deletingId={deletingId}
           />
         )}
 
         {/* ── MATCHING ─────────────────────────────────────── */}
         {activeTab === "Matching" && (
-          <MatchingPanel matches={matches} buyerReqs={buyerReqs} tenantReqs={tenantReqs} />
+          <MatchingPanel matches={filteredMatches} buyerReqs={filteredBuyerReqs} tenantReqs={filteredTenantReqs} />
         )}
 
         {/* ── PROPOSALS ────────────────────────────────────── */}
@@ -439,14 +440,14 @@ export default function ProjectsClient({
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-purple-600" />
                 <span className="text-sm font-bold text-gray-900">Proposals</span>
-                <span className="text-xs text-gray-400">({proposals.length})</span>
+                <span className="text-xs text-gray-400">({filteredProposals.length})</span>
               </div>
               <Link href="/proposals/new"
                 className="flex items-center gap-1.5 bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-blue-700">
                 <Plus className="w-3.5 h-3.5" /> New Proposal
               </Link>
             </div>
-            {proposals.length === 0 ? (
+            {filteredProposals.length === 0 ? (
               <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
                 <FileText className="w-10 h-10 text-gray-200 mx-auto mb-3" />
                 <p className="text-sm font-medium text-gray-500">No proposals yet</p>
@@ -460,7 +461,7 @@ export default function ProjectsClient({
                 {/* Pipeline summary */}
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">
                   {(["DRAFT","SENT","VIEWED","ACCEPTED","REJECTED"] as const).map(s => {
-                    const count = proposals.filter(p => p.status === s).length;
+                    const count = filteredProposals.filter(p => p.status === s).length;
                     const cfg: Record<string, { color: string; bg: string }> = {
                       DRAFT:    { color: "#6b7280", bg: "#f9fafb" },
                       SENT:     { color: "#2563eb", bg: "#eff6ff" },
@@ -477,7 +478,7 @@ export default function ProjectsClient({
                   })}
                 </div>
                 {/* Proposal cards */}
-                {proposals.map((p) => (
+                {filteredProposals.map((p) => (
                   <ProposalCard key={p.id} proposal={p} />
                 ))}
               </div>
@@ -492,14 +493,14 @@ export default function ProjectsClient({
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-pink-600" />
                 <span className="text-sm font-bold text-gray-900">Site Visits</span>
-                <span className="text-xs text-gray-400">({siteVisits.length})</span>
+                <span className="text-xs text-gray-400">({filteredSiteVisits.length})</span>
               </div>
               <Link href="/site-visits/new"
                 className="flex items-center gap-1.5 bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-blue-700">
                 <Plus className="w-3.5 h-3.5" /> Schedule Visit
               </Link>
             </div>
-            {siteVisits.length === 0 ? (
+            {filteredSiteVisits.length === 0 ? (
               <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
                 <MapPin className="w-10 h-10 text-gray-200 mx-auto mb-3" />
                 <p className="text-sm font-medium text-gray-500">No site visits scheduled</p>
@@ -521,7 +522,7 @@ export default function ProjectsClient({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {siteVisits.map((v) => (
+                    {filteredSiteVisits.map((v) => (
                       <tr key={v.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3 font-semibold text-gray-900">{v.project?.title ?? <span className="text-gray-300 font-normal">—</span>}</td>
                         <td className="px-4 py-3 text-gray-700">{v.contact?.name ?? "—"}</td>
@@ -546,9 +547,9 @@ export default function ProjectsClient({
             <div className="flex items-center gap-2 mb-1">
               <CheckCircle2 className="w-4 h-4 text-green-600" />
               <span className="text-sm font-bold text-gray-900">Closed Deals</span>
-              <span className="text-xs text-gray-400">({deals.length})</span>
+              <span className="text-xs text-gray-400">({filteredDeals.length})</span>
             </div>
-            {deals.length === 0 ? (
+            {filteredDeals.length === 0 ? (
               <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
                 <TrendingUp className="w-10 h-10 text-gray-200 mx-auto mb-3" />
                 <p className="text-sm font-medium text-gray-500">No closed deals yet</p>
@@ -567,7 +568,7 @@ export default function ProjectsClient({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {deals.map((d) => (
+                    {filteredDeals.map((d) => (
                       <tr key={d.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3 font-semibold text-gray-900">{d.project.title}</td>
                         <td className="px-4 py-3">
@@ -578,7 +579,7 @@ export default function ProjectsClient({
                         </td>
                         <td className="px-4 py-3 text-gray-700">{d.contact.name}</td>
                         <td className="px-4 py-3">
-                          <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase", DEAL_TYPE_COLORS[d.type] ?? "bg-gray-100 text-gray-500")}>{d.type.replace(/_/g, " ")}</span>
+                          <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold uppercase", DEAL_TYPE_COLORS[d.type] ?? "bg-gray-100 text-gray-500")}>{dealTypeLabel(d.type)}</span>
                         </td>
                         <td className="px-4 py-3 font-semibold text-gray-900">
                           {d.finalPrice ? `₹${(d.finalPrice / 1e7).toFixed(2)}Cr` : d.finalRent ? `₹${d.finalRent.toLocaleString()}/mo` : "—"}
@@ -687,13 +688,9 @@ function MatchingPanel({ matches, buyerReqs, tenantReqs }: {
                   <span className="text-xs text-gray-400 flex-shrink-0">{g.reqNumber}</span>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <Link href={`/projects/${g.reqId}`}
+                  <Link href={`/projects/${g.reqId}?tab=Project Overview`}
                     className="text-[10px] font-bold border border-gray-200 text-gray-600 px-2.5 py-1 rounded-lg hover:bg-gray-50">
-                    View Req
-                  </Link>
-                  <Link href={`/proposals/new?demandProjectId=${g.reqId}`}
-                    className="flex items-center gap-1 text-[10px] font-bold bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700">
-                    <Send className="w-3 h-3" /> Create Proposal
+                    View Requirement
                   </Link>
                 </div>
               </div>
@@ -844,18 +841,26 @@ function ProposalCard({ proposal }: { proposal: Proposal }) {
   );
 }
 
-// ─── Shared Requirements Tab ──────────────────────────────────────────────────
-function RequirementsTab<T>({
-  label, color, icon, items, categories, catFilter, onCatFilter,
-  newHref, renderRow, headers,
+// ─── Shared Requirements Card List (mirrors /requirements/buyer and /requirements/tenant) ─────
+const REQ_ACCENT = {
+  green: { avatarBg: "bg-green-100", avatarText: "text-green-700", chipBg: "bg-green-50", chipText: "text-green-700", hoverBorder: "hover:border-green-300", hoverBg: "hover:bg-green-50/30", arrowHover: "group-hover:text-green-500", addBtn: "bg-green-600 hover:bg-green-700" },
+  amber: { avatarBg: "bg-amber-100", avatarText: "text-amber-700", chipBg: "bg-amber-50", chipText: "text-amber-700", hoverBorder: "hover:border-amber-300", hoverBg: "hover:bg-amber-50/30", arrowHover: "group-hover:text-amber-500", addBtn: "bg-amber-600 hover:bg-amber-700" },
+} as const;
+
+function RequirementCardList({
+  label, icon, items, newHref, accent, onDelete, deletingId,
 }: {
-  label: string; color: string; icon: React.ReactNode;
-  items: T[]; categories: Category[];
-  catFilter: string; onCatFilter: (c: string) => void;
+  label: string; icon: React.ReactNode;
+  items: (BuyerReq | TenantReq)[];
   newHref: string;
-  renderRow: (item: T) => React.ReactNode;
-  headers: string[];
+  accent: keyof typeof REQ_ACCENT;
+  onDelete: (e: React.MouseEvent, id: string, label: string) => void;
+  deletingId: string | null;
 }) {
+  const a = REQ_ACCENT[accent];
+  const active = items.filter((p) => p.state !== "ARCHIVED");
+  const inactive = items.filter((p) => p.state === "ARCHIVED");
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -865,23 +870,9 @@ function RequirementsTab<T>({
           <span className="text-xs text-gray-400">({items.length})</span>
         </div>
         <Link href={newHref}
-          className="flex items-center gap-1.5 bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-blue-700">
+          className={cn("flex items-center gap-1.5 text-white text-xs font-bold px-3 py-1.5 rounded-lg", a.addBtn)}>
           <Plus className="w-3.5 h-3.5" /> Add Requirement
         </Link>
-      </div>
-
-      {/* Category filter pills */}
-      <div className="flex items-center gap-1.5 flex-wrap">
-        {["All", ...categories.map((c) => c.name)].map((cat) => (
-          <button key={cat} onClick={() => onCatFilter(cat)}
-            className={cn("px-2.5 py-1 rounded-md text-xs font-semibold transition-colors",
-              catFilter === cat
-                ? "text-white"
-                : "border border-gray-200 text-gray-600 hover:bg-gray-50")}
-            style={catFilter === cat ? { background: color } : undefined}>
-            {cat}
-          </button>
-        ))}
       </div>
 
       {items.length === 0 ? (
@@ -891,30 +882,65 @@ function RequirementsTab<T>({
           <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
             Add a requirement from a contact, then run Matching to find suitable properties.
           </p>
-          <Link href={newHref} className="inline-block mt-3 text-xs bg-blue-600 text-white font-bold px-4 py-2 rounded-lg hover:bg-blue-700">
+          <Link href={newHref} className={cn("inline-block mt-3 text-xs text-white font-bold px-4 py-2 rounded-lg", a.addBtn)}>
             Add Requirement →
           </Link>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-gray-200">
-                {headers.map((h) => (
-                  <th key={h} className="text-left px-4 py-3 font-semibold text-[10px] uppercase tracking-wider text-gray-400 sticky top-0 z-10 bg-gray-50">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {items.map((item, i) => (
-                <tr key={i} className="hover:bg-gray-50 transition-colors">
-                  {renderRow(item)}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-6">
+          {active.length > 0 && (
+            <section className="space-y-2">
+              {inactive.length > 0 && <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Active ({active.length})</p>}
+              {active.map((r) => <RequirementCardRow key={r.id} r={r} a={a} onDelete={onDelete} deleting={deletingId === r.id} />)}
+            </section>
+          )}
+          {inactive.length > 0 && (
+            <section className="space-y-2">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Archived ({inactive.length})</p>
+              {inactive.map((r) => <RequirementCardRow key={r.id} r={r} a={a} onDelete={onDelete} deleting={deletingId === r.id} />)}
+            </section>
+          )}
         </div>
       )}
     </div>
+  );
+}
+
+function RequirementCardRow({ r, a, onDelete, deleting }: {
+  r: BuyerReq | TenantReq; a: typeof REQ_ACCENT[keyof typeof REQ_ACCENT];
+  onDelete: (e: React.MouseEvent, id: string, label: string) => void;
+  deleting: boolean;
+}) {
+  const displayName = r.clientContact?.name ?? r.clientName ?? r.title;
+  return (
+    <Link href={`/projects/${r.id}`}
+      className={cn("flex items-center gap-4 bg-white rounded-xl border border-gray-200 px-4 py-3 transition-all group", a.hoverBorder, a.hoverBg)}>
+      <div className={cn("w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold", a.avatarBg, a.avatarText)}>
+        {displayName.charAt(0).toUpperCase()}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-bold text-gray-900 text-sm">{displayName}</span>
+          <span className="font-mono text-[10px] text-gray-400">{r.projectNumber}</span>
+          <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded", a.chipBg, a.chipText)}>{r.category.name}</span>
+        </div>
+        <div className="flex items-center gap-3 mt-1 flex-wrap">
+          <span className="text-[10px] text-gray-400">{fmtDate(r.createdAt)}</span>
+          {r.demandMatches.length > 0 && (
+            <span className="text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full">
+              {r.demandMatches.length} matched
+            </span>
+          )}
+        </div>
+      </div>
+      <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0", REQ_STATUS_COLORS[r.state] ?? "bg-gray-100 text-gray-500")}>
+        {r.state}
+      </span>
+      <button onClick={(e) => onDelete(e, r.id, displayName)} disabled={deleting}
+        title="Delete this requirement" className="text-gray-300 hover:text-red-600 disabled:opacity-50 flex-shrink-0">
+        <Trash2 className="w-3.5 h-3.5" />
+      </button>
+      <ArrowRight className={cn("w-3.5 h-3.5 text-gray-300 flex-shrink-0 transition-colors", a.arrowHover)} />
+    </Link>
   );
 }

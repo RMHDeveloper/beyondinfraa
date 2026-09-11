@@ -27,7 +27,7 @@ const TYPE_LABELS: Record<string, string> = {
   TECHNICAL_CONSULTANT: "Technical", ASSOCIATION_MEMBER: "Association", COMPANY: "Company", OTHER: "Other",
 };
 
-const FILTER_TYPES = ["All", "OWNER", "BUYER", "TENANT", "DEVELOPER", "BROKER", "COMPANY"];
+const FILTER_TYPES = ["All", "OWNER", "BUYER", "TENANT", "DEVELOPER", "OTHER"];
 
 export default function ContactsClient({ contacts }: { contacts: Contact[] }) {
   const [search, setSearch] = useState("");

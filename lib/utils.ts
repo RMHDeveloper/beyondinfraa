@@ -84,3 +84,9 @@ export function formatResponseValue(value: string | null, jsonValue: unknown, fi
 export function normalizePhone(s: string): string {
   return s.replace(/\D/g, "").slice(-10);
 }
+
+// Subcategory names are stored/matched as "Redevelopment" in the database — this only
+// swaps the display text to "Joint Development" wherever a subcategory name is shown to a user.
+export function subcategoryLabel(name: string): string {
+  return name === "Redevelopment" ? "Joint Development" : name;
+}

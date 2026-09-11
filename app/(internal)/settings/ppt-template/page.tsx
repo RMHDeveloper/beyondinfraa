@@ -9,16 +9,39 @@ const SLOTS = [
   { key: "thankyou", label: "Thank You Slide", help: "The fixed last slide of every marketing PPT." },
 ] as const;
 
+const FONT_SIZE_PRESETS = [
+  { key: "compact", label: "Compact", help: "Fits more on each slide." },
+  { key: "standard", label: "Standard", help: "Default size." },
+  { key: "large", label: "Large", help: "Easier to read from a distance." },
+] as const;
+
 export default function PptTemplateSettingsPage() {
   const [configured, setConfigured] = useState<Record<string, boolean>>({});
   const [uploading, setUploading] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
+  const [fontPreset, setFontPreset] = useState<string>("standard");
+  const [savingFontPreset, setSavingFontPreset] = useState(false);
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   useEffect(() => {
     fetch("/api/settings/ppt-template").then((r) => r.json()).then(setConfigured);
   }, [version]);
+
+  useEffect(() => {
+    fetch("/api/settings/ppt-font-size").then((r) => r.json()).then((d) => setFontPreset(d.preset));
+  }, []);
+
+  async function handleFontPreset(preset: string) {
+    setFontPreset(preset);
+    setSavingFontPreset(true);
+    await fetch("/api/settings/ppt-font-size", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ preset }),
+    });
+    setSavingFontPreset(false);
+  }
 
   async function handleUpload(slot: string, e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -76,6 +99,32 @@ export default function PptTemplateSettingsPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="border border-gray-200 rounded-xl p-4 mt-6">
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-sm font-semibold text-gray-800">Field Slide Text Size</p>
+          {savingFontPreset && <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-400" />}
+        </div>
+        <p className="text-xs text-gray-400 mb-3">
+          Applies to the group heading, field labels, and field values on every field slide.
+        </p>
+        <div className="flex gap-2">
+          {FONT_SIZE_PRESETS.map((p) => (
+            <button
+              key={p.key}
+              onClick={() => handleFontPreset(p.key)}
+              title={p.help}
+              className={`flex-1 text-sm font-medium px-3.5 py-2 rounded-lg border transition-colors ${
+                fontPreset === p.key
+                  ? "border-blue-600 bg-blue-50 text-blue-700"
+                  : "border-gray-300 text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

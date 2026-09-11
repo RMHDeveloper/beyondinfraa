@@ -10,12 +10,6 @@ const CONTACT_TYPES = [
   { value: "BUYER", label: "Buyer" },
   { value: "TENANT", label: "Tenant" },
   { value: "DEVELOPER", label: "Developer" },
-  { value: "BROKER", label: "Broker" },
-  { value: "ARCHITECT", label: "Architect" },
-  { value: "LEGAL_CONSULTANT", label: "Legal Consultant" },
-  { value: "TECHNICAL_CONSULTANT", label: "Technical Consultant" },
-  { value: "ASSOCIATION_MEMBER", label: "Association Member" },
-  { value: "COMPANY", label: "Company" },
   { value: "OTHER", label: "Other" },
 ];
 

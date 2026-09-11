@@ -20,6 +20,9 @@ type MatchRow = {
 type Filter = "all" | "buyer" | "tenant" | "confirmed" | "pending" | "awarded";
 
 const DEAL_TYPES = ["SOLD", "RENTED", "LEASED", "REDEVELOPMENT_CONFIRMED", "WITHDRAWN", "REQUIREMENT_CLOSED"];
+function dealTypeLabel(t: string) {
+  return t === "REDEVELOPMENT_CONFIRMED" ? "JOINT DEVELOPMENT CONFIRMED" : t.replace(/_/g, " ");
+}
 
 function AwardModal({ match, onClose, onAwarded }: { match: MatchRow; onClose: () => void; onAwarded: () => void }) {
   const [dealType, setDealType] = useState(match.demandProject?.subcategory.name === "Buy" ? "SOLD" : "RENTED");
@@ -54,7 +57,7 @@ function AwardModal({ match, onClose, onAwarded }: { match: MatchRow; onClose: (
           <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Deal Type</label>
           <select value={dealType} onChange={e => setDealType(e.target.value)}
             className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500">
-            {DEAL_TYPES.map(t => <option key={t} value={t}>{t.replace(/_/g, " ")}</option>)}
+            {DEAL_TYPES.map(t => <option key={t} value={t}>{dealTypeLabel(t)}</option>)}
           </select>
         </div>
 
@@ -110,6 +113,7 @@ export default function MatchingPage() {
   const [filter, setFilter] = useState<Filter>("all");
   const [running, setRunning] = useState(false);
   const [runResult, setRunResult] = useState<string | null>(null);
+  const [runError, setRunError] = useState(false);
   const [awardTarget, setAwardTarget] = useState<MatchRow | null>(null);
 
   async function load() {
@@ -124,11 +128,20 @@ export default function MatchingPage() {
   async function runMatching() {
     setRunning(true);
     setRunResult(null);
-    const res = await fetch("/api/matching/run", { method: "POST" });
-    const data = await res.json();
-    if (data.ok) {
-      setRunResult(`${data.created} new match${data.created === 1 ? "" : "es"} found`);
-      await load();
+    setRunError(false);
+    try {
+      const res = await fetch("/api/matching/run", { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setRunResult(`${data.created} new match${data.created === 1 ? "" : "es"} found`);
+        await load();
+      } else {
+        setRunError(true);
+        setRunResult(data.error ?? "Matching run failed. Please try again.");
+      }
+    } catch {
+      setRunError(true);
+      setRunResult("Matching run failed. Please try again.");
     }
     setRunning(false);
   }
@@ -152,7 +165,7 @@ export default function MatchingPage() {
   ];
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 overflow-y-auto">
+    <div className="flex flex-col h-full bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
         <div>
@@ -169,9 +182,10 @@ export default function MatchingPage() {
         </button>
       </div>
 
-      <div className="px-6 py-5 space-y-4">
+      <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
         {runResult && (
-          <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-2.5 text-xs text-green-700 font-medium flex items-center gap-2">
+          <div className={cn("border rounded-xl px-4 py-2.5 text-xs font-medium flex items-center gap-2",
+            runError ? "bg-red-50 border-red-200 text-red-700" : "bg-green-50 border-green-200 text-green-700")}>
             <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> {runResult}
           </div>
         )}

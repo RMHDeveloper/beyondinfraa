@@ -10,14 +10,18 @@ const CONTACT_TYPES = [
   { value: "BUYER",                  label: "Buyer" },
   { value: "TENANT",                 label: "Tenant" },
   { value: "DEVELOPER",              label: "Developer" },
-  { value: "BROKER",                 label: "Broker" },
-  { value: "ARCHITECT",              label: "Architect" },
-  { value: "LEGAL_CONSULTANT",       label: "Legal Consultant" },
-  { value: "TECHNICAL_CONSULTANT",   label: "Technical Consultant" },
-  { value: "ASSOCIATION_MEMBER",     label: "Association Member" },
-  { value: "COMPANY",                label: "Company" },
   { value: "OTHER",                  label: "Other" },
 ];
+// Legacy types no longer offered for new selections, but a contact already
+// set to one of these must still show its current type instead of blanking out.
+const LEGACY_CONTACT_TYPE_LABELS: Record<string, string> = {
+  BROKER: "Broker",
+  ARCHITECT: "Architect",
+  LEGAL_CONSULTANT: "Legal Consultant",
+  TECHNICAL_CONSULTANT: "Technical Consultant",
+  ASSOCIATION_MEMBER: "Association Member",
+  COMPANY: "Company",
+};
 
 type Contact = {
   id: string; name: string; type: string; phone: string | null; email: string | null;
@@ -70,6 +74,9 @@ export default function EditContactForm({
                 {CONTACT_TYPES.map((t) => (
                   <option key={t.value} value={t.value}>{t.label}</option>
                 ))}
+                {LEGACY_CONTACT_TYPE_LABELS[type] && (
+                  <option value={type}>{LEGACY_CONTACT_TYPE_LABELS[type]} (legacy)</option>
+                )}
               </select>
             </div>
 

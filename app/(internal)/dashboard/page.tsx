@@ -5,7 +5,8 @@ import Link from "next/link";
 import {
   Home, Briefcase, Factory, RefreshCw, TrendingUp,
   AlertCircle, Clock, Activity, ArrowUpRight, CheckCircle2,
-  XCircle, FileText, Users, Target, MapPin, Handshake,
+  XCircle, FileText, Users, Target, Handshake,
+  Filter, X, Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,38 +32,184 @@ type DashboardData = {
   matchByCatMap: Record<string, number>;
 };
 
-// "Redevelopment" is a sidebar/dashboard sector label, but the underlying Category
+// "Redevelopment" is a sidebar/dashboard sector key (used in URLs/lookups), but the underlying Category
 // record is actually named "Special Projects" (it has Redevelopment + Joint Venture
 // subcategories) — catKey is what the real category.name-keyed data is looked up by.
+// label is the user-facing display text, which may differ from key.
 const SECTORS = [
-  { key: "Residential",   catKey: "Residential",      icon: Home,      color: "#2563eb", bg: "#eff6ff", sub: "Apartments · Villas · Plots" },
-  { key: "Commercial",    catKey: "Commercial",       icon: Briefcase, color: "#d97706", bg: "#fffbeb", sub: "Offices · Retail · Warehouses" },
-  { key: "Industrial",    catKey: "Industrial",       icon: Factory,   color: "#7c3aed", bg: "#f5f3ff", sub: "Factories · Logistics · Land" },
-  { key: "Redevelopment", catKey: "Special Projects", icon: RefreshCw, color: "#0d9488", bg: "#f0fdfa", sub: "Owner Register · Developer Matching" },
+  { key: "Residential",   label: "Residential",       catKey: "Residential",      icon: Home,      color: "#2563eb", bg: "#eff6ff", sub: "Apartments · Villas · Plots" },
+  { key: "Commercial",    label: "Commercial",        catKey: "Commercial",       icon: Briefcase, color: "#d97706", bg: "#fffbeb", sub: "Offices · Retail · Warehouses" },
+  { key: "Industrial",    label: "Industrial",        catKey: "Industrial",       icon: Factory,   color: "#7c3aed", bg: "#f5f3ff", sub: "Factories · Logistics · Land" },
+  { key: "Redevelopment", label: "Joint Development",  catKey: "Special Projects", icon: RefreshCw, color: "#0d9488", bg: "#f0fdfa", sub: "Owner Register · Developer Matching" },
 ];
 
 type EmployeeOption = { id: string; name: string; role: string };
+
+function CreditFilterModal({
+  employees, selectedId, onSelect, from, to, onApplyDates, onClose,
+}: {
+  employees: EmployeeOption[];
+  selectedId: string;
+  onSelect: (id: string) => void;
+  from: string;
+  to: string;
+  onApplyDates: (from: string, to: string) => void;
+  onClose: () => void;
+}) {
+  const [fromInput, setFromInput] = useState(from);
+  const [toInput, setToInput] = useState(to);
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl border border-gray-200 w-full max-w-sm max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <p className="text-sm font-bold text-gray-900">Filter by Credit</p>
+          <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 text-gray-400">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="overflow-y-auto py-2">
+          <button
+            onClick={() => { onSelect(""); onClose(); }}
+            className="w-full flex items-center justify-between px-5 py-2.5 text-sm hover:bg-gray-50 text-left">
+            <span className={cn("font-medium", selectedId === "" ? "text-blue-600" : "text-gray-700")}>All Employees</span>
+            {selectedId === "" && <Check className="w-4 h-4 text-blue-600" />}
+          </button>
+          {employees.map(e => (
+            <button
+              key={e.id}
+              onClick={() => { onSelect(e.id); onClose(); }}
+              className="w-full flex items-center justify-between px-5 py-2.5 text-sm hover:bg-gray-50 text-left">
+              <span className={cn("font-medium", selectedId === e.id ? "text-blue-600" : "text-gray-700")}>{e.name}</span>
+              {selectedId === e.id && <Check className="w-4 h-4 text-blue-600" />}
+            </button>
+          ))}
+        </div>
+        <div className="border-t border-gray-100 px-5 py-4 space-y-3">
+          <p className="text-xs font-bold text-gray-900">Date Range</p>
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <label className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">From</label>
+              <input
+                type="date"
+                value={fromInput}
+                onChange={(e) => setFromInput(e.target.value)}
+                className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">To</label>
+              <input
+                type="date"
+                value={toInput}
+                onChange={(e) => setToInput(e.target.value)}
+                className="mt-1 w-full text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { onApplyDates(fromInput, toInput); onClose(); }}
+              className="flex-1 text-xs font-bold py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+              Apply
+            </button>
+            {(from || to) && (
+              <button
+                onClick={() => { setFromInput(""); setToInput(""); onApplyDates("", ""); onClose(); }}
+                className="text-xs font-bold py-2 px-3 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="overflow-y-auto h-full bg-gray-50">
+      <div className="px-4 sm:px-8 pt-6 pb-2 flex items-end justify-between flex-wrap gap-2">
+        <div className="space-y-2">
+          <div className="h-3 w-40 bg-gray-200 rounded animate-pulse" />
+          <div className="h-7 w-64 bg-gray-200 rounded animate-pulse" />
+        </div>
+        <div className="h-9 w-28 bg-gray-200 rounded-lg animate-pulse" />
+      </div>
+
+      <div className="px-4 sm:px-8 pb-8 space-y-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-xl border border-gray-200 p-3 text-center">
+              <div className="w-7 h-7 rounded-lg bg-gray-200 animate-pulse mx-auto mb-1.5" />
+              <div className="h-5 w-8 bg-gray-200 rounded animate-pulse mx-auto" />
+              <div className="h-2.5 w-14 bg-gray-200 rounded animate-pulse mx-auto mt-1.5" />
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden p-4 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-gray-200 animate-pulse" />
+                <div className="space-y-1.5">
+                  <div className="h-3.5 w-24 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-2.5 w-32 bg-gray-200 rounded animate-pulse" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="h-8 bg-gray-100 rounded animate-pulse" />
+                <div className="h-8 bg-gray-100 rounded animate-pulse" />
+              </div>
+              <div className="h-8 bg-gray-200 rounded-lg animate-pulse" />
+            </div>
+          ))}
+        </div>
+
+        <div className="rounded-xl p-5 h-32 animate-pulse" style={{ background: "#1a2b3c" }} />
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-6 bg-gray-100 rounded animate-pulse" />
+            ))}
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 grid grid-cols-2 gap-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-14 bg-gray-100 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [employees, setEmployees] = useState<EmployeeOption[]>([]);
   const [employeeId, setEmployeeId] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/users").then((r) => r.json()).then(setEmployees);
   }, []);
 
   useEffect(() => {
-    const qs = employeeId ? `?employeeId=${employeeId}` : "";
+    const params = new URLSearchParams();
+    if (employeeId) params.set("employeeId", employeeId);
+    if (fromDate) params.set("from", fromDate);
+    if (toDate) params.set("to", toDate);
+    const qs = params.toString() ? `?${params.toString()}` : "";
     fetch(`/api/dashboard${qs}`).then((r) => r.json()).then(setData);
-  }, [employeeId]);
+  }, [employeeId, fromDate, toDate]);
 
   if (!data) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-sm text-gray-400">Loading…</div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   const pipelineCr = (data.pipelineValue / 1e7).toFixed(1);
@@ -74,17 +221,27 @@ export default function DashboardPage() {
           <p className="text-xs text-gray-400">ERP System › Main Dashboard</p>
           <h1 className="text-2xl font-bold text-gray-900 mt-0.5">Operations Overview</h1>
         </div>
-        <select
-          value={employeeId}
-          onChange={(e) => setEmployeeId(e.target.value)}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+        <button
+          onClick={() => setFilterOpen(true)}
+          className="flex items-center gap-1.5 text-sm font-bold border border-gray-200 rounded-lg px-3 py-2 bg-white hover:bg-gray-50 transition-colors"
         >
-          <option value="">Credit: All Employees</option>
-          {employees.map((e) => (
-            <option key={e.id} value={e.id}>Credit: {e.name}</option>
-          ))}
-        </select>
+          <Filter className="w-3.5 h-3.5 text-gray-500" />
+          {employeeId ? employees.find(e => e.id === employeeId)?.name ?? "Filter" : "Filter"}
+          {(fromDate || toDate) && <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />}
+        </button>
       </div>
+
+      {filterOpen && (
+        <CreditFilterModal
+          employees={employees}
+          selectedId={employeeId}
+          onSelect={setEmployeeId}
+          from={fromDate}
+          to={toDate}
+          onApplyDates={(f, t) => { setFromDate(f); setToDate(t); }}
+          onClose={() => setFilterOpen(false)}
+        />
+      )}
 
       <div className="px-4 sm:px-8 pb-8 space-y-5">
         {/* Overdue alert */}
@@ -104,8 +261,6 @@ export default function DashboardPage() {
             { label: "Buyer Reqs",    value: data.totalBuyerReqs,      icon: FileText, color: "#0d9488" },
             { label: "Tenant Reqs",   value: data.totalTenantReqs,     icon: FileText, color: "#d97706" },
             { label: "Matches",       value: data.totalMatches,        icon: Target,   color: "#7c3aed" },
-            { label: "Proposals",     value: data.totalProposals,      icon: FileText, color: "#db2777" },
-            { label: "Site Visits",   value: data.totalSiteVisits,     icon: MapPin,   color: "#0891b2" },
             { label: "Deals Closed",  value: data.totalDeals,          icon: TrendingUp, color: "#059669" },
           ].map(({ label, value, icon: Icon, color }) => (
             <div key={label} className="bg-white rounded-xl border border-gray-200 p-3 text-center">
@@ -120,11 +275,10 @@ export default function DashboardPage() {
 
         {/* Sector cards */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          {SECTORS.map(({ key, catKey, icon: Icon, color, bg, sub }) => {
+          {SECTORS.map(({ key, label: sectorLabel, catKey, icon: Icon, color, bg, sub }) => {
             const propCount = data.catCounts[catKey] ?? 0;
             const buyerReqs = data.buyerByCatMap[catKey] ?? 0;
             const tenantReqs = data.tenantByCatMap[catKey] ?? 0;
-            const matches    = data.matchByCatMap[catKey] ?? 0;
             return (
               <div key={key} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                 <div className="px-4 pt-4 pb-3 flex items-start justify-between">
@@ -133,17 +287,16 @@ export default function DashboardPage() {
                       <Icon className="w-4.5 h-4.5" style={{ color }} strokeWidth={1.75} />
                     </div>
                     <div>
-                      <p className="font-bold text-gray-900 text-sm">{key}</p>
+                      <p className="font-bold text-gray-900 text-sm">{sectorLabel}</p>
                       <p className="text-[10px] text-gray-400">{sub}</p>
                     </div>
                   </div>
                   <span className="text-lg font-bold" style={{ color }}>{propCount}</span>
                 </div>
-                <div className="px-4 pb-3 grid grid-cols-3 gap-x-3 gap-y-2">
+                <div className="px-4 pb-3 grid grid-cols-2 gap-x-3 gap-y-2">
                   {[
                     { label: "BUYER REQS",   val: buyerReqs },
                     { label: "TENANT REQS",  val: tenantReqs },
-                    { label: "MATCHES",      val: matches },
                   ].map(({ label, val }) => (
                     <div key={label}>
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{label}</p>
@@ -155,7 +308,7 @@ export default function DashboardPage() {
                   <Link href={`/projects?cat=${key}`}
                     className="block w-full text-center text-xs font-bold py-2 rounded-lg border-2 transition-colors hover:opacity-80"
                     style={{ borderColor: color, color }}>
-                    OPEN {key.toUpperCase()}
+                    OPEN {sectorLabel.toUpperCase()}
                   </Link>
                 </div>
               </div>
@@ -178,13 +331,13 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {SECTORS.map(({ key, catKey, color, bg }) => {
+            {SECTORS.map(({ key, label: sectorLabel, catKey, color, bg }) => {
               const propCount = data.catCounts[catKey] ?? 0;
               return (
                 <div key={key} className="rounded-lg px-4 py-3" style={{ background: "rgba(255,255,255,0.07)" }}>
                   <span className="w-2 h-2 rounded-full inline-block mb-2" style={{ background: color }} />
                   <p className="text-lg font-bold text-white">{propCount}</p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">{key}</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">{sectorLabel}</p>
                 </div>
               );
             })}
@@ -254,8 +407,6 @@ export default function DashboardPage() {
                 { label: "Add Buyer Req",        href: "/requirements/buyer/new",     color: "#0d9488", bg: "#f0fdfa",  icon: FileText },
                 { label: "Add Tenant Req",       href: "/requirements/tenant/new",    color: "#d97706", bg: "#fffbeb",  icon: FileText },
                 { label: "Run Matching",         href: "/matching/run",               color: "#7c3aed", bg: "#f5f3ff",  icon: Target },
-                { label: "New Proposal",         href: "/proposals/new",              color: "#db2777", bg: "#fdf2f8",  icon: FileText },
-                { label: "Schedule Site Visit",  href: "/site-visits/new",            color: "#0891b2", bg: "#f0f9ff",  icon: MapPin },
                 { label: "View Reports",         href: "/reports",                    color: "#64748b", bg: "#f1f5f9",  icon: TrendingUp },
               ].map(({ label, href, color, bg, icon: Icon }) => (
                 <Link key={label} href={href}

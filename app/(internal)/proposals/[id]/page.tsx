@@ -7,7 +7,7 @@ import {
   ArrowLeft, FileText, Loader2, Check, ChevronDown,
   Building2, Users, Handshake, MapPin, ExternalLink, Send, Paperclip,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, subcategoryLabel } from "@/lib/utils";
 import FilesTab from "@/components/project/FilesTab";
 
 type ProposalItem = {
@@ -270,7 +270,7 @@ export default function ProposalDetailPage() {
                         )}
                       </div>
                       <p className="text-sm font-semibold text-gray-900 truncate mt-0.5">{item.project.title}</p>
-                      <p className="text-[10px] text-gray-400">{item.project.category.name} · {item.project.subcategory.name}</p>
+                      <p className="text-[10px] text-gray-400">{item.project.category.name} · {subcategoryLabel(item.project.subcategory.name)}</p>
                     </div>
 
                     {/* Client response dropdown */}

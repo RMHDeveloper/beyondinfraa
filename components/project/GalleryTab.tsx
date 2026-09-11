@@ -1,44 +1,22 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Upload, Trash2, Loader2, Presentation, GripVertical } from "lucide-react";
+import { Upload, Trash2, Loader2, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
-import CreatePptModal from "./CreatePptModal";
-import type { PptExportConfig } from "@/app/(internal)/projects/[id]/page";
 
 export type GalleryImage = {
   id: string; originalName: string; sizeBytes: number; uploadedAt: string;
 };
 
-type TemplateGroup = { id: string; sortOrder: number; group: { id: string; name: string; questions: { id: string; label: string; fieldType: string; isInternal: boolean; showInPptExport: boolean }[] } };
-
-export default function GalleryTab({ projectId, apiBase, readOnly }: { projectId: string; apiBase: string; readOnly: boolean }) {
+export default function GalleryTab({ apiBase, readOnly }: { apiBase: string; readOnly: boolean }) {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [showPptModal, setShowPptModal] = useState(false);
-  const [pptImages, setPptImages] = useState<GalleryImage[]>([]);
-  const [pptTemplateGroups, setPptTemplateGroups] = useState<TemplateGroup[]>([]);
-  const [pptResponseMap, setPptResponseMap] = useState<Record<string, string>>({});
-  const [pptExportConfig, setPptExportConfig] = useState<PptExportConfig | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dragIndex = useRef<number | null>(null);
 
   async function load() {
     const res = await fetch(`${apiBase}?kind=GALLERY_IMAGE`);
     setImages(await res.json());
-  }
-
-  async function openPptModal() {
-    const [projectRes, configRes] = await Promise.all([
-      fetch(`/api/projects/${projectId}`),
-      fetch(`/api/projects/${projectId}/ppt-export-config`),
-    ]);
-    const [project, config] = await Promise.all([projectRes.json(), configRes.json()]);
-    setPptImages(images);
-    setPptTemplateGroups(project.template.groups);
-    setPptResponseMap(Object.fromEntries((project.responses ?? []).map((r: { questionId: string; value: string | null }) => [r.questionId, r.value ?? ""])));
-    setPptExportConfig(config.pptExportConfig ?? null);
-    setShowPptModal(true);
   }
 
   useEffect(() => { load(); }, [apiBase]);
@@ -96,12 +74,6 @@ export default function GalleryTab({ projectId, apiBase, readOnly }: { projectId
             {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
             {uploading ? "Uploading…" : "Upload Images"}
           </button>
-          <button
-            onClick={openPptModal}
-            className="flex items-center gap-2 text-sm font-medium bg-blue-600 text-white px-3.5 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Presentation className="w-4 h-4" /> Create PPT
-          </button>
         </div>
       )}
 
@@ -139,19 +111,6 @@ export default function GalleryTab({ projectId, apiBase, readOnly }: { projectId
             </div>
           ))}
         </div>
-      )}
-
-      {showPptModal && (
-        <CreatePptModal
-          projectId={projectId}
-          apiBase={apiBase}
-          customFieldsApiBase={`/api/projects/${projectId}/custom-fields`}
-          images={pptImages}
-          templateGroups={pptTemplateGroups}
-          responseMap={pptResponseMap}
-          initialConfig={pptExportConfig}
-          onClose={() => setShowPptModal(false)}
-        />
       )}
     </div>
   );

@@ -323,6 +323,7 @@ model Question {
   autoCalcJson    Json?         // { formula, sourceFields }
   showInPrint     Boolean       @default(true)
   showInPptExport Boolean       @default(true)
+  isArchived      Boolean       @default(false)
   group           QuestionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
   responses       Response[]
 

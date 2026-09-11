@@ -27,6 +27,7 @@ export const POST = withErrorHandling(async function POST(req: NextRequest) {
     categoryId, subcategoryId, templateId, templateVersion, title, clientName, clientPhone, clientEmail, leadSource, leadDate,
     referredById, newReferrerName, newReferrerPhone,
     clientContactId, newClientContactName, newClientContactPhone,
+    statusId,
   } = await req.json();
 
   if (!categoryId || !subcategoryId || !templateId || !title) {
@@ -69,7 +70,7 @@ export const POST = withErrorHandling(async function POST(req: NextRequest) {
   const count = await db.project.count();
   const projectNumber = `BI-${category.slug.slice(0, 3).toUpperCase()}-${String(count + 1).padStart(4, "0")}`;
 
-  const defaultStatus = await db.status.findFirst({ where: { slug: "new" } });
+  const defaultStatus = statusId ? null : await db.status.findFirst({ where: { slug: "new" } });
 
   const project = await db.project.create({
     data: {
@@ -79,7 +80,7 @@ export const POST = withErrorHandling(async function POST(req: NextRequest) {
       subcategoryId,
       templateId,
       templateVersion: templateVersion ?? 1,
-      statusId: defaultStatus?.id ?? null,
+      statusId: statusId ?? defaultStatus?.id ?? null,
       assigneeId: session.role === "EMPLOYEE" ? session.id : null,
       clientName: clientName ?? null,
       clientPhone: clientPhone ?? null,

@@ -6,8 +6,22 @@ export const dynamic = "force-dynamic";
 
 export const GET = withErrorHandling(async function GET(req: Request) {
   await requireSession();
-  const employeeId = new URL(req.url).searchParams.get("employeeId") || undefined;
-  const projectWhere = employeeId ? { assigneeId: employeeId } : {};
+  const url = new URL(req.url);
+  const employeeId = url.searchParams.get("employeeId") || undefined;
+  const from = url.searchParams.get("from") || undefined;
+  const to = url.searchParams.get("to") || undefined;
+
+  const createdAtFilter =
+    from || to
+      ? { createdAt: { ...(from ? { gte: new Date(from) } : {}), ...(to ? { lte: new Date(`${to}T23:59:59.999`) } : {}) } }
+      : {};
+  // "Dropped" projects are excluded from every analytics count/breakdown below —
+  // they're still visible in the projects list, just not counted toward stats.
+  const projectWhere = {
+    ...(employeeId ? { assigneeId: employeeId } : {}),
+    ...createdAtFilter,
+    status: { isNot: { name: { equals: "Dropped", mode: "insensitive" as const } } },
+  };
 
   const [
     totalProjects,
@@ -42,8 +56,8 @@ export const GET = withErrorHandling(async function GET(req: Request) {
     }),
     db.followUp.count({ where: { isDone: false, dueAt: { lt: new Date() } } }),
     db.contact.count(),
-    db.project.count({ where: { subcategory: { name: "Buy" }, state: { not: "ARCHIVED" } } }),
-    db.project.count({ where: { subcategory: { name: "Tenant" }, state: { not: "ARCHIVED" } } }),
+    db.project.count({ where: { ...projectWhere, subcategory: { name: "Buy" }, state: { not: "ARCHIVED" } } }),
+    db.project.count({ where: { ...projectWhere, subcategory: { name: "Tenant" }, state: { not: "ARCHIVED" } } }),
     db.match.count(),
     db.proposal.count(),
     db.siteVisit.count(),
@@ -51,7 +65,7 @@ export const GET = withErrorHandling(async function GET(req: Request) {
     db.response.findMany({
       where: {
         question: { label: "Budget — Max" },
-        project: { subcategory: { name: "Buy" }, state: { not: "ARCHIVED" } },
+        project: { ...projectWhere, subcategory: { name: "Buy" }, state: { not: "ARCHIVED" } },
       },
       select: { value: true },
     }),
@@ -68,12 +82,17 @@ export const GET = withErrorHandling(async function GET(req: Request) {
   );
 
   const [buyerByCat, tenantByCat, matchByCatRaw] = await Promise.all([
-    db.project.groupBy({ by: ["categoryId"], _count: { id: true }, where: { subcategory: { name: "Buy" } } }),
-    db.project.groupBy({ by: ["categoryId"], _count: { id: true }, where: { subcategory: { name: "Tenant" } } }),
+    db.project.groupBy({ by: ["categoryId"], _count: { id: true }, where: { ...projectWhere, subcategory: { name: "Buy" } } }),
+    db.project.groupBy({ by: ["categoryId"], _count: { id: true }, where: { ...projectWhere, subcategory: { name: "Tenant" } } }),
     db.$queryRaw<{ categoryId: string; cnt: bigint }[]>`
       SELECT p."categoryId", COUNT(*)::bigint AS cnt
-      FROM matches m JOIN projects p ON p.id = m."projectId"
-      WHERE ${employeeId ?? null}::text IS NULL OR p."assigneeId" = ${employeeId ?? null}
+      FROM matches m
+      JOIN projects p ON p.id = m."projectId"
+      LEFT JOIN statuses st ON st.id = p."statusId"
+      WHERE (${employeeId ?? null}::text IS NULL OR p."assigneeId" = ${employeeId ?? null})
+        AND (${from ?? null}::timestamp IS NULL OR p."createdAt" >= ${from ?? null}::timestamp)
+        AND (${to ?? null}::timestamp IS NULL OR p."createdAt" <= ${to ? `${to}T23:59:59.999` : null}::timestamp)
+        AND (st.name IS NULL OR lower(st.name) != 'dropped')
       GROUP BY p."categoryId"
     `,
   ]);

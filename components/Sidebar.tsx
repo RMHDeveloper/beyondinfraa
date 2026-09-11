@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Home, Briefcase, Factory, RefreshCw,
   Users, BarChart2, Settings, ClipboardList, LogOut,
-  ChevronRight, MapPin, Building2, UserCog, FileText,
+  ChevronRight, Building2, UserCog,
   PanelLeftClose, PanelLeftOpen, X, CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -19,20 +19,17 @@ const sectorNav = [
   { href: "/projects?cat=Residential",   label: "Residential",  icon: Home,       color: "#2563eb" },
   { href: "/projects?cat=Commercial",    label: "Commercial",   icon: Briefcase,  color: "#d97706" },
   { href: "/projects?cat=Industrial",    label: "Industrial",   icon: Factory,    color: "#7c3aed" },
-  { href: "/projects?cat=Redevelopment", label: "Redevelopment",icon: RefreshCw,  color: "#0d9488" },
+  { href: "/projects?cat=Redevelopment", label: "Joint Development",icon: RefreshCw,  color: "#0d9488" },
 ];
 
 const mgmtNav = [
   { href: "/contacts",              label: "Contacts",          icon: Users,         roles: ["SUPER_ADMIN", "OWNER"] as const },
   { href: "/requirements/buyer",    label: "Buyer Reqs",        icon: Users,         roles: ["SUPER_ADMIN", "OWNER"] as const },
   { href: "/requirements/tenant",   label: "Tenant Reqs",       icon: Building2,     roles: ["SUPER_ADMIN", "OWNER"] as const },
-  { href: "/proposals",             label: "Proposals",         icon: FileText,      roles: ["SUPER_ADMIN", "OWNER"] as const },
   { href: "/tasks",                 label: "Tasks & Follow-ups", icon: ClipboardList, roles: ["SUPER_ADMIN", "OWNER"] as const },
-  { href: "/site-visits",           label: "Site Visits",       icon: MapPin,        roles: ["SUPER_ADMIN", "OWNER"] as const },
   { href: "/calendar",              label: "Calendar",          icon: CalendarDays,  roles: ["SUPER_ADMIN", "OWNER"] as const },
   { href: "/reports",               label: "Reports",           icon: BarChart2,     roles: ["SUPER_ADMIN", "OWNER"] as const },
   { href: "/employees",             label: "Employees",         icon: UserCog,       roles: ["SUPER_ADMIN", "OWNER"] as const },
-  { href: "/audit-logs",            label: "Audit Logs",        icon: FileText,      roles: ["SUPER_ADMIN"] as const },
   { href: "/users",                 label: "Users & Roles",     icon: Users,         roles: ["SUPER_ADMIN"] as const },
   { href: "/settings",              label: "Settings",          icon: Settings,      roles: ["SUPER_ADMIN", "OWNER"] as const },
 ];
@@ -146,12 +143,12 @@ export default function Sidebar({ user, mobileOpen = false, onClose }: Props) {
                       ? "bg-blue-50 text-blue-700"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   )}
-                  style={active ? { color } : undefined}
+                  style={{ color }}
                 >
                   <item.icon
                     className="w-4 h-4 flex-shrink-0"
                     strokeWidth={1.75}
-                    style={{ color: active ? color : undefined }}
+                    style={{ color }}
                   />
                   {!isCollapsed && (
                     <>

@@ -1,5 +1,18 @@
 # Changes
 
+## 2026-09-06 - 10-item batch: filters, tasks, PPT font sizes, reports, contact types
+
+- **Sidebar**: removed "Site Visit" and "Proposals" nav entries (proposals are being redefined separately — PPT-as-proposal, not built yet — so hidden from the menu for now, not deleted).
+- **Gallery**: removed "Create PPT" action from the project detail page's Gallery tab (PPT creation still available elsewhere).
+- **Sector nav colors**: Residential/Commercial/Industrial/Redevelopment menu items now keep their category color always, not just when active.
+- **`/projects` category filter (items #9/#10)**: the category filter chosen in the sector nav wasn't propagating to any tab except Overview/Available Properties — `ProjectsClient.tsx` now derives one `effectiveCat` (mapped through `SECTOR_TO_CATEGORY`) and filters Buyer/Tenant Requirements, Matching, Proposals, Site Visits, and Closed Deals tabs all off that same value. Also fixed Buy/Tenant-subcategory projects incorrectly appearing in the "Available Properties" listing (they're demand-side, not listings) — excluded by subcategory name. Removed the now-redundant per-tab category filter pills on the Requirements tabs (`RequirementsTab`'s `categories`/`catFilter`/`onCatFilter`/`color` props deleted, now driven by the top-level sector nav only).
+- **Contact types (item #7)**: trimmed the selectable `Contact Type` options on Add/Edit Contact and the Contacts list filter down to Owner/Buyer/Tenant/Developer/Other, per instruction. This is a UI-only restriction — the `ContactType` Prisma enum itself was left unchanged, since live data safety couldn't be verified (local DB connectivity issue, unrelated to this change, prevented checking whether any contacts use the removed types). `EditContactForm.tsx` shows a contact's existing legacy type (e.g. Broker, Company) as a "(legacy)" option so it doesn't get silently blanked/changed on save. **Open question for the user: confirm whether the underlying enum should also be shrunk, or left as-is with the UI restriction only.**
+- **Tasks page (item #4)**: `/tasks` now supports inline due-date editing (click the date cell) and a "New Task" button with a project picker + description + due date, reusing the existing project-scoped `POST /api/projects/[id]/followups`. Extended `PATCH /api/followups/[id]` to also accept `dueAt` (previously only toggled `isDone`).
+- **PPT font sizes (item #1)**: added a "Field Slide Text Size" preset control (Compact/Standard/Large) on `/settings/ppt-template`, stored in `AppSetting` (`ppt_font_size_preset`) via new `GET/POST /api/settings/ppt-font-size`. `lib/pptTemplate.ts`'s `addFieldSlides()`/`addCustomFieldSlide()` now read the active preset and apply it to the group heading, field label, and field value text sizes on every field slide (previously hardcoded 14/15/20pt).
+- **Reports (item #2)**: added a date-range filter (applies to the Deals/Properties breakdowns and CSV exports), two CSV export buttons (Deals, Properties — client-side, no library), a "Deals Closed by Category" breakdown, a "Site Visits by Status" breakdown, and total sale value / total brokerage figures for the selected range.
+
+`npx tsc --noEmit` clean, `npx vitest run` 19/19 passing. Not verified in a live browser this round.
+
 ## 2026-09-04 - Wrapped all remaining API routes in error handling + added a Vitest test suite
 Two follow-ups from the production-readiness audit ("fix those too"):
 

@@ -14,13 +14,14 @@ export const GET = withErrorHandling(async function GET() {
           group: {
             select: {
               id: true, name: true, isShared: true,
+              _count: { select: { templates: true } },
               questions: {
                 orderBy: { sortOrder: "asc" },
                 select: {
                   id: true, label: true, fieldType: true, isRequired: true,
                   isInternal: true, options: true, unit: true, helpText: true,
                   conditionalJson: true, autoCalcJson: true, sortOrder: true,
-                  showInPrint: true, showInPptExport: true,
+                  showInPrint: true, showInPptExport: true, isArchived: true,
                 },
               },
             },

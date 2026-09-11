@@ -78,6 +78,21 @@ export async function photoOnBackground(photoBuffer: Buffer, backgroundDataUri: 
 const FIELD_SLIDE_DARK = "111111";
 const FIELD_SLIDE_GRAY = "6B7280";
 
+export const PPT_FONT_SIZE_PRESETS = {
+  compact:  { header: 13, label: 13, value: 17 },
+  standard: { header: 15, label: 15, value: 20 },
+  large:    { header: 17, label: 17, value: 23 },
+} as const;
+export type PptFontSizePreset = keyof typeof PPT_FONT_SIZE_PRESETS;
+export const DEFAULT_PPT_FONT_SIZE_PRESET: PptFontSizePreset = "standard";
+const PPT_FONT_SIZE_SETTING_KEY = "ppt_font_size_preset";
+
+async function getPptFontSizes() {
+  const row = await db.appSetting.findUnique({ where: { key: PPT_FONT_SIZE_SETTING_KEY } });
+  const preset = (row?.value as PptFontSizePreset) ?? DEFAULT_PPT_FONT_SIZE_PRESET;
+  return PPT_FONT_SIZE_PRESETS[preset] ?? PPT_FONT_SIZE_PRESETS[DEFAULT_PPT_FONT_SIZE_PRESET];
+}
+
 export type PptExportConfig = {
   groupOrder: string[];
   groups: Record<string, { included: boolean; questionOrder: string[]; excludedQuestionIds: string[] }>;
@@ -106,6 +121,7 @@ export async function addFieldSlides(
   headerRightLabel: string,
   customFields: FieldSlideCustomField[] = [],
 ) {
+  const fontSizes = await getPptFontSizes();
   const groupsById = new Map(templateGroups.map((tg) => [tg.group.id, tg]));
   const customFieldsById = new Map(customFields.map((f) => [f.id, f]));
   const excludedCustomFieldIds = new Set(pptExportConfig?.excludedCustomFieldIds ?? []);
@@ -118,7 +134,7 @@ export async function addFieldSlides(
       const fieldId = groupId.slice(CUSTOM_FIELD_PREFIX.length);
       if (excludedCustomFieldIds.has(fieldId)) continue;
       const field = customFieldsById.get(fieldId)!;
-      await addCustomFieldSlide(pptx, field, middleDataUri);
+      await addCustomFieldSlide(pptx, field, middleDataUri, fontSizes);
       continue;
     }
     const tg = groupsById.get(groupId)!;
@@ -154,7 +170,7 @@ export async function addFieldSlides(
 
       const header = pages.length > 1 ? `${tg.group.name.toUpperCase()} (${pageIndex + 1})` : tg.group.name.toUpperCase();
       slide.addText(header, {
-        x: 0.4, y: 0.32, w: 9, h: 0.5, fontSize: 15, bold: true, color: FIELD_SLIDE_DARK, charSpacing: 1,
+        x: 0.4, y: 0.32, w: 9, h: 0.5, fontSize: fontSizes.header, bold: true, color: FIELD_SLIDE_DARK, charSpacing: 1,
       });
       slide.addText(headerRightLabel, {
         x: 0, y: 0.32, w: 12.53, h: 0.5, fontSize: 10, color: FIELD_SLIDE_GRAY, align: "right",
@@ -167,8 +183,8 @@ export async function addFieldSlides(
 
       for (const { q, val, isBlank } of pageRows) {
         const x = col === 0 ? 0.4 : col2X;
-        slide.addText(q.label, { x, y: rowY, w: colW, h: 0.4, fontSize: 15, bold: true, color: FIELD_SLIDE_GRAY, wrap: true });
-        slide.addText(!isBlank ? val : "—", { x, y: rowY + 0.42, w: colW, h: 0.55, fontSize: 20, color: FIELD_SLIDE_DARK, wrap: true });
+        slide.addText(q.label, { x, y: rowY, w: colW, h: 0.4, fontSize: fontSizes.label, bold: true, color: FIELD_SLIDE_GRAY, wrap: true });
+        slide.addText(!isBlank ? val : "—", { x, y: rowY + 0.42, w: colW, h: 0.55, fontSize: fontSizes.value, color: FIELD_SLIDE_DARK, wrap: true });
         slide.addShape(pptx.ShapeType.line, { x, y: rowY + 1.02, w: colW, h: 0, line: { color: "E5E7EB", width: 0.5 } });
 
         col = 1 - col;
@@ -181,13 +197,18 @@ export async function addFieldSlides(
 // One custom field, one slide — text fields get a label+value block, image fields get the
 // same framed-photo layout used elsewhere. Each field is independently positioned via
 // CUSTOM_FIELD_PREFIX in groupOrder, so fields can no longer share a combined slide.
-async function addCustomFieldSlide(pptx: PptxGenJS, field: FieldSlideCustomField, middleDataUri: string) {
+async function addCustomFieldSlide(
+  pptx: PptxGenJS,
+  field: FieldSlideCustomField,
+  middleDataUri: string,
+  fontSizes: { header: number; label: number; value: number },
+) {
   if (field.type === "TEXT") {
     if (!field.value?.trim()) return;
     const slide = pptx.addSlide();
     slide.background = { data: middleDataUri };
-    slide.addText(field.label.toUpperCase(), { x: 0.4, y: 0.32, w: 9, h: 0.5, fontSize: 15, bold: true, color: FIELD_SLIDE_DARK, charSpacing: 1 });
-    slide.addText(field.value ?? "", { x: 0.4, y: 1.15, w: 11.7, h: 3.5, fontSize: 14, color: FIELD_SLIDE_DARK, wrap: true });
+    slide.addText(field.label.toUpperCase(), { x: 0.4, y: 0.32, w: 9, h: 0.5, fontSize: fontSizes.header, bold: true, color: FIELD_SLIDE_DARK, charSpacing: 1 });
+    slide.addText(field.value ?? "", { x: 0.4, y: 1.15, w: 11.7, h: 3.5, fontSize: fontSizes.label, color: FIELD_SLIDE_DARK, wrap: true });
     return;
   }
   if (!field.file) return;
@@ -195,7 +216,7 @@ async function addCustomFieldSlide(pptx: PptxGenJS, field: FieldSlideCustomField
   const bgDataUri = await photoOnBackground(buf, middleDataUri);
   const slide = pptx.addSlide();
   slide.background = { data: bgDataUri };
-  slide.addText(field.label, { x: 0.4, y: 0.32, w: 9, h: 0.5, fontSize: 15, bold: true, color: FIELD_SLIDE_DARK, charSpacing: 1 });
+  slide.addText(field.label, { x: 0.4, y: 0.32, w: 9, h: 0.5, fontSize: fontSizes.header, bold: true, color: FIELD_SLIDE_DARK, charSpacing: 1 });
 }
 
 export async function propertySlideBackground(photoBuffer: Buffer): Promise<string> {

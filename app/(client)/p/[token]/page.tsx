@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Loader2, Check, AlertCircle, PartyPopper } from "lucide-react";
-import { cn, isBlankResponseValue } from "@/lib/utils";
+import { cn, isBlankResponseValue, subcategoryLabel } from "@/lib/utils";
 import FieldRenderer from "@/components/project/FieldRenderer";
 import { useAutosave } from "@/components/project/useAutosave";
 import OtpInput from "@/components/client-portal/OtpInput";
@@ -305,7 +305,7 @@ export default function ClientPortalPage() {
             <Image src="/ppt-template/logo-icon.png" alt="Logo" width={32} height={32} className="rounded-md shrink-0" />
             <div className="min-w-0">
               <h1 className="text-sm font-bold text-white truncate">{project.title}</h1>
-              <p className="text-xs text-white/60 truncate">{project.category.name} · {project.subcategory.name}</p>
+              <p className="text-xs text-white/60 truncate">{project.category.name} · {subcategoryLabel(project.subcategory.name)}</p>
             </div>
           </div>
           <span className="text-xs shrink-0">

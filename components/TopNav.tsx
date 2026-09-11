@@ -57,7 +57,7 @@ export default function TopNav({ onMenuClick }: { onMenuClick?: () => void }) {
 
   function tabActive(tab: typeof TABS[number]) {
     if (tab.label === "Overview") return pathname === "/dashboard";
-    if (tab.label === "Matching") return pathname.startsWith("/projects") && (!tabParam || tabParam === "Matching" || tabParam === "Available Properties");
+    if (tab.label === "Matching") return pathname.startsWith("/projects") && (!tabParam || tabParam === "Matching" || tabParam === "Inventory");
     return pathname.startsWith("/projects") && tabParam === tab.label;
   }
 

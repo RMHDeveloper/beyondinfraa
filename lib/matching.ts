@@ -44,6 +44,26 @@ export function demandMode(subcategoryName: string): "buyer" | "tenant" | null {
   return null;
 }
 
+// Map category/subcategory to a scoring profile slug. Land Sale, Joint Venture, and
+// Redevelopment each get their own profile (instead of one shared "special-projects"
+// profile) because their templates carry genuinely different fields (e.g. only Land
+// Sale has a Commission field, only Redevelopment has a Consent field).
+export function resolveScoringProfile(categoryName: string, subcategoryName: string, templateName: string): string {
+  const sub  = subcategoryName.toLowerCase();
+  const tmpl = templateName.toLowerCase();
+
+  if (sub.includes("redevelopment") || tmpl.includes("redevelopment")) return "redevelopment";
+  if (sub.includes("joint venture") || tmpl.includes("joint venture")) return "joint-venture";
+  if (sub.includes("land sale") || tmpl.includes("land sale")) return "land-sale";
+
+  if (
+    sub.includes("rent") || sub.includes("rental") || sub.includes("lease") ||
+    tmpl.includes("rent") || tmpl.includes("rental") || tmpl.includes("lease")
+  ) return "rental";
+
+  return "selling-buying";
+}
+
 export type ScoreResult = { pct: number; matched: string[]; missed: string[] };
 
 export function scoreDemandAgainstListing(demand: ProjectForScoring, listing: ProjectForScoring): ScoreResult | null {

@@ -21,9 +21,11 @@ export default async function ProjectsPage() {
       orderBy: { createdAt: "desc" },
       take: 200,
       select: {
-        id: true, projectNumber: true, state: true, createdAt: true,
+        id: true, projectNumber: true, title: true, state: true, createdAt: true,
         clientContact: { select: { id: true, name: true, type: true } },
+        clientName: true, clientPhone: true,
         category: { select: { id: true, name: true } },
+        demandMatches: { where: { confirmedAt: { not: null } }, select: { id: true } },
       },
     }),
     db.project.findMany({
@@ -31,9 +33,11 @@ export default async function ProjectsPage() {
       orderBy: { createdAt: "desc" },
       take: 200,
       select: {
-        id: true, projectNumber: true, state: true, createdAt: true,
+        id: true, projectNumber: true, title: true, state: true, createdAt: true,
         clientContact: { select: { id: true, name: true, type: true } },
+        clientName: true, clientPhone: true,
         category: { select: { id: true, name: true } },
+        demandMatches: { where: { confirmedAt: { not: null } }, select: { id: true } },
       },
     }),
     db.contact.findMany({ select: { id: true, name: true, type: true }, orderBy: { name: "asc" }, take: 1000 }),

@@ -14,7 +14,7 @@ const SEGMENT_OPTIONS: Record<string, { value: string; label: string }[]> = {
     { value: "SELL", label: "Sell" },
   ],
   "Special Projects": [
-    { value: "REDEVELOPMENT", label: "Redevelopment" },
+    { value: "REDEVELOPMENT", label: "Joint Development" },
     { value: "JV", label: "JV" },
   ],
 };

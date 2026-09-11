@@ -4,7 +4,7 @@ import { MapPin, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const SEGMENT_LABELS: Record<string, string> = {
-  BUY: "Buy", SELL: "Sell", RENT: "Rent", REDEVELOPMENT: "Redevelopment", JV: "JV",
+  BUY: "Buy", SELL: "Sell", RENT: "Rent", REDEVELOPMENT: "Joint Development", JV: "JV",
 };
 
 export const dynamic = "force-dynamic";

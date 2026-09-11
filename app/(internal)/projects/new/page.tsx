@@ -9,6 +9,7 @@ type Sub = { id: string; name: string; slug: string; templates?: Template[] };
 type Category = { id: string; name: string; slug: string; subcategories: Sub[] };
 type Template = { id: string; name: string; version: number };
 type Contact = { id: string; name: string; type: string; phone: string | null; email: string | null };
+type Status = { id: string; name: string; color: string };
 
 type Step = "category" | "subcategory" | "details";
 
@@ -27,6 +28,8 @@ export default function NewProjectPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [statuses, setStatuses] = useState<Status[]>([]);
+  const [statusId, setStatusId] = useState("");
 
   const [selectedCat, setSelectedCat] = useState<Category | null>(null);
   const [selectedSub, setSelectedSub] = useState<Sub | null>(null);
@@ -81,6 +84,11 @@ export default function NewProjectPage() {
   useEffect(() => {
     fetch("/api/settings/categories").then((r) => r.json()).then(setCategories);
     fetch("/api/contacts").then((r) => r.json()).then(setContacts);
+    fetch("/api/settings/statuses").then((r) => r.json()).then((s: Status[]) => {
+      setStatuses(s);
+      const def = s.find((x) => x.name.trim().toLowerCase() === "new");
+      if (def) setStatusId(def.id);
+    });
   }, []);
 
   useEffect(() => {
@@ -120,6 +128,7 @@ export default function NewProjectPage() {
           subcategoryId: selectedSub.id,
           templateId: selectedTemplate.id,
           templateVersion: selectedTemplate.version,
+          statusId: statusId || null,
           title: form.title.trim(),
           clientName: form.clientName || null,
           clientPhone: form.clientPhone.trim() ? `${clientCountryCode} ${form.clientPhone.trim()}` : null,
@@ -248,6 +257,20 @@ export default function NewProjectPage() {
                 onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
                 autoFocus
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
+              <select
+                className="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-gray-900 bg-white"
+                value={statusId}
+                onChange={(e) => setStatusId(e.target.value)}
+              >
+                <option value="">No Status</option>
+                {statuses.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
             </div>
 
             <div className="border-t border-gray-100 pt-5">

@@ -7,10 +7,15 @@ export const dynamic = "force-dynamic";
 export const PATCH = withErrorHandling(async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   await requireSession();
   const { id } = await params;
-  const { isDone } = await req.json();
-  const followUp = await db.followUp.update({
-    where: { id },
-    data: { isDone, doneAt: isDone ? new Date() : null },
-  });
+  const body = await req.json();
+
+  const data: { isDone?: boolean; doneAt?: Date | null; dueAt?: Date } = {};
+  if (typeof body.isDone === "boolean") {
+    data.isDone = body.isDone;
+    data.doneAt = body.isDone ? new Date() : null;
+  }
+  if (typeof body.dueAt === "string" && body.dueAt) data.dueAt = new Date(body.dueAt);
+
+  const followUp = await db.followUp.update({ where: { id }, data });
   return Response.json(followUp);
 });
