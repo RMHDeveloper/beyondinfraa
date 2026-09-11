@@ -66,9 +66,17 @@ export const POST = withErrorHandling(async function POST(req: NextRequest) {
     resolvedClientContactId = client.id;
   }
 
-  // Generate project number
-  const count = await db.project.count();
-  const projectNumber = `BI-${category.slug.slice(0, 3).toUpperCase()}-${String(count + 1).padStart(4, "0")}`;
+  // Generate project number. Scoped per category prefix and derived from the highest
+  // existing number (not a row count) so a deleted project never causes a number to be
+  // reused and collide with the unique constraint on a later create.
+  const prefix = `BI-${category.slug.slice(0, 3).toUpperCase()}-`;
+  const lastInCategory = await db.project.findFirst({
+    where: { projectNumber: { startsWith: prefix } },
+    orderBy: { projectNumber: "desc" },
+    select: { projectNumber: true },
+  });
+  const lastSeq = lastInCategory ? parseInt(lastInCategory.projectNumber.slice(prefix.length), 10) || 0 : 0;
+  const projectNumber = `${prefix}${String(lastSeq + 1).padStart(4, "0")}`;
 
   const defaultStatus = statusId ? null : await db.status.findFirst({ where: { slug: "new" } });
 
