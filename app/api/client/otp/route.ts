@@ -51,8 +51,11 @@ export const POST = withErrorHandling(async function POST(req: NextRequest) {
   }
 
   const isDev = process.env.NODE_ENV !== "production";
+  // ALLOW_OTP_BYPASS fixes every OTP to OTP_DEV_BYPASS's value even in production —
+  // for use only while SMS delivery isn't wired up yet. Remove both env vars once it is.
+  const bypassAllowed = isDev || process.env.ALLOW_OTP_BYPASS === "true";
   const otp =
-    (isDev && process.env.OTP_DEV_BYPASS) ||
+    (bypassAllowed && process.env.OTP_DEV_BYPASS) ||
     String(Math.floor(100000 + Math.random() * 900000));
 
   const otpExpiresAt = new Date(Date.now() + OTP_TTL_MS);
