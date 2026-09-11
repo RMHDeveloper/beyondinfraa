@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Home, Briefcase, Factory, RefreshCw,
   Users, BarChart2, Settings, ClipboardList, LogOut,
-  ChevronRight, Building2, UserCog,
+  ChevronRight, Building2,
   PanelLeftClose, PanelLeftOpen, X, CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -29,7 +29,6 @@ const mgmtNav = [
   { href: "/tasks",                 label: "Tasks & Follow-ups", icon: ClipboardList, roles: ["SUPER_ADMIN", "OWNER"] as const },
   { href: "/calendar",              label: "Calendar",          icon: CalendarDays,  roles: ["SUPER_ADMIN", "OWNER"] as const },
   { href: "/reports",               label: "Reports",           icon: BarChart2,     roles: ["SUPER_ADMIN", "OWNER"] as const },
-  { href: "/employees",             label: "Employees",         icon: UserCog,       roles: ["SUPER_ADMIN", "OWNER"] as const },
   { href: "/users",                 label: "Users & Roles",     icon: Users,         roles: ["SUPER_ADMIN"] as const },
   { href: "/settings",              label: "Settings",          icon: Settings,      roles: ["SUPER_ADMIN", "OWNER"] as const },
 ];
