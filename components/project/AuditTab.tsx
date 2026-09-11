@@ -13,6 +13,10 @@ type AuditEntry = {
   user?: { name: string } | null;
 };
 
+function isRestorable(e: AuditEntry): boolean {
+  return e.action === "UPDATE" && e.entityType === "response" && !!e.meta?.beforeRaw;
+}
+
 const ACTION_META: Record<string, { label: string; color: string; bg: string }> = {
   CREATE:       { label: "Created",        color: "#059669", bg: "#ecfdf5" },
   UPDATE:       { label: "Updated",        color: "#2563eb", bg: "#eff6ff" },
@@ -95,10 +99,26 @@ function clusterByDay(entries: AuditEntry[]): { day: string; clusters: Cluster[]
 
 export default function AuditTab({ projectId }: { projectId: string }) {
   const [entries, setEntries] = useState<AuditEntry[]>([]);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
 
-  useEffect(() => {
+  function load() {
     fetch(`/api/projects/${projectId}/audit`).then(r => r.json()).then(setEntries);
-  }, [projectId]);
+  }
+
+  useEffect(() => { load(); }, [projectId]);
+
+  async function restore(auditId: string) {
+    if (!confirm("Restore this field to its earlier value?")) return;
+    setRestoringId(auditId);
+    const res = await fetch(`/api/projects/${projectId}/audit/${auditId}/restore`, { method: "POST" });
+    setRestoringId(null);
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      alert(body?.error ?? "Failed to restore");
+      return;
+    }
+    load();
+  }
 
   if (entries.length === 0) {
     return (
@@ -146,9 +166,20 @@ export default function AuditTab({ projectId }: { projectId: string }) {
                         ))}
                       </div>
                     )}
-                    <p className="text-[10px] text-gray-400 mt-1">
-                      by {c.user?.name ?? (c.source === "client" ? "Client" : "System")}
-                    </p>
+                    <div className="flex items-center justify-between gap-3 mt-1">
+                      <p className="text-[10px] text-gray-400">
+                        by {c.user?.name ?? (c.source === "client" ? "Client" : "System")}
+                      </p>
+                      {c.entries.length === 1 && isRestorable(c.entries[0]) && (
+                        <button
+                          onClick={() => restore(c.entries[0].id)}
+                          disabled={restoringId === c.entries[0].id}
+                          className="text-[10px] font-bold text-blue-600 hover:text-blue-700 disabled:opacity-50 flex-shrink-0"
+                        >
+                          {restoringId === c.entries[0].id ? "Restoring…" : "Restore"}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

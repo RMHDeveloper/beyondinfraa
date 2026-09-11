@@ -80,7 +80,14 @@ export async function PATCH(req: NextRequest) {
         action: "UPDATE",
         entityType: "response",
         entityId: questionId,
-        meta: { label: question.label, before: beforeText, after: afterText, source: "client" } as Prisma.InputJsonValue,
+        meta: {
+          label: question.label,
+          before: beforeText,
+          after: afterText,
+          source: "client",
+          beforeRaw: { value: existing?.value ?? null, jsonValue: existing?.jsonValue ?? null },
+          afterRaw: { value: value ?? null, jsonValue: jsonValue ?? null },
+        } as Prisma.InputJsonValue,
       },
     });
   }
