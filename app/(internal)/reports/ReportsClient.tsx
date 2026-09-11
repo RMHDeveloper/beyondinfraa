@@ -22,10 +22,7 @@ type Props = {
     totalContacts: number;
     totalBuyerReqs: number;
     totalTenantReqs: number;
-    totalProposals: number;
-    totalSiteVisits: number;
     totalDeals: number;
-    siteVisitsByStatusNamed: { status: string; count: number }[];
     deals: Deal[];
     projects: ProjectRow[];
   };
@@ -105,8 +102,6 @@ export default function ReportsClient({ data }: Props) {
     { label: "Contacts", value: data.totalContacts, icon: Users, color: "#059669" },
     { label: "Buyer Requirements", value: data.totalBuyerReqs, icon: FileText, color: "#d97706" },
     { label: "Tenant Requirements", value: data.totalTenantReqs, icon: FileText, color: "#7c3aed" },
-    { label: "Proposals Sent", value: data.totalProposals, icon: FileText, color: "#0d9488" },
-    { label: "Site Visits", value: data.totalSiteVisits, icon: MapPin, color: "#db2777" },
     { label: "Deals Closed", value: hasDateFilter ? filteredDeals.length : data.totalDeals, icon: TrendingUp, color: "#059669" },
   ];
 
@@ -251,24 +246,6 @@ export default function ReportsClient({ data }: Props) {
             })}
             {dealsByCategory.length === 0 && (
               <p className="text-sm text-gray-400 text-center py-4">No deals in this range.</p>
-            )}
-          </div>
-        </div>
-
-        {/* Site Visits by Status */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="font-bold text-gray-900 mb-4">Site Visits by Status</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {data.siteVisitsByStatusNamed.map(({ status, count }) => (
-              <div key={status} className="flex items-center gap-2.5 p-3 rounded-lg border border-gray-100">
-                <div>
-                  <p className="text-xs font-semibold text-gray-800">{count}</p>
-                  <p className="text-[10px] text-gray-400">{status}</p>
-                </div>
-              </div>
-            ))}
-            {data.siteVisitsByStatusNamed.length === 0 && (
-              <p className="text-sm text-gray-400 col-span-3 text-center py-4">No site visits yet.</p>
             )}
           </div>
         </div>

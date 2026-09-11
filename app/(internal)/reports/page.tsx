@@ -15,10 +15,7 @@ export default async function ReportsPage() {
     totalContacts,
     totalBuyerReqs,
     totalTenantReqs,
-    totalProposals,
-    totalSiteVisits,
     totalDeals,
-    siteVisitsByStatus,
     deals,
     projects,
   ] = await Promise.all([
@@ -28,10 +25,7 @@ export default async function ReportsPage() {
     db.contact.count(),
     db.project.count({ where: { ...notDropped, subcategory: { name: "Buy" } } }),
     db.project.count({ where: { ...notDropped, subcategory: { name: "Tenant" } } }),
-    db.proposal.count(),
-    db.siteVisit.count(),
     db.deal.count(),
-    db.siteVisit.groupBy({ by: ["status"], _count: true }),
     db.deal.findMany({
       select: {
         id: true, dealNumber: true, type: true, finalPrice: true, finalRent: true,
@@ -63,11 +57,6 @@ export default async function ReportsPage() {
     count: b._count,
   }));
 
-  const siteVisitsByStatusNamed = siteVisitsByStatus.map((s) => ({
-    status: s.status,
-    count: s._count,
-  }));
-
   const dealsFlat = deals.map((d) => ({
     id: d.id,
     dealNumber: d.dealNumber,
@@ -95,8 +84,8 @@ export default async function ReportsPage() {
       data={{
         totalProjects, byCategoryNamed, byStatusNamed,
         totalContacts, totalBuyerReqs, totalTenantReqs,
-        totalProposals, totalSiteVisits, totalDeals,
-        siteVisitsByStatusNamed, deals: dealsFlat, projects: projectsFlat,
+        totalDeals,
+        deals: dealsFlat, projects: projectsFlat,
       }}
     />
   );
