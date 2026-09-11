@@ -48,6 +48,19 @@ export async function templateSlotDataUri(slot: TemplateSlot): Promise<string> {
   return `data:image/png;base64,${buf.toString("base64")}`;
 }
 
+// "second" is an optional slide with no bundled default — returns null when unset,
+// meaning the export should skip it entirely instead of falling back to anything.
+export async function optionalTemplateSlotDataUri(slot: "second"): Promise<string | null> {
+  const row = await db.appSetting.findUnique({ where: { key: `ppt_${slot}_image` } });
+  if (!row) return null;
+  try {
+    const buf = await getObject(row.value);
+    return `data:image/png;base64,${buf.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
+
 // Composites a property photo as a framed inset on top of a supplied slide
 // background (e.g. the "middle" template), instead of using the photo itself
 // as the full-bleed backdrop.

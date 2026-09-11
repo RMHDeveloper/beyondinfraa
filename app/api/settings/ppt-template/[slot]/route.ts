@@ -6,10 +6,12 @@ import { getObject } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
-const SLOTS = ["cover", "thankyou", "middle"] as const;
+const SLOTS = ["cover", "second", "thankyou", "middle"] as const;
 type Slot = (typeof SLOTS)[number];
 
-const DEFAULT_FILES: Record<Slot, string> = {
+// "second" has no bundled default — it's an optional slide, skipped entirely in the
+// export when unset. The other three always fall back to a bundled default.
+const DEFAULT_FILES: Partial<Record<Slot, string>> = {
   cover: "cover.png",
   thankyou: "thankyou.png",
   middle: "middle-bg.png",
@@ -31,8 +33,11 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ slot: 
     }
   }
 
+  const defaultFile = DEFAULT_FILES[slot as Slot];
+  if (!defaultFile) return apiError("Not configured", 404);
+
   const { readFile } = await import("fs/promises");
   const path = await import("path");
-  const buffer = await readFile(path.join(process.cwd(), "public", "ppt-template", DEFAULT_FILES[slot as Slot]));
+  const buffer = await readFile(path.join(process.cwd(), "public", "ppt-template", defaultFile));
   return new Response(new Uint8Array(buffer), { headers: { "Content-Type": "image/png" } });
 }

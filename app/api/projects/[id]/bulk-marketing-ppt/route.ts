@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth";
 import { apiError, withErrorHandling } from "@/lib/utils";
-import { templateSlotDataUri, addFieldSlides, type PptExportConfig } from "@/lib/pptTemplate";
+import { templateSlotDataUri, optionalTemplateSlotDataUri, addFieldSlides, type PptExportConfig } from "@/lib/pptTemplate";
 import PptxGenJS from "pptxgenjs";
 
 export const dynamic = "force-dynamic";
@@ -62,10 +62,11 @@ export const POST = withErrorHandling(async function POST(req: NextRequest, { pa
     )
   );
 
-  const [coverDataUri, thankYouDataUri, middleDataUri] = await Promise.all([
+  const [coverDataUri, thankYouDataUri, middleDataUri, secondSlideDataUri] = await Promise.all([
     templateSlotDataUri("cover"),
     templateSlotDataUri("thankyou"),
     templateSlotDataUri("middle"),
+    optionalTemplateSlotDataUri("second"),
   ]);
 
   const pptx = new PptxGenJS();
@@ -82,6 +83,11 @@ export const POST = withErrorHandling(async function POST(req: NextRequest, { pa
   for (const p of orderedProperties) {
     const responseMap = Object.fromEntries(p.responses.map((r) => [r.questionId, r.value ?? ""]));
     await addFieldSlides(pptx, p.template.groups, responseMap, (p.pptExportConfig as PptExportConfig | null) ?? undefined, middleDataUri, p.title);
+  }
+
+  if (secondSlideDataUri) {
+    const slide = pptx.addSlide();
+    slide.background = { data: secondSlideDataUri };
   }
 
   {

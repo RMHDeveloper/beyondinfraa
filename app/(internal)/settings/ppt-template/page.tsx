@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Upload, Loader2, Check } from "lucide-react";
+import { Upload, Loader2, Check, ImageOff } from "lucide-react";
 
 const SLOTS = [
-  { key: "cover", label: "Welcome / Cover Slide", help: "The fixed first slide of every marketing PPT." },
-  { key: "middle", label: "Middle Slide Background", help: "Background used on every slide except the first (Cover) and last (Thank You)." },
-  { key: "thankyou", label: "Thank You Slide", help: "The fixed last slide of every marketing PPT." },
+  { key: "cover", label: "Welcome / Cover Slide", help: "The fixed first slide of every marketing PPT.", optional: false },
+  { key: "middle", label: "Middle Slide Background", help: "Background used on every slide except the first (Cover) and last (Thank You).", optional: false },
+  { key: "second", label: "Second Image Slide", help: "Optional slide shown right before the Thank You slide. Leave unset to skip it entirely.", optional: true },
+  { key: "thankyou", label: "Thank You Slide", help: "The fixed last slide of every marketing PPT.", optional: false },
 ] as const;
 
 const FONT_SIZE_PRESETS = [
@@ -74,11 +75,17 @@ export default function PptTemplateSettingsPage() {
             </div>
             <p className="text-xs text-gray-400 mb-3">{s.help}</p>
             <div className="flex items-center gap-3">
-              <img
-                src={`/api/settings/ppt-template/${s.key}?v=${version}`}
-                alt={s.label}
-                className="w-32 aspect-video object-cover rounded-lg border border-gray-200 bg-gray-50"
-              />
+              {s.optional && !configured[s.key] ? (
+                <div className="w-32 aspect-video flex items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 text-gray-300">
+                  <ImageOff className="w-5 h-5" />
+                </div>
+              ) : (
+                <img
+                  src={`/api/settings/ppt-template/${s.key}?v=${version}`}
+                  alt={s.label}
+                  className="w-32 aspect-video object-cover rounded-lg border border-gray-200 bg-gray-50"
+                />
+              )}
               <div>
                 <input
                   ref={(el) => { inputRefs.current[s.key] = el; }}

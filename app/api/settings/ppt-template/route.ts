@@ -6,7 +6,7 @@ import { uploadObject } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
-const SLOTS = ["cover", "thankyou", "middle"] as const;
+const SLOTS = ["cover", "second", "thankyou", "middle"] as const;
 type Slot = (typeof SLOTS)[number];
 
 function settingKey(slot: Slot) {
